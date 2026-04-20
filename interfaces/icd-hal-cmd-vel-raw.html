@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ICD-HAL-001 · /hal/cmd_vel_raw</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=IBM+Plex+Sans:wght@300;400;500;600;700&family=IBM+Plex+Serif:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../shared/shared.css">
+</head>
+<body>
+
+<div class="doc-bar">
+  <a class="doc-bar-crumb" href="../index.html">← HOME</a>
+  <span class="doc-bar-sep">·</span>
+  <a class="doc-bar-crumb" href="index.html">INTERFACES</a>
+  <span class="doc-bar-sep">·</span>
+  <span class="doc-bar-id">ICD-HAL-001</span>
+  <span class="doc-bar-sep">·</span>
+  <span class="doc-bar-path">/hal/cmd_vel_raw</span>
+  <span class="doc-bar-sep">·</span>
+  <span style="color: var(--ink-dim)">REV 0.1</span>
+  <div class="doc-bar-status"><span class="status-dot"></span><span>DRAFT</span></div>
+  <div class="doc-bar-tools">
+    <button class="tool-btn" onclick="window.print()">PRINT</button>
+    <button class="tool-btn" onclick="copyLink(event)">COPY LINK</button>
+  </div>
+</div>
+
+<div class="container">
+  <nav class="toc">
+    <div class="toc-title">CONTENTS</div>
+    <ul class="toc-list">
+      <li class="toc-item"><a class="toc-link" href="#s1"><span class="toc-num">1.0</span>Purpose</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s2"><span class="toc-num">2.0</span>Participants</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s3"><span class="toc-num">3.0</span>Message Definition</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s4"><span class="toc-num">4.0</span>Semantics</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s5"><span class="toc-num">5.0</span>Timing &amp; Rate</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s6"><span class="toc-num">6.0</span>QoS Profile</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s7"><span class="toc-num">7.0</span>Fault Behavior</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s8"><span class="toc-num">8.0</span>Requirements</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s9"><span class="toc-num">9.0</span>Verification</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s10"><span class="toc-num">10.0</span>Open Issues</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s11"><span class="toc-num">11.0</span>Revision History</a></li>
+    </ul>
+  </nav>
+
+  <main class="prose-serif">
+
+    <div class="doc-header">
+      <div class="doc-type interface">INTERFACE CONTROL DOCUMENT</div>
+      <h1 class="doc-title"><code>/hal/cmd_vel_raw</code></h1>
+      <p class="doc-subtitle">Priority-arbitrated velocity command output from <code>twist_mux</code>. Single input to the safety monitor's gating logic.</p>
+
+      <div class="doc-meta">
+        <div class="meta-item"><div class="meta-label">Document ID</div><div class="meta-value">ICD-HAL-001</div></div>
+        <div class="meta-item"><div class="meta-label">Revision</div><div class="meta-value">0.1 · draft</div></div>
+        <div class="meta-item"><div class="meta-label">Owner</div><div class="meta-value">platform_hal</div></div>
+        <div class="meta-item"><div class="meta-label">Classification</div><div class="meta-value">Control-path</div></div>
+        <div class="meta-item"><div class="meta-label">Last Updated</div><div class="meta-value">2026-04-19</div></div>
+      </div>
+    </div>
+
+    <section id="s1">
+      <div class="section-header"><span class="section-num">1.0</span><h2 class="section-title">Purpose</h2></div>
+      <p>The <code>/hal/cmd_vel_raw</code> topic carries the arbitrated velocity command from <code>twist_mux</code> — the highest-priority currently-active velocity source, selected from teleop, autonomous, and recovery inputs. It is the single input consumed by <a href="../nodes/srs-safety-monitor.html">safety_monitor</a> for safety gating.</p>
+      <p>The "raw" suffix denotes that the command has not yet passed through safety gating; it reflects operator/mission intent only.</p>
+    </section>
+
+    <section id="s2">
+      <div class="section-header"><span class="section-num">2.0</span><h2 class="section-title">Participants</h2></div>
+      <div class="participants">
+        <div class="participant-card pub">
+          <div class="participant-role">Publisher</div>
+          <div class="participant-name">twist_mux</div>
+          <div class="participant-detail">
+            <strong>Package</strong>twist_mux (off-the-shelf)
+            <strong>Responsibility</strong>Selects the highest-priority currently-active <code>Twist</code> input. Publishes at the rate of the active source. Rejects inputs whose source has gone stale.
+            <strong>Inputs</strong><code>/hal/cmd_vel_teleop</code> (priority 100), <code>/hal/cmd_vel_auto</code> (priority 50), <code>/hal/cmd_vel_recovery</code> (priority 10).
+          </div>
+        </div>
+        <div class="participant-card sub">
+          <div class="participant-role">Subscriber</div>
+          <div class="participant-name">safety_monitor</div>
+          <div class="participant-detail">
+            <strong>Package</strong>platform_safety
+            <strong>SRS</strong><a href="../nodes/srs-safety-monitor.html">SRS-SAF-001</a>
+            <strong>Responsibility</strong>Passes through when safe, zeros when not. Republishes on <a href="icd-hal-cmd-vel-safe.html">/hal/cmd_vel_safe</a>.
+          </div>
+        </div>
+      </div>
+      <p class="subsection-title">Monitoring subscribers</p>
+      <ul class="indent-list">
+        <li><code>rosbag2</code> — records raw commands for pairing with <code>cmd_vel_safe</code> in post-mission analysis (used to prove what safety blocked).</li>
+      </ul>
+    </section>
+
+    <section id="s3">
+      <div class="section-header"><span class="section-num">3.0</span><h2 class="section-title">Message Definition</h2></div>
+      <p>Type: <code>geometry_msgs/msg/Twist</code>. Field semantics identical to <a href="icd-hal-cmd-vel-safe.html">ICD-HAL-002 §3</a>, with the following differences:</p>
+      <ul class="indent-list">
+        <li>Field values carry operator / mission intent, not gated output. Bounds (0.7 m/s, 1.5 rad/s) still apply; twist_mux priorities already limit inputs.</li>
+        <li>Non-finite values should not occur but are not enforced here; enforcement is at the safety gate.</li>
+      </ul>
+    </section>
+
+    <section id="s4">
+      <div class="section-header"><span class="section-num">4.0</span><h2 class="section-title">Semantics</h2></div>
+      <p>A message on this topic represents "what the system wants the rover to do, absent safety considerations." Whether the rover actually does it depends on <a href="../nodes/srs-safety-monitor.html">safety_monitor</a>'s current state.</p>
+      <p>Priority arbitration rules (from twist_mux config):</p>
+      <ul class="indent-list">
+        <li><strong>teleop (100)</strong> wins whenever a <code>Twist</code> is received on <code>/hal/cmd_vel_teleop</code> within the last 500 ms.</li>
+        <li><strong>auto (50)</strong> takes over when teleop is silent (iteration 2+). Iteration 1: stubbed.</li>
+        <li><strong>recovery (10)</strong> takes over when both above are silent. Iteration 1: unused.</li>
+        <li>When no source is active, twist_mux ceases publishing — the safety monitor then sees staleness and begins publishing zero.</li>
+      </ul>
+    </section>
+
+    <section id="s5">
+      <div class="section-header"><span class="section-num">5.0</span><h2 class="section-title">Timing &amp; Rate</h2></div>
+      <div class="data-table-wrap">
+        <table class="data-table">
+          <thead><tr><th>Parameter</th><th>Value</th><th>Notes</th></tr></thead>
+          <tbody>
+            <tr><td>Publication rate</td><td>0–50 Hz</td><td>Event-driven; equal to the active input's rate.</td></tr>
+            <tr><td>Staleness timeout (source)</td><td>500 ms</td><td>Per-source timeout inside twist_mux.</td></tr>
+            <tr><td>Downstream staleness</td><td>200 ms</td><td>safety_monitor treats absence beyond this as "no command" and publishes zero on <code>/hal/cmd_vel_safe</code>.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="s6">
+      <div class="section-header"><span class="section-num">6.0</span><h2 class="section-title">QoS Profile</h2></div>
+      <div class="data-table-wrap">
+        <table class="data-table">
+          <thead><tr><th>Setting</th><th>Value</th></tr></thead>
+          <tbody>
+            <tr><td><span class="field-name">Reliability</span></td><td><span class="field-type">RELIABLE</span></td></tr>
+            <tr><td><span class="field-name">Durability</span></td><td><span class="field-type">VOLATILE</span></td></tr>
+            <tr><td><span class="field-name">History</span></td><td><span class="field-type">KEEP_LAST</span></td></tr>
+            <tr><td><span class="field-name">Depth</span></td><td><span class="field-type">1</span></td></tr>
+            <tr><td><span class="field-name">Deadline</span></td><td><span class="field-type">not enforced</span> (rate is operator-paced)</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="s7">
+      <div class="section-header"><span class="section-num">7.0</span><h2 class="section-title">Fault Behavior</h2></div>
+      <div class="data-table-wrap">
+        <table class="data-table">
+          <thead><tr><th>Fault</th><th>Response</th></tr></thead>
+          <tbody>
+            <tr><td>twist_mux crash</td><td>systemd restart within 2 s. During gap, no messages published → safety_monitor observes staleness → <code>/hal/cmd_vel_safe</code> publishes zero.</td></tr>
+            <tr><td>All input sources silent</td><td>twist_mux stops publishing. Correctly handled by safety_monitor staleness logic (not a fault; normal idle).</td></tr>
+            <tr><td>Input with NaN</td><td>twist_mux forwards. safety_monitor may forward to cmd_vel_safe; the motor driver catches it via REQ-ICD-002-04.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="s8">
+      <div class="section-header"><span class="section-num">8.0</span><h2 class="section-title">Requirements</h2></div>
+      <ul class="req-list">
+        <li class="req-item"><div class="req-id">REQ-ICD-001-01</div><div><div class="req-text">twist_mux shall publish only when exactly one input source is currently active and within its staleness window.</div><div class="req-trace">allocated to: twist_mux · verified by: <code>TEST-HAL-006</code></div></div></li>
+        <li class="req-item"><div class="req-id">REQ-ICD-001-02</div><div><div class="req-text">When multiple sources publish simultaneously, the highest-priority source shall be selected.</div><div class="req-trace">allocated to: twist_mux · verified by: <code>TEST-HAL-007</code></div></li></div>
+        <li class="req-item"><div class="req-id">REQ-ICD-001-03</div><div><div class="req-text">The topic shall be the sole input to <code>safety_monitor</code> for velocity arbitration. safety_monitor shall not subscribe to any raw teleop or autonomous topic directly.</div><div class="req-trace">allocated to: <a href="../nodes/srs-safety-monitor.html">safety_monitor</a> · verified by: <a href="../verification/test-saf-016.html">TEST-SAF-016</a></div></div></li>
+      </ul>
+    </section>
+
+    <section id="s9">
+      <div class="section-header"><span class="section-num">9.0</span><h2 class="section-title">Verification</h2></div>
+      <div class="data-table-wrap">
+        <table class="data-table">
+          <thead><tr><th>Test ID</th><th>Method</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr><td><span class="field-name">TEST-HAL-006</span></td><td>Integration</td><td>Launch twist_mux with mock inputs; verify only the active highest-priority source is relayed.</td></tr>
+            <tr><td><span class="field-name">TEST-HAL-007</span></td><td>Integration</td><td>Publish concurrently on two sources of differing priority; verify correct selection.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="s10">
+      <div class="section-header"><span class="section-num">10.0</span><h2 class="section-title">Open Issues</h2></div>
+      <ol class="indent-list">
+        <li><strong>OPEN-01</strong> — Recovery source (priority 10) has no concrete producer yet. Its existence is reserved for iteration 2's Nav2 recovery behaviors.</li>
+        <li><strong>OPEN-02</strong> — Consider whether to lower teleop priority when safety state is CRITICAL (battery low) so a scheduled "return-to-dock" autonomous source can supersede manual input.</li>
+      </ol>
+    </section>
+
+    <section id="s11">
+      <div class="section-header"><span class="section-num">11.0</span><h2 class="section-title">Revision History</h2></div>
+      <table class="revision-table">
+        <thead><tr><th>Rev</th><th>Date</th><th>Author</th><th>Change</th></tr></thead>
+        <tbody><tr><td class="rev">0.1</td><td>2026-04-19</td><td>Louis Roig &amp; Claude Opus 4.7</td><td>Initial draft.</td></tr></tbody>
+      </table>
+    </section>
+
+    <div class="footer-nav">
+      <a href="index.html">← Interfaces Index</a>
+      <span>Next: <a href="icd-hal-cmd-vel-safe.html">/hal/cmd_vel_safe →</a></span>
+    </div>
+
+  </main>
+</div>
+
+<script src="../shared/shared.js"></script>
+</body>
+</html>

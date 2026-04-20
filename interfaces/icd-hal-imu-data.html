@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ICD-HAL-004 · /hal/imu/data</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=IBM+Plex+Sans:wght@300;400;500;600;700&family=IBM+Plex+Serif:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../shared/shared.css">
+</head>
+<body>
+
+<div class="doc-bar">
+  <a class="doc-bar-crumb" href="../index.html">← HOME</a>
+  <span class="doc-bar-sep">·</span>
+  <a class="doc-bar-crumb" href="index.html">INTERFACES</a>
+  <span class="doc-bar-sep">·</span>
+  <span class="doc-bar-id">ICD-HAL-004</span>
+  <span class="doc-bar-sep">·</span>
+  <span class="doc-bar-path">/hal/imu/data</span>
+  <span class="doc-bar-sep">·</span>
+  <span style="color: var(--ink-dim)">REV 0.1</span>
+  <div class="doc-bar-status"><span class="status-dot"></span><span>DRAFT</span></div>
+  <div class="doc-bar-tools">
+    <button class="tool-btn" onclick="window.print()">PRINT</button>
+    <button class="tool-btn" onclick="copyLink(event)">COPY LINK</button>
+  </div>
+</div>
+
+<div class="container">
+  <nav class="toc">
+    <div class="toc-title">CONTENTS</div>
+    <ul class="toc-list">
+      <li class="toc-item"><a class="toc-link" href="#s1"><span class="toc-num">1.0</span>Purpose</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s2"><span class="toc-num">2.0</span>Participants</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s3"><span class="toc-num">3.0</span>Message Definition</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s4"><span class="toc-num">4.0</span>Semantics</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s5"><span class="toc-num">5.0</span>Timing</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s6"><span class="toc-num">6.0</span>QoS</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s7"><span class="toc-num">7.0</span>Fault</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s8"><span class="toc-num">8.0</span>Requirements</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s9"><span class="toc-num">9.0</span>Verification</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s10"><span class="toc-num">10.0</span>Open Issues</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s11"><span class="toc-num">11.0</span>Revision History</a></li>
+    </ul>
+  </nav>
+
+  <main class="prose-serif">
+
+    <div class="doc-header">
+      <div class="doc-type interface">INTERFACE CONTROL DOCUMENT</div>
+      <h1 class="doc-title"><code>/hal/imu/data</code></h1>
+      <p class="doc-subtitle">Linear acceleration, angular velocity, and orientation from the ISM330DHCX inertial measurement unit. Sourced at 100 Hz over I²C.</p>
+
+      <div class="doc-meta">
+        <div class="meta-item"><div class="meta-label">Document ID</div><div class="meta-value">ICD-HAL-004</div></div>
+        <div class="meta-item"><div class="meta-label">Revision</div><div class="meta-value">0.1 · draft</div></div>
+        <div class="meta-item"><div class="meta-label">Owner</div><div class="meta-value">platform_hal</div></div>
+        <div class="meta-item"><div class="meta-label">Classification</div><div class="meta-value">Sensing · safety input</div></div>
+        <div class="meta-item"><div class="meta-label">Last Updated</div><div class="meta-value">2026-04-19</div></div>
+      </div>
+    </div>
+
+    <section id="s1">
+      <div class="section-header"><span class="section-num">1.0</span><h2 class="section-title">Purpose</h2></div>
+      <p>The <code>/hal/imu/data</code> topic carries 6-DoF inertial data (3-axis accelerometer, 3-axis gyroscope) plus a fused orientation from the IMU. It is consumed by the local EKF for orientation estimation and by the <a href="../nodes/srs-safety-monitor.html">safety_monitor</a> for tilt detection.</p>
+      <p>This is a safety-input interface: stale or missing IMU data is treated as worst-case tilt by the safety monitor.</p>
+    </section>
+
+    <section id="s2">
+      <div class="section-header"><span class="section-num">2.0</span><h2 class="section-title">Participants</h2></div>
+      <div class="participants">
+        <div class="participant-card pub">
+          <div class="participant-role">Publisher</div>
+          <div class="participant-name">imu_driver</div>
+          <div class="participant-detail">
+            <strong>Package</strong>platform_hal
+            <strong>SRS</strong><a href="../nodes/srs-imu-driver.html">SRS-HAL-002</a>
+            <strong>Hardware</strong>ISM330DHCX over I²C on Qwiic bus (Pi bus 1)
+          </div>
+        </div>
+        <div class="participant-card sub">
+          <div class="participant-role">Subscriber</div>
+          <div class="participant-name">ekf_local, safety_monitor</div>
+          <div class="participant-detail">
+            <strong>ekf_local</strong>Fuses with wheel odom; publishes <a href="icd-odometry-filtered.html">/odometry/filtered</a>.
+            <strong>safety_monitor</strong>Extracts tilt from orientation; triggers WARNING/ESTOP on thresholds.
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="s3">
+      <div class="section-header"><span class="section-num">3.0</span><h2 class="section-title">Message Definition</h2></div>
+      <p>Type: <code>sensor_msgs/msg/Imu</code>. Standard fields. Driver notes:</p>
+      <div class="data-table-wrap">
+        <table class="data-table">
+          <thead><tr><th>Field</th><th>Populated?</th><th>Notes</th></tr></thead>
+          <tbody>
+            <tr><td><span class="field-name">header.stamp</span></td><td>yes</td><td>Pi clock at I²C read completion.</td></tr>
+            <tr><td><span class="field-name">header.frame_id</span></td><td>yes</td><td><code>imu_link</code>.</td></tr>
+            <tr><td><span class="field-name">orientation</span></td><td>yes</td><td>Driver-side Madgwick filter over accel+gyro; covariance reflects filter uncertainty.</td></tr>
+            <tr><td><span class="field-name">angular_velocity</span></td><td>yes</td><td>rad/s, corrected for calibrated bias.</td></tr>
+            <tr><td><span class="field-name">linear_acceleration</span></td><td>yes</td><td>m/s², gravity included.</td></tr>
+            <tr><td><span class="field-name">*_covariance</span></td><td>yes</td><td>Calibrated values per §3 of <a href="../nodes/srs-imu-driver.html">SRS-HAL-002</a>.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="s4">
+      <div class="section-header"><span class="section-num">4.0</span><h2 class="section-title">Semantics</h2></div>
+      <p>Axes follow REP-103: x forward, y left, z up. Gravity appears as +9.81 m/s² on z when rover is level.</p>
+      <p>Tilt is computed by the safety monitor as <code>acos(gravity_z / |gravity|)</code> using the orientation quaternion applied to the (0,0,1) gravity vector. Values exceeding <code>tilt_warning_deg</code> (18°) trigger WARNING; exceeding <code>tilt_limit_deg</code> (25°) trigger ESTOP.</p>
+    </section>
+
+    <section id="s5">
+      <div class="section-header"><span class="section-num">5.0</span><h2 class="section-title">Timing</h2></div>
+      <div class="data-table-wrap">
+        <table class="data-table">
+          <thead><tr><th>Parameter</th><th>Value</th></tr></thead>
+          <tbody>
+            <tr><td>Publication rate</td><td>100 Hz ± 10 Hz</td></tr>
+            <tr><td>I²C read latency</td><td>≤ 5 ms</td></tr>
+            <tr><td>Staleness threshold (safety)</td><td>50 ms</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="s6">
+      <div class="section-header"><span class="section-num">6.0</span><h2 class="section-title">QoS</h2></div>
+      <p>RELIABLE, KEEP_LAST depth 5, VOLATILE. Deadline 20 ms.</p>
+    </section>
+
+    <section id="s7">
+      <div class="section-header"><span class="section-num">7.0</span><h2 class="section-title">Fault</h2></div>
+      <div class="data-table-wrap">
+        <table class="data-table">
+          <thead><tr><th>Fault</th><th>Response</th></tr></thead>
+          <tbody>
+            <tr><td>I²C NAK or timeout</td><td>Driver retries up to 3×; then transitions to fault state, stops publishing, publishes diagnostic.</td></tr>
+            <tr><td>Sensor reports all-zero</td><td>Driver detects via running-variance check; emits diagnostic; safety_monitor treats as stale.</td></tr>
+            <tr><td>Publication stale &gt; 50 ms</td><td>safety_monitor treats as worst-case tilt → ESTOP within one cycle.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="s8">
+      <div class="section-header"><span class="section-num">8.0</span><h2 class="section-title">Requirements</h2></div>
+      <ul class="req-list">
+        <li class="req-item"><div class="req-id">REQ-ICD-004-01</div><div><div class="req-text">Publication rate shall be 100 Hz ± 10 Hz during normal operation.</div><div class="req-trace">verified by: <code>TEST-HAL-020</code></div></div></li>
+        <li class="req-item"><div class="req-id">REQ-ICD-004-02</div><div><div class="req-text">Orientation accuracy shall be &lt; 2° pitch/roll after 10 s of stationary warmup.</div><div class="req-trace">verified by: <code>TEST-HAL-021</code></div></div></li>
+        <li class="req-item"><div class="req-id">REQ-ICD-004-03</div><div><div class="req-text">The publisher shall cease publication rather than emit known-bad values when the sensor reports an I²C fault.</div><div class="req-trace">verified by: <code>TEST-HAL-022</code></div></div></li>
+      </ul>
+    </section>
+
+    <section id="s9">
+      <div class="section-header"><span class="section-num">9.0</span><h2 class="section-title">Verification</h2></div>
+      <div class="data-table-wrap">
+        <table class="data-table">
+          <thead><tr><th>Test ID</th><th>Method</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr><td><span class="field-name">TEST-HAL-020</span></td><td>Integration</td><td>Rate monitor, 60 s window, stationary rover.</td></tr>
+            <tr><td><span class="field-name">TEST-HAL-021</span></td><td>Bench</td><td>Fixed on tilt-calibrated jig at 0°, 10°, 25°; compare reported orientation.</td></tr>
+            <tr><td><span class="field-name">TEST-HAL-022</span></td><td>Unit (mocked I²C)</td><td>Inject NAK; verify publisher halts.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="s10">
+      <div class="section-header"><span class="section-num">10.0</span><h2 class="section-title">Open Issues</h2></div>
+      <ol class="indent-list">
+        <li><strong>OPEN-01</strong> — Madgwick filter tuning (β parameter) for the rover's motion regime pending field data.</li>
+        <li><strong>OPEN-02</strong> — Magnetometer (<a href="icd-hal-imu-mag.html">/hal/imu/mag</a>) integration into orientation estimate — currently gyro+accel only; mag added at iter-2 for yaw drift correction.</li>
+      </ol>
+    </section>
+
+    <section id="s11">
+      <div class="section-header"><span class="section-num">11.0</span><h2 class="section-title">Revision History</h2></div>
+      <table class="revision-table">
+        <thead><tr><th>Rev</th><th>Date</th><th>Author</th><th>Change</th></tr></thead>
+        <tbody><tr><td class="rev">0.1</td><td>2026-04-19</td><td>Louis Roig &amp; Claude Opus 4.7</td><td>Initial draft.</td></tr></tbody>
+      </table>
+    </section>
+
+    <div class="footer-nav">
+      <a href="index.html">← Interfaces Index</a>
+      <span>Related: <a href="icd-hal-imu-mag.html">/hal/imu/mag</a></span>
+    </div>
+
+  </main>
+</div>
+
+<script src="../shared/shared.js"></script>
+</body>
+</html>

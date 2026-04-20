@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ICD-HAL-003 · /hal/odom</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=IBM+Plex+Sans:wght@300;400;500;600;700&family=IBM+Plex+Serif:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../shared/shared.css">
+</head>
+<body>
+
+<div class="doc-bar">
+  <a class="doc-bar-crumb" href="../index.html">← HOME</a>
+  <span class="doc-bar-sep">·</span>
+  <a class="doc-bar-crumb" href="index.html">INTERFACES</a>
+  <span class="doc-bar-sep">·</span>
+  <span class="doc-bar-id">ICD-HAL-003</span>
+  <span class="doc-bar-sep">·</span>
+  <span class="doc-bar-path">/hal/odom</span>
+  <span class="doc-bar-sep">·</span>
+  <span style="color: var(--ink-dim)">REV 0.1</span>
+  <div class="doc-bar-status"><span class="status-dot"></span><span>DRAFT</span></div>
+  <div class="doc-bar-tools">
+    <button class="tool-btn" onclick="window.print()">PRINT</button>
+    <button class="tool-btn" onclick="copyLink(event)">COPY LINK</button>
+  </div>
+</div>
+
+<div class="container">
+  <nav class="toc">
+    <div class="toc-title">CONTENTS</div>
+    <ul class="toc-list">
+      <li class="toc-item"><a class="toc-link" href="#s1"><span class="toc-num">1.0</span>Purpose</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s2"><span class="toc-num">2.0</span>Participants</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s3"><span class="toc-num">3.0</span>Message Definition</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s4"><span class="toc-num">4.0</span>Semantics</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s5"><span class="toc-num">5.0</span>Timing &amp; Rate</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s6"><span class="toc-num">6.0</span>QoS Profile</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s7"><span class="toc-num">7.0</span>Fault Behavior</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s8"><span class="toc-num">8.0</span>Requirements</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s9"><span class="toc-num">9.0</span>Verification</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s10"><span class="toc-num">10.0</span>Open Issues</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s11"><span class="toc-num">11.0</span>Revision History</a></li>
+    </ul>
+  </nav>
+
+  <main class="prose-serif">
+
+    <div class="doc-header">
+      <div class="doc-type interface">INTERFACE CONTROL DOCUMENT</div>
+      <h1 class="doc-title"><code>/hal/odom</code></h1>
+      <p class="doc-subtitle">Wheel odometry from the RoboClaw motor controller. Pose is integrated from track-side encoders using skid-steer kinematics.</p>
+
+      <div class="doc-meta">
+        <div class="meta-item"><div class="meta-label">Document ID</div><div class="meta-value">ICD-HAL-003</div></div>
+        <div class="meta-item"><div class="meta-label">Revision</div><div class="meta-value">0.1 · draft</div></div>
+        <div class="meta-item"><div class="meta-label">Owner</div><div class="meta-value">platform_hal</div></div>
+        <div class="meta-item"><div class="meta-label">Classification</div><div class="meta-value">Sensing</div></div>
+        <div class="meta-item"><div class="meta-label">Last Updated</div><div class="meta-value">2026-04-19</div></div>
+      </div>
+    </div>
+
+    <section id="s1">
+      <div class="section-header"><span class="section-num">1.0</span><h2 class="section-title">Purpose</h2></div>
+      <p>The <code>/hal/odom</code> topic carries wheel-encoder-derived odometry for the rover. The <a href="../nodes/srs-roboclaw-driver.html">roboclaw_driver</a> reads encoder counts from the motor controller, applies skid-steer kinematics, and integrates to produce a pose in the <code>odom</code> frame.</p>
+      <p>This is the primary proprioceptive sensor for the rover's local-frame EKF. It is fast (50 Hz), low-latency, and drifts over time — exactly the profile the EKF expects.</p>
+    </section>
+
+    <section id="s2">
+      <div class="section-header"><span class="section-num">2.0</span><h2 class="section-title">Participants</h2></div>
+      <div class="participants">
+        <div class="participant-card pub">
+          <div class="participant-role">Publisher</div>
+          <div class="participant-name">roboclaw_driver</div>
+          <div class="participant-detail">
+            <strong>Package</strong>platform_hal
+            <strong>SRS</strong><a href="../nodes/srs-roboclaw-driver.html">SRS-HAL-001</a>
+            <strong>Responsibility</strong>Read encoder counts at 50 Hz, compute pose delta via skid-steer kinematics, integrate, publish Odometry in <code>odom</code> frame.
+          </div>
+        </div>
+        <div class="participant-card sub">
+          <div class="participant-role">Subscriber</div>
+          <div class="participant-name">ekf_local (robot_localization)</div>
+          <div class="participant-detail">
+            <strong>Package</strong>robot_localization (off-the-shelf)
+            <strong>Responsibility</strong>Fuse odom with <a href="icd-hal-imu-data.html">/hal/imu/data</a> into <a href="icd-odometry-filtered.html">/odometry/filtered</a> in <code>odom</code> frame.
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="s3">
+      <div class="section-header"><span class="section-num">3.0</span><h2 class="section-title">Message Definition</h2></div>
+      <p>Type: <code>nav_msgs/msg/Odometry</code>. Standard ROS 2 message. Key fields:</p>
+      <div class="data-table-wrap">
+        <table class="data-table">
+          <thead><tr><th>Field</th><th>Type</th><th>Semantics</th></tr></thead>
+          <tbody>
+            <tr><td><span class="field-name">header.stamp</span></td><td><span class="field-type">time</span></td><td>Time encoder counts were sampled on the Pi (not the RoboClaw).</td></tr>
+            <tr><td><span class="field-name">header.frame_id</span></td><td><span class="field-type">string</span></td><td>Always <code>odom</code>.</td></tr>
+            <tr><td><span class="field-name">child_frame_id</span></td><td><span class="field-type">string</span></td><td>Always <code>base_link</code>.</td></tr>
+            <tr><td><span class="field-name">pose.pose</span></td><td><span class="field-type">Pose</span></td><td>Integrated position + orientation in <code>odom</code> frame. Drifts over time.</td></tr>
+            <tr><td><span class="field-name">pose.covariance</span></td><td><span class="field-type">float64[36]</span></td><td>Diagonal: σ²_x, σ²_y, 1e6 (unused z), 1e6, 1e6, σ²_yaw. Populated from calibrated wheel-variance.</td></tr>
+            <tr><td><span class="field-name">twist.twist.linear.x</span></td><td><span class="field-type">float64</span></td><td>Instantaneous forward velocity, m/s.</td></tr>
+            <tr><td><span class="field-name">twist.twist.angular.z</span></td><td><span class="field-type">float64</span></td><td>Instantaneous yaw rate, rad/s.</td></tr>
+            <tr><td><span class="field-name">twist.covariance</span></td><td><span class="field-type">float64[36]</span></td><td>Diagonal: σ²_vx, 1e6, 1e6, 1e6, 1e6, σ²_ωz.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="s4">
+      <div class="section-header"><span class="section-num">4.0</span><h2 class="section-title">Semantics</h2></div>
+      <p>The driver reads left and right track encoder counts, computes:</p>
+      <div class="code-block" data-lang="Kinematics"><span class="comment">// Skid-steer forward kinematics (track_width = L)</span>
+v_left  <span class="keyword">=</span> (ticks_left  <span class="keyword">-</span> last_ticks_left)  <span class="keyword">×</span> m_per_tick <span class="keyword">/</span> dt
+v_right <span class="keyword">=</span> (ticks_right <span class="keyword">-</span> last_ticks_right) <span class="keyword">×</span> m_per_tick <span class="keyword">/</span> dt
+v       <span class="keyword">=</span> (v_left <span class="keyword">+</span> v_right) <span class="keyword">/</span> <span class="number">2</span>           <span class="comment">// m/s</span>
+ω       <span class="keyword">=</span> (v_right <span class="keyword">-</span> v_left) <span class="keyword">/</span> L          <span class="comment">// rad/s</span>
+
+<span class="comment">// Pose integration (midpoint method)</span>
+θ       <span class="keyword">+=</span> ω <span class="keyword">×</span> dt
+x       <span class="keyword">+=</span> v <span class="keyword">×</span> cos(θ) <span class="keyword">×</span> dt
+y       <span class="keyword">+=</span> v <span class="keyword">×</span> sin(θ) <span class="keyword">×</span> dt</div>
+      <p>The <code>odom</code> frame is permitted to drift relative to <code>map</code>; this is the normal and expected odometry contract. The EKF consumes the twist (velocity) for fusion and largely ignores pose drift.</p>
+    </section>
+
+    <section id="s5">
+      <div class="section-header"><span class="section-num">5.0</span><h2 class="section-title">Timing &amp; Rate</h2></div>
+      <div class="data-table-wrap">
+        <table class="data-table">
+          <thead><tr><th>Parameter</th><th>Value</th><th>Notes</th></tr></thead>
+          <tbody>
+            <tr><td>Publication rate</td><td>50 Hz</td><td>Timer-driven; encoders polled at same rate.</td></tr>
+            <tr><td>Encoder read latency</td><td>≤ 10 ms</td><td>USB serial round-trip to RoboClaw.</td></tr>
+            <tr><td>Stamp offset</td><td>Pi clock at read</td><td>RoboClaw is not time-synchronized; Pi stamp used.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="s6">
+      <div class="section-header"><span class="section-num">6.0</span><h2 class="section-title">QoS Profile</h2></div>
+      <div class="data-table-wrap">
+        <table class="data-table">
+          <thead><tr><th>Setting</th><th>Value</th></tr></thead>
+          <tbody>
+            <tr><td><span class="field-name">Reliability</span></td><td><span class="field-type">RELIABLE</span></td></tr>
+            <tr><td><span class="field-name">History</span></td><td><span class="field-type">KEEP_LAST</span> / depth 10</td></tr>
+            <tr><td><span class="field-name">Durability</span></td><td><span class="field-type">VOLATILE</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="s7">
+      <div class="section-header"><span class="section-num">7.0</span><h2 class="section-title">Fault Behavior</h2></div>
+      <div class="data-table-wrap">
+        <table class="data-table">
+          <thead><tr><th>Fault</th><th>Response</th></tr></thead>
+          <tbody>
+            <tr><td>RoboClaw unplugged / USB disconnect</td><td>roboclaw_driver enters FAULT; publishes <code>/hal/odom_status.encoders_healthy = false</code>. No <code>/hal/odom</code> messages emitted.</td></tr>
+            <tr><td>Encoder wrap</td><td>Driver uses signed 32-bit delta arithmetic. Single wrap is handled; two missed reads around wrap could corrupt — covered by <code>TEST-HAL-004</code>.</td></tr>
+            <tr><td>One encoder fails</td><td>Detected by cross-check of commanded vs sensed velocity. Driver transitions to degraded; reports on <code>/diagnostics</code>; odom publishing continues with increased covariance on yaw.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="s8">
+      <div class="section-header"><span class="section-num">8.0</span><h2 class="section-title">Requirements</h2></div>
+      <ul class="req-list">
+        <li class="req-item"><div class="req-id">REQ-ICD-003-01</div><div><div class="req-text">The publisher shall emit Odometry at 50 Hz ± 5 Hz.</div><div class="req-trace">verified by: <code>TEST-HAL-003</code></div></div></li>
+        <li class="req-item"><div class="req-id">REQ-ICD-003-02</div><div><div class="req-text">Covariance shall be populated using calibrated wheel-slip variance, not hard-coded zeros.</div><div class="req-trace">verified by: <code>TEST-HAL-004</code></div></div></li>
+        <li class="req-item"><div class="req-id">REQ-ICD-003-03</div><div><div class="req-text">Absolute pose drift over a 30 m straight-line traverse shall be less than 1.5 m at default tire inflation.</div><div class="req-trace">verified by: <code>TEST-HAL-005</code> (field)</div></div></li>
+      </ul>
+    </section>
+
+    <section id="s9">
+      <div class="section-header"><span class="section-num">9.0</span><h2 class="section-title">Verification</h2></div>
+      <div class="data-table-wrap">
+        <table class="data-table">
+          <thead><tr><th>Test ID</th><th>Method</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr><td><span class="field-name">TEST-HAL-003</span></td><td>Integration</td><td>Monitor rate over 60 s with motors commanded to nominal velocity.</td></tr>
+            <tr><td><span class="field-name">TEST-HAL-004</span></td><td>Unit</td><td>Simulated encoder wrap scenario; verify integrated pose remains continuous.</td></tr>
+            <tr><td><span class="field-name">TEST-HAL-005</span></td><td>Field</td><td>Drive 30 m straight on concrete; compare integrated pose to measured endpoint.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="s10">
+      <div class="section-header"><span class="section-num">10.0</span><h2 class="section-title">Open Issues</h2></div>
+      <ol class="indent-list">
+        <li><strong>OPEN-01</strong> — Covariance tuning requires in-yard data. First-pass values are engineering judgement.</li>
+        <li><strong>OPEN-02</strong> — Slip-heavy surfaces (wet grass) degrade accuracy disproportionately. Consider a surface-classifier-gated covariance boost in iteration 3.</li>
+      </ol>
+    </section>
+
+    <section id="s11">
+      <div class="section-header"><span class="section-num">11.0</span><h2 class="section-title">Revision History</h2></div>
+      <table class="revision-table">
+        <thead><tr><th>Rev</th><th>Date</th><th>Author</th><th>Change</th></tr></thead>
+        <tbody><tr><td class="rev">0.1</td><td>2026-04-19</td><td>Louis Roig &amp; Claude Opus 4.7</td><td>Initial draft.</td></tr></tbody>
+      </table>
+    </section>
+
+    <div class="footer-nav">
+      <a href="index.html">← Interfaces Index</a>
+      <span>Related: <a href="icd-odometry-filtered.html">/odometry/filtered</a> · <a href="icd-hal-imu-data.html">/hal/imu/data</a></span>
+    </div>
+
+  </main>
+</div>
+
+<script src="../shared/shared.js"></script>
+</body>
+</html>

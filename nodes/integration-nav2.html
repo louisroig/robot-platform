@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>INT-NAV2 · Nav2 Configuration Notes</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=IBM+Plex+Sans:wght@300;400;500;600;700&family=IBM+Plex+Serif:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../shared/shared.css">
+</head>
+<body>
+<div class="doc-bar">
+  <a class="doc-bar-crumb" href="../index.html">← HOME</a><span class="doc-bar-sep">·</span>
+  <a class="doc-bar-crumb" href="index.html">NODES</a><span class="doc-bar-sep">·</span>
+  <span class="doc-bar-id">INT-NAV2</span><span class="doc-bar-sep">·</span>
+  <span class="doc-bar-path">Nav2 Integration</span><span class="doc-bar-sep">·</span>
+  <span style="color: var(--ink-dim)">REV 0.1</span>
+  <div class="doc-bar-status"><span class="status-dot"></span><span>DRAFT</span></div>
+  <div class="doc-bar-tools"><button class="tool-btn" onclick="window.print()">PRINT</button><button class="tool-btn" onclick="copyLink(event)">COPY LINK</button></div>
+</div>
+<div class="container single">
+  <main class="prose-serif">
+    <div class="doc-header">
+      <div class="doc-type">INTEGRATION NOTES · OFF-THE-SHELF</div>
+      <h1 class="doc-title">Nav2 Configuration</h1>
+      <p class="doc-subtitle">Iteration-2 deployment notes for the Navigation 2 stack. In iteration 1 Nav2 is present but not invoked; its integration shape is defined here so that iteration-2 work is wiring rather than design.</p>
+      <div class="doc-meta">
+        <div class="meta-item"><div class="meta-label">Document ID</div><div class="meta-value">INT-NAV2</div></div>
+        <div class="meta-item"><div class="meta-label">Revision</div><div class="meta-value">0.1 · draft</div></div>
+        <div class="meta-item"><div class="meta-label">Status</div><div class="meta-value">Iteration 2 target</div></div>
+      </div>
+    </div>
+
+    <section id="s1"><div class="section-header"><span class="section-num">1.0</span><h2 class="section-title">Purpose</h2></div>
+      <p>Nav2 is the ROS 2 navigation stack. It provides a planner, local controller, recovery behaviors, costmap stack, and a behavior tree. Iteration 2 introduces autonomous waypoint navigation; this document describes how we'll wire it in.</p>
+    </section>
+
+    <section id="s2"><div class="section-header"><span class="section-num">2.0</span><h2 class="section-title">Selected Algorithms</h2></div>
+      <div class="data-table-wrap"><table class="data-table"><thead><tr><th>Component</th><th>Choice</th><th>Why</th></tr></thead><tbody>
+        <tr><td>Global planner</td><td>SmacPlanner2D</td><td>Good with static costmaps; supports differential-drive constraints.</td></tr>
+        <tr><td>Local controller</td><td>RegulatedPurePursuitController</td><td>Robust, easy to tune for skid-steer; handles slow speeds.</td></tr>
+        <tr><td>Recovery behaviors</td><td>Spin, BackUp, Wait (default set)</td><td>Safety-compatible — each is velocity-bounded.</td></tr>
+        <tr><td>Costmap inflation</td><td>Default with obstacle layer</td><td>Iteration 2 introduces <a href="../interfaces/icd-perception-obstacles.html">/perception/obstacles</a> as input.</td></tr>
+      </tbody></table></div>
+    </section>
+
+    <section id="s3"><div class="section-header"><span class="section-num">3.0</span><h2 class="section-title">Topic Mapping</h2></div>
+      <p>Nav2 outputs <code>/cmd_vel</code>; we remap to <a href="../interfaces/icd-hal-cmd-vel-raw.html">/hal/cmd_vel_auto</a> so that all motion still flows through <a href="../nodes/srs-safety-monitor.html">safety_monitor</a>. Nav2 never bypasses the safety gate.</p>
+    </section>
+
+    <section id="s4"><div class="section-header"><span class="section-num">4.0</span><h2 class="section-title">Safety Compatibility</h2></div>
+      <ul class="indent-list">
+        <li>Nav2 velocity is clipped by safety_monitor just like teleop.</li>
+        <li>Nav2's own recovery behaviors are <em>additional</em> to safety_monitor's ESTOP — they handle navigation-scope faults (stuck, no plan found), not safety faults.</li>
+        <li>On ESTOP, Nav2 receives <code>/hal/cmd_vel_safe=0</code> (consumed by its controller as "the robot isn't moving"); it will wait or trigger its own recovery.</li>
+      </ul>
+    </section>
+
+    <section id="s5"><div class="section-header"><span class="section-num">5.0</span><h2 class="section-title">Parameter Highlights</h2></div>
+      <p>Parameter file in <code>mower_config/nav2.yaml</code>. Key values:</p>
+      <div class="data-table-wrap"><table class="data-table"><thead><tr><th>Parameter</th><th>Value</th></tr></thead><tbody>
+        <tr><td><span class="field-name">controller.max_vel_x</span></td><td>0.5 m/s (below the 0.7 platform max)</td></tr>
+        <tr><td><span class="field-name">controller.max_vel_theta</span></td><td>1.2 rad/s</td></tr>
+        <tr><td><span class="field-name">controller.lookahead_dist</span></td><td>0.4 m</td></tr>
+        <tr><td><span class="field-name">costmap.robot_radius</span></td><td>0.25 m</td></tr>
+        <tr><td><span class="field-name">costmap.inflation_radius</span></td><td>0.55 m</td></tr>
+      </tbody></table></div>
+    </section>
+
+    <section id="s6"><div class="section-header"><span class="section-num">6.0</span><h2 class="section-title">Open Issues</h2></div>
+      <ol class="indent-list">
+        <li><strong>OPEN-01</strong> — Coverage planning (iteration 2) is <em>not</em> Nav2 — Nav2 does goal-reach. We will likely use <code>opennav_coverage</code> or a custom boustrophedon planner that feeds goals to Nav2.</li>
+        <li><strong>OPEN-02</strong> — Recovery behavior interaction with the safety monitor's auto-clear window needs thought: a geofence breach recovery that auto-spins could hit the boundary again.</li>
+      </ol>
+    </section>
+
+    <section id="s7"><div class="section-header"><span class="section-num">7.0</span><h2 class="section-title">Revision</h2></div>
+      <table class="revision-table"><thead><tr><th>Rev</th><th>Date</th><th>Author</th><th>Change</th></tr></thead><tbody><tr><td class="rev">0.1</td><td>2026-04-19</td><td>Louis Roig &amp; Claude Opus 4.7</td><td>Initial draft.</td></tr></tbody></table>
+    </section>
+
+    <div class="footer-nav"><a href="index.html">← Nodes Index</a></div>
+  </main>
+</div>
+<script src="../shared/shared.js"></script>
+</body></html>

@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SM-GEO-001 · geofence_enforcer state machine</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=IBM+Plex+Sans:wght@300;400;500;600;700&family=IBM+Plex+Serif:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../shared/shared.css">
+</head>
+<body>
+<div class="doc-bar">
+  <a class="doc-bar-crumb" href="../index.html">← HOME</a><span class="doc-bar-sep">·</span>
+  <a class="doc-bar-crumb" href="index.html">STATE MACHINES</a><span class="doc-bar-sep">·</span>
+  <span class="doc-bar-id">SM-GEO-001</span><span class="doc-bar-sep">·</span>
+  <span class="doc-bar-path">geofence_enforcer</span><span class="doc-bar-sep">·</span>
+  <span style="color: var(--ink-dim)">REV 0.1</span>
+  <div class="doc-bar-status"><span class="status-dot"></span><span>DRAFT</span></div>
+  <div class="doc-bar-tools"><button class="tool-btn" onclick="window.print()">PRINT</button><button class="tool-btn" onclick="copyLink(event)">COPY LINK</button></div>
+</div>
+
+<div class="container">
+  <nav class="toc">
+    <div class="toc-title">CONTENTS</div>
+    <ul class="toc-list">
+      <li class="toc-item"><a class="toc-link" href="#s1"><span class="toc-num">1.0</span>Purpose</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s2"><span class="toc-num">2.0</span>Diagram</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s3"><span class="toc-num">3.0</span>States</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s4"><span class="toc-num">4.0</span>Transitions</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s5"><span class="toc-num">5.0</span>Hysteresis</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s6"><span class="toc-num">6.0</span>Open Issues</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s7"><span class="toc-num">7.0</span>Revision</a></li>
+    </ul>
+  </nav>
+
+  <main class="prose-serif">
+    <div class="doc-header">
+      <div class="doc-type state">STATE MACHINE · GEOFENCE</div>
+      <h1 class="doc-title">geofence_enforcer state machine</h1>
+      <p class="doc-subtitle">Three-state machine on rover position relative to the active zone polygon: INSIDE · WARNING · OUTSIDE.</p>
+      <div class="doc-meta">
+        <div class="meta-item"><div class="meta-label">Document ID</div><div class="meta-value">SM-GEO-001</div></div>
+        <div class="meta-item"><div class="meta-label">Node</div><div class="meta-value"><a href="../nodes/srs-geofence-enforcer.html">geofence_enforcer</a></div></div>
+        <div class="meta-item"><div class="meta-label">Revision</div><div class="meta-value">0.1 · draft</div></div>
+      </div>
+    </div>
+
+    <section id="s1"><div class="section-header"><span class="section-num">1.0</span><h2 class="section-title">Purpose</h2></div>
+      <p>Formal specification of the state machine in <a href="../nodes/srs-geofence-enforcer.html">geofence_enforcer</a> — a three-state classifier with hysteresis over the continuous signed distance to the active polygon.</p>
+    </section>
+
+    <section id="s2"><div class="section-header"><span class="section-num">2.0</span><h2 class="section-title">Diagram</h2></div>
+
+      <div class="state-diagram">
+        <svg viewBox="0 0 700 260" xmlns="http://www.w3.org/2000/svg">
+          <defs><marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#7a8a99"/></marker></defs>
+
+          <rect class="state-node ok" x="50" y="100" width="140" height="70" rx="6"/>
+          <text class="state-label" x="120" y="130">INSIDE</text>
+          <text class="state-label sub" x="120" y="148">distance ≥ 1.0 m</text>
+
+          <rect class="state-node warn" x="280" y="100" width="140" height="70" rx="6"/>
+          <text class="state-label" x="350" y="130">WARNING</text>
+          <text class="state-label sub" x="350" y="148">0 &lt; d &lt; 1.0 m</text>
+
+          <rect class="state-node estop" x="510" y="100" width="140" height="70" rx="6"/>
+          <text class="state-label" x="580" y="130">OUTSIDE</text>
+          <text class="state-label sub" x="580" y="148">distance ≤ 0</text>
+
+          <path class="transition-line" d="M 190 125 L 280 125" marker-end="url(#arr)"/>
+          <text class="transition-label" x="235" y="118">d falls &lt; 0.75</text>
+          <path class="transition-line" d="M 280 150 L 190 150" marker-end="url(#arr)"/>
+          <text class="transition-label" x="235" y="165">d rises &gt; 1.25</text>
+
+          <path class="transition-line" d="M 420 125 L 510 125" marker-end="url(#arr)"/>
+          <text class="transition-label" x="465" y="118">d falls &lt; −0.25</text>
+          <path class="transition-line" d="M 510 150 L 420 150" marker-end="url(#arr)"/>
+          <text class="transition-label" x="465" y="165">d rises &gt; 0.25</text>
+        </svg>
+      </div>
+    </section>
+
+    <section id="s3"><div class="section-header"><span class="section-num">3.0</span><h2 class="section-title">States</h2></div>
+
+      <div class="data-table-wrap"><table class="data-table"><thead><tr><th>State</th><th>Value</th><th>Published as</th><th>Safety effect</th></tr></thead><tbody>
+        <tr><td><span class="field-name">INSIDE</span></td><td>0</td><td>/geofence/state.state = 0</td><td>No effect on safety_monitor.</td></tr>
+        <tr><td><span class="field-name">WARNING</span></td><td>1</td><td>/geofence/state.state = 1</td><td>safety_monitor transitions to WARNING.</td></tr>
+        <tr><td><span class="field-name">OUTSIDE</span></td><td>2</td><td>/geofence/state.state = 2</td><td>safety_monitor transitions to ESTOP with reason "geofence_violated".</td></tr>
+      </tbody></table></div>
+    </section>
+
+    <section id="s4"><div class="section-header"><span class="section-num">4.0</span><h2 class="section-title">Transitions</h2></div>
+
+      <p>Let <code>d</code> = signed distance to nearest edge (positive inside, negative outside). Let <code>T = warning_threshold_m</code> (1.0), <code>H = hysteresis_m</code> (0.25).</p>
+
+      <div class="data-table-wrap"><table class="data-table"><thead><tr><th>From</th><th>To</th><th>Trigger</th></tr></thead><tbody>
+        <tr><td>INSIDE</td><td>WARNING</td><td>d &lt; T − H (i.e. d &lt; 0.75)</td></tr>
+        <tr><td>WARNING</td><td>INSIDE</td><td>d &gt; T + H (i.e. d &gt; 1.25)</td></tr>
+        <tr><td>WARNING</td><td>OUTSIDE</td><td>d &lt; −H (i.e. d &lt; −0.25)</td></tr>
+        <tr><td>OUTSIDE</td><td>WARNING</td><td>d &gt; +H (i.e. d &gt; 0.25)</td></tr>
+        <tr><td>INSIDE</td><td>OUTSIDE</td><td>only via WARNING (no direct jump allowed)</td></tr>
+      </tbody></table></div>
+
+      <p>Direct INSIDE→OUTSIDE is not permitted; the machine must pass through WARNING. This prevents chatter when distance estimates jump discretely due to SLAM pose corrections.</p>
+    </section>
+
+    <section id="s5"><div class="section-header"><span class="section-num">5.0</span><h2 class="section-title">Hysteresis</h2></div>
+      <p>Hysteresis of 0.25 m prevents rapid state cycling when the rover lingers near a threshold. The symmetric "band" around each threshold means:</p>
+      <ul class="indent-list">
+        <li>To enter a state, cross its threshold by at least H in the triggering direction.</li>
+        <li>To exit the same state back the way you came, cross the threshold by at least H in the opposite direction.</li>
+      </ul>
+      <p>This works with the 10 Hz publication rate: a rover-sized object moving at 0.5 m/s covers 0.5 m / 0.1 s = 50 mm per tick — comfortable relative to the 0.25 m hysteresis.</p>
+    </section>
+
+    <section id="s6"><div class="section-header"><span class="section-num">6.0</span><h2 class="section-title">Open Issues</h2></div>
+      <ol class="indent-list">
+        <li><strong>OPEN-01</strong> — Disallowing INSIDE→OUTSIDE direct is conservative; a sudden pose-correction jump may leave the rover momentarily in OUTSIDE with no intermediate sample. In that case the first visible state is OUTSIDE — safe, but logs look odd.</li>
+        <li><strong>OPEN-02</strong> — Per-side hysteresis width (e.g., tighter for exclusion polygon edges) deferred to iteration 2.</li>
+      </ol>
+    </section>
+
+    <section id="s7"><div class="section-header"><span class="section-num">7.0</span><h2 class="section-title">Revision</h2></div>
+      <table class="revision-table"><thead><tr><th>Rev</th><th>Date</th><th>Author</th><th>Change</th></tr></thead><tbody><tr><td class="rev">0.1</td><td>2026-04-19</td><td>Louis Roig &amp; Claude Opus 4.7</td><td>Initial draft.</td></tr></tbody></table>
+    </section>
+
+    <div class="footer-nav"><a href="index.html">← State Machines Index</a><span>Related: <a href="../nodes/srs-geofence-enforcer.html">SRS-SAF-002</a></span></div>
+  </main>
+</div>
+<script src="../shared/shared.js"></script>
+</body></html>

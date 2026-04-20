@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ICD-LOC-001 · /localization/pose</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=IBM+Plex+Sans:wght@300;400;500;600;700&family=IBM+Plex+Serif:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../shared/shared.css">
+</head>
+<body>
+<div class="doc-bar">
+  <a class="doc-bar-crumb" href="../index.html">← HOME</a><span class="doc-bar-sep">·</span>
+  <a class="doc-bar-crumb" href="index.html">INTERFACES</a><span class="doc-bar-sep">·</span>
+  <span class="doc-bar-id">ICD-LOC-001</span><span class="doc-bar-sep">·</span>
+  <span class="doc-bar-path">/localization/pose</span><span class="doc-bar-sep">·</span>
+  <span style="color: var(--ink-dim)">REV 0.1</span>
+  <div class="doc-bar-status"><span class="status-dot"></span><span>DRAFT</span></div>
+  <div class="doc-bar-tools">
+    <button class="tool-btn" onclick="window.print()">PRINT</button>
+    <button class="tool-btn" onclick="copyLink(event)">COPY LINK</button>
+  </div>
+</div>
+
+<div class="container">
+  <nav class="toc">
+    <div class="toc-title">CONTENTS</div>
+    <ul class="toc-list">
+      <li class="toc-item"><a class="toc-link" href="#s1"><span class="toc-num">1.0</span>Purpose</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s2"><span class="toc-num">2.0</span>Participants</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s3"><span class="toc-num">3.0</span>Message</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s4"><span class="toc-num">4.0</span>Semantics</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s5"><span class="toc-num">5.0</span>Timing</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s6"><span class="toc-num">6.0</span>QoS</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s7"><span class="toc-num">7.0</span>Fault</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s8"><span class="toc-num">8.0</span>Requirements</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s9"><span class="toc-num">9.0</span>Verification</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s10"><span class="toc-num">10.0</span>Open Issues</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s11"><span class="toc-num">11.0</span>Revision</a></li>
+    </ul>
+  </nav>
+
+  <main class="prose-serif">
+    <div class="doc-header">
+      <div class="doc-type interface">INTERFACE CONTROL DOCUMENT</div>
+      <h1 class="doc-title"><code>/localization/pose</code></h1>
+      <p class="doc-subtitle">Fused pose estimate in the <code>map</code> frame. The authoritative "where is the rover" for mission-level code.</p>
+      <div class="doc-meta">
+        <div class="meta-item"><div class="meta-label">Document ID</div><div class="meta-value">ICD-LOC-001</div></div>
+        <div class="meta-item"><div class="meta-label">Revision</div><div class="meta-value">0.1 · draft</div></div>
+        <div class="meta-item"><div class="meta-label">Owner</div><div class="meta-value">platform_localization</div></div>
+        <div class="meta-item"><div class="meta-label">Classification</div><div class="meta-value">Localization</div></div>
+        <div class="meta-item"><div class="meta-label">Last Updated</div><div class="meta-value">2026-04-19</div></div>
+      </div>
+    </div>
+
+    <section id="s1"><div class="section-header"><span class="section-num">1.0</span><h2 class="section-title">Purpose</h2></div>
+      <p>Output of the global EKF. Fuses local odometry (<a href="icd-odometry-filtered.html">/odometry/filtered</a>), SLAM pose (RTAB-Map), and optional GPS into a single best-estimate pose in the <code>map</code> frame. This is the pose the <a href="../nodes/srs-geofence-enforcer.html">geofence_enforcer</a> checks against the active zone; it is the pose the mobile app shows on the aerial image.</p>
+    </section>
+
+    <section id="s2"><div class="section-header"><span class="section-num">2.0</span><h2 class="section-title">Participants</h2></div>
+      <div class="participants">
+        <div class="participant-card pub"><div class="participant-role">Publisher</div><div class="participant-name">ekf_global (robot_localization)</div>
+          <div class="participant-detail"><strong>Package</strong>robot_localization (off-the-shelf)<strong>Inputs</strong>/odometry/filtered, RTAB-Map pose, optional /hal/gps/fix</div></div>
+        <div class="participant-card sub"><div class="participant-role">Subscribers</div><div class="participant-name">geofence_enforcer · telemetry_publisher · drone_mission_coordinator</div>
+          <div class="participant-detail"><strong>geofence_enforcer</strong>Distance-to-boundary.<strong>telemetry</strong>Displayed on app.<strong>drone_mission_coordinator</strong>Sets drone mission origin.</div></div>
+      </div>
+    </section>
+
+    <section id="s3"><div class="section-header"><span class="section-num">3.0</span><h2 class="section-title">Message</h2></div>
+      <p>Type: <code>geometry_msgs/msg/PoseWithCovarianceStamped</code>. Standard fields: pose (position + orientation quaternion) in <code>map</code> frame; 6×6 covariance matrix reflecting EKF uncertainty.</p>
+      <p>Frame id: <code>map</code>. Pose is expressed in meters (x, y) and radians (yaw), with z typically pinned at 0 for the ground rover.</p>
+    </section>
+
+    <section id="s4"><div class="section-header"><span class="section-num">4.0</span><h2 class="section-title">Semantics</h2></div>
+      <p>The <code>map</code> frame is anchored to the first SLAM keyframe in the current session. Persistence across sessions is not yet implemented (iteration 2+). Consumers should not assume <code>map</code> frame is consistent day-over-day.</p>
+      <p>On startup, before SLAM converges, pose is published with high covariance (identity × 100) and a header stamp. Consumers should check the <code>pose.covariance[0]</code> element (x-variance) and down-weight or reject when above their tolerance.</p>
+    </section>
+
+    <section id="s5"><div class="section-header"><span class="section-num">5.0</span><h2 class="section-title">Timing</h2></div>
+      <p>30 Hz ± 3 Hz. Rate set by EKF's update cycle.</p>
+    </section>
+
+    <section id="s6"><div class="section-header"><span class="section-num">6.0</span><h2 class="section-title">QoS</h2></div>
+      <p>RELIABLE, KEEP_LAST depth 5, VOLATILE.</p>
+    </section>
+
+    <section id="s7"><div class="section-header"><span class="section-num">7.0</span><h2 class="section-title">Fault</h2></div>
+      <div class="data-table-wrap"><table class="data-table"><thead><tr><th>Fault</th><th>Response</th></tr></thead>
+        <tbody>
+          <tr><td>SLAM loss of tracking</td><td>Covariance grows rapidly; ekf_global continues publishing using odometry dead-reckoning. Consumers detect via covariance threshold.</td></tr>
+          <tr><td>ekf_global crash</td><td>Topic goes silent; geofence_enforcer ceases publishing; safety_monitor staleness triggers ESTOP.</td></tr>
+          <tr><td>SLAM loop-closure jump</td><td>Discontinuity in pose. Detected by consumers as position jump &gt; 0.5 m per sample; geofence responds with OUTSIDE.</td></tr>
+        </tbody></table></div>
+    </section>
+
+    <section id="s8"><div class="section-header"><span class="section-num">8.0</span><h2 class="section-title">Requirements</h2></div>
+      <ul class="req-list">
+        <li class="req-item"><div class="req-id">REQ-ICD-LOC-001-01</div><div><div class="req-text">Publication rate shall be 30 Hz ± 3 Hz once EKF has converged.</div><div class="req-trace">verified by: <code>TEST-LOC-001</code></div></div></li>
+        <li class="req-item"><div class="req-id">REQ-ICD-LOC-001-02</div><div><div class="req-text">Pose covariance shall be populated (non-zero) so consumers can make principled uncertainty-based decisions.</div><div class="req-trace">verified by: <code>TEST-LOC-002</code></div></div></li>
+      </ul>
+    </section>
+
+    <section id="s9"><div class="section-header"><span class="section-num">9.0</span><h2 class="section-title">Verification</h2></div>
+      <div class="data-table-wrap"><table class="data-table"><thead><tr><th>Test</th><th>Method</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td><span class="field-name">TEST-LOC-001</span></td><td>Integration</td><td>Launch full localization stack; record topic 60 s; compute rate statistics.</td></tr>
+          <tr><td><span class="field-name">TEST-LOC-002</span></td><td>Integration</td><td>Verify covariance values are non-zero and reflect expected orders of magnitude at startup vs. converged.</td></tr>
+        </tbody></table></div>
+    </section>
+
+    <section id="s10"><div class="section-header"><span class="section-num">10.0</span><h2 class="section-title">Open Issues</h2></div>
+      <ol class="indent-list">
+        <li><strong>OPEN-01</strong> — Map persistence across sessions. Iteration 2 target: RTAB-Map database save/load.</li>
+        <li><strong>OPEN-02</strong> — GPS-only fallback when SLAM fails (no visual features). Needs EKF parameter-set switching logic.</li>
+      </ol>
+    </section>
+
+    <section id="s11"><div class="section-header"><span class="section-num">11.0</span><h2 class="section-title">Revision</h2></div>
+      <table class="revision-table"><thead><tr><th>Rev</th><th>Date</th><th>Author</th><th>Change</th></tr></thead>
+        <tbody><tr><td class="rev">0.1</td><td>2026-04-19</td><td>Louis Roig &amp; Claude Opus 4.7</td><td>Initial draft.</td></tr></tbody></table>
+    </section>
+
+    <div class="footer-nav"><a href="index.html">← Interfaces Index</a><span>Related: <a href="icd-odometry-filtered.html">/odometry/filtered</a> · <a href="icd-geofence-state.html">/geofence/state</a></span></div>
+  </main>
+</div>
+<script src="../shared/shared.js"></script>
+</body></html>

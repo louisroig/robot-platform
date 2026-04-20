@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TEST-SAF-011 · ESTOP latency on person detection</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=IBM+Plex+Sans:wght@300;400;500;600;700&family=IBM+Plex+Serif:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../shared/shared.css">
+</head>
+<body>
+<div class="doc-bar">
+  <a class="doc-bar-crumb" href="../index.html">← HOME</a><span class="doc-bar-sep">·</span>
+  <a class="doc-bar-crumb" href="index.html">VERIFICATION</a><span class="doc-bar-sep">·</span>
+  <span class="doc-bar-id">TEST-SAF-011</span><span class="doc-bar-sep">·</span>
+  <span class="doc-bar-path">ESTOP latency</span><span class="doc-bar-sep">·</span>
+  <span style="color: var(--ink-dim)">REV 0.1</span>
+  <div class="doc-bar-status"><span class="status-dot"></span><span>DRAFT</span></div>
+  <div class="doc-bar-tools"><button class="tool-btn" onclick="window.print()">PRINT</button><button class="tool-btn" onclick="copyLink(event)">COPY LINK</button></div>
+</div>
+<div class="container single">
+  <main class="prose-serif">
+    <div class="doc-header">
+      <div class="doc-type test">TEST PROTOCOL · SAFETY</div>
+      <h1 class="doc-title">ESTOP latency on person detection</h1>
+      <p class="doc-subtitle">Integration test: measure end-to-end latency from injected person detection to first zero-velocity message on <code>/hal/cmd_vel_safe</code>.</p>
+      <div class="doc-meta">
+        <div class="meta-item"><div class="meta-label">Test ID</div><div class="meta-value">TEST-SAF-011</div></div>
+        <div class="meta-item"><div class="meta-label">Method</div><div class="meta-value">Integration</div></div>
+        <div class="meta-item"><div class="meta-label">Automation</div><div class="meta-value">CI (launch_testing)</div></div>
+        <div class="meta-item"><div class="meta-label">Revision</div><div class="meta-value">0.1 · draft</div></div>
+      </div>
+    </div>
+
+    <section><div class="section-header"><span class="section-num">1.0</span><h2 class="section-title">Requirements verified</h2></div>
+      <ul class="indent-list">
+        <li><a href="../requirements/safety.html">SR-002</a> — cease motion within 500 ms of person within 3 m.</li>
+        <li><a href="../interfaces/icd-hal-cmd-vel-safe.html">REQ-ICD-002-02</a> — zero within 50 ms of ESTOP entry.</li>
+        <li><a href="../requirements/functional.html">FR-004</a> — detect and stop for humans/pets.</li>
+      </ul>
+    </section>
+
+    <section><div class="section-header"><span class="section-num">2.0</span><h2 class="section-title">Method</h2></div>
+      <p>Integration test under <code>launch_testing</code>. No physical hardware; the perception pipeline is mocked and a test harness injects a synthetic person detection. The safety stack runs under real DDS.</p>
+    </section>
+
+    <section><div class="section-header"><span class="section-num">3.0</span><h2 class="section-title">Preconditions</h2></div>
+      <ul class="indent-list">
+        <li>Full safety stack launched: <a href="../nodes/srs-safety-monitor.html">safety_monitor</a>, <a href="../nodes/srs-roboclaw-driver.html">roboclaw_driver</a> (serial mocked), <a href="../nodes/srs-estop-monitor.html">estop_monitor</a> (GPIO mocked), <a href="../nodes/srs-geofence-enforcer.html">geofence_enforcer</a>, <a href="../nodes/srs-living-thing-filter.html">living_thing_filter</a>.</li>
+        <li>No zone loaded (geofence inactive).</li>
+        <li>safety_monitor has completed startup self-test; state = OK.</li>
+        <li>A publisher injecting teleop Twist at 0.3 m/s is running to keep cmd_vel_safe non-zero.</li>
+      </ul>
+    </section>
+
+    <section><div class="section-header"><span class="section-num">4.0</span><h2 class="section-title">Procedure</h2></div>
+      <ol class="indent-list">
+        <li>Start recording <code>/perception/people</code> and <code>/hal/cmd_vel_safe</code> via rosbag2.</li>
+        <li>Wait 2 s for settling.</li>
+        <li>Using the test publisher, emit a single DetectionArray on <code>/perception/detections</code> containing one detection with class=person, confidence=0.9, distance_m=2.0 (within danger radius of 3.0 m).</li>
+        <li>Record the timestamp of publication (t_inject).</li>
+        <li>Scan <code>/hal/cmd_vel_safe</code> for the first message with <code>linear.x == 0 and angular.z == 0</code> after t_inject. Call its stamp t_zero.</li>
+        <li>Record latency = t_zero − t_inject.</li>
+        <li>Repeat steps 3–6 ten times.</li>
+        <li>Compute min, max, mean, 95th percentile of latency.</li>
+      </ol>
+    </section>
+
+    <section><div class="section-header"><span class="section-num">5.0</span><h2 class="section-title">Expected results</h2></div>
+      <ul class="indent-list">
+        <li>Every trial's latency &lt; 50 ms.</li>
+        <li>p95 &lt; 50 ms, mean &lt; 30 ms.</li>
+        <li>No subsequent non-zero cmd_vel_safe messages until the synthetic detection is removed and dwell elapses.</li>
+      </ul>
+    </section>
+
+    <section><div class="section-header"><span class="section-num">6.0</span><h2 class="section-title">Pass / fail criteria</h2></div>
+      <p><strong>Pass:</strong> All 10 trials latency ≤ 50 ms; no missed zeros; no spurious non-zeros during trial.</p>
+      <p><strong>Fail:</strong> Any trial &gt; 50 ms, OR any trial missing a zero within 200 ms, OR spurious non-zero before dwell expires.</p>
+    </section>
+
+    <section><div class="section-header"><span class="section-num">7.0</span><h2 class="section-title">Test data / fixtures</h2></div>
+      <ul class="indent-list">
+        <li>Fixture: <code>test/fixtures/mock_person_detection.py</code> — provides the synthetic DetectionArray publisher.</li>
+        <li>Fixture: <code>test/fixtures/mock_serial_roboclaw.py</code> — accepts serial commands and logs them (no hardware).</li>
+        <li>Fixture: <code>test/fixtures/mock_gpio.py</code> — emulates libgpiod, e-stop always released.</li>
+      </ul>
+    </section>
+
+    <section><div class="section-header"><span class="section-num">8.0</span><h2 class="section-title">Automation status</h2></div>
+      <p>Automated under <code>launch_testing</code>. Located at <code>platform_safety/test/test_saf_011_estop_latency.py</code>. Runs in CI on every PR touching <code>platform_safety/*</code>.</p>
+    </section>
+
+    <section><div class="section-header"><span class="section-num">9.0</span><h2 class="section-title">Revision</h2></div>
+      <table class="revision-table"><thead><tr><th>Rev</th><th>Date</th><th>Author</th><th>Change</th></tr></thead><tbody><tr><td class="rev">0.1</td><td>2026-04-19</td><td>Louis Roig &amp; Claude Opus 4.7</td><td>Initial draft.</td></tr></tbody></table>
+    </section>
+
+    <div class="footer-nav"><a href="index.html">← Verification Index</a><span>Related: <a href="../nodes/srs-safety-monitor.html">SRS-SAF-001</a></span></div>
+  </main>
+</div>
+<script src="../shared/shared.js"></script>
+</body></html>

@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>INT-RTAB · RTAB-Map Configuration Notes</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=IBM+Plex+Sans:wght@300;400;500;600;700&family=IBM+Plex+Serif:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../shared/shared.css">
+</head>
+<body>
+<div class="doc-bar">
+  <a class="doc-bar-crumb" href="../index.html">← HOME</a><span class="doc-bar-sep">·</span>
+  <a class="doc-bar-crumb" href="index.html">NODES</a><span class="doc-bar-sep">·</span>
+  <span class="doc-bar-id">INT-RTAB</span><span class="doc-bar-sep">·</span>
+  <span class="doc-bar-path">RTAB-Map Integration</span><span class="doc-bar-sep">·</span>
+  <span style="color: var(--ink-dim)">REV 0.1</span>
+  <div class="doc-bar-status"><span class="status-dot"></span><span>DRAFT</span></div>
+  <div class="doc-bar-tools"><button class="tool-btn" onclick="window.print()">PRINT</button><button class="tool-btn" onclick="copyLink(event)">COPY LINK</button></div>
+</div>
+<div class="container single">
+  <main class="prose-serif">
+    <div class="doc-header">
+      <div class="doc-type">INTEGRATION NOTES · OFF-THE-SHELF</div>
+      <h1 class="doc-title">RTAB-Map Configuration</h1>
+      <p class="doc-subtitle">Visual SLAM via RTAB-Map using the OAK-D Lite stereo pair. Deployment profile and tuning highlights.</p>
+      <div class="doc-meta">
+        <div class="meta-item"><div class="meta-label">Document ID</div><div class="meta-value">INT-RTAB</div></div>
+        <div class="meta-item"><div class="meta-label">Revision</div><div class="meta-value">0.1 · draft</div></div>
+        <div class="meta-item"><div class="meta-label">Status</div><div class="meta-value">Iteration 1</div></div>
+      </div>
+    </div>
+
+    <section><div class="section-header"><span class="section-num">1.0</span><h2 class="section-title">Purpose</h2></div>
+      <p>Visual SLAM for the ground rover. RTAB-Map consumes the OAK-D Lite's stereo image streams and the IMU, produces a pose estimate and a 3D feature map, and publishes pose via <code>/rtabmap/odom</code> — which the global EKF fuses with <a href="../interfaces/icd-odometry-filtered.html">/odometry/filtered</a>.</p>
+    </section>
+
+    <section><div class="section-header"><span class="section-num">2.0</span><h2 class="section-title">Pipeline</h2></div>
+      <ul class="indent-list">
+        <li><strong>Input.</strong> Stereo left+right color from OAK-D Lite at 720p 15 fps; IMU pre-integrated via <a href="../interfaces/icd-hal-imu-data.html">/hal/imu/data</a>.</li>
+        <li><strong>Front-end.</strong> GFTT+BRIEF features (fast on CPU; sufficient for outdoor grass-and-foliage scenes).</li>
+        <li><strong>Back-end.</strong> g2o optimization on loop closures.</li>
+        <li><strong>Output.</strong> <code>/rtabmap/odom</code> (pose in <code>map</code> frame), <code>/rtabmap/grid_map</code> (unused in iter 1).</li>
+      </ul>
+    </section>
+
+    <section><div class="section-header"><span class="section-num">3.0</span><h2 class="section-title">Key Parameters</h2></div>
+      <div class="data-table-wrap"><table class="data-table"><thead><tr><th>Parameter</th><th>Value</th><th>Rationale</th></tr></thead><tbody>
+        <tr><td><span class="field-name">RGBD/OptimizeFromGraphEnd</span></td><td>true</td><td>Loop-closure affects newest frame first.</td></tr>
+        <tr><td><span class="field-name">Rtabmap/DetectionRate</span></td><td>2.0 Hz</td><td>Balance against Pi 5 CPU budget.</td></tr>
+        <tr><td><span class="field-name">Mem/IncrementalMemory</span></td><td>true</td><td>Multi-session mapping (deferred to iteration 2, but set now).</td></tr>
+        <tr><td><span class="field-name">Odom/Strategy</span></td><td>0 (F2M)</td><td>Frame-to-map works well with stereo + IMU.</td></tr>
+      </tbody></table></div>
+    </section>
+
+    <section><div class="section-header"><span class="section-num">4.0</span><h2 class="section-title">Known Limitations</h2></div>
+      <ul class="indent-list">
+        <li>Featureless surfaces (large uniform lawns) degrade tracking. Mitigation: keep odom+IMU fused at high weight when visual features are sparse.</li>
+        <li>Dynamic scenes (moving people, pets) create spurious loop closures. Partial mitigation via RTAB-Map's dynamic-object filtering; full mitigation out of scope for iteration 1.</li>
+        <li>CPU: ~30-40% of one Pi 5 core at 2 Hz detection. Acceptable margin.</li>
+      </ul>
+    </section>
+
+    <section><div class="section-header"><span class="section-num">5.0</span><h2 class="section-title">Open Issues</h2></div>
+      <ol class="indent-list">
+        <li><strong>OPEN-01</strong> — Multi-session mapping (save/load) is iteration 2.</li>
+        <li><strong>OPEN-02</strong> — Evaluate ORB-SLAM3 as an alternative if RTAB-Map's CPU budget becomes limiting.</li>
+      </ol>
+    </section>
+
+    <section><div class="section-header"><span class="section-num">6.0</span><h2 class="section-title">Revision</h2></div>
+      <table class="revision-table"><thead><tr><th>Rev</th><th>Date</th><th>Author</th><th>Change</th></tr></thead><tbody><tr><td class="rev">0.1</td><td>2026-04-19</td><td>Louis Roig &amp; Claude Opus 4.7</td><td>Initial draft.</td></tr></tbody></table>
+    </section>
+
+    <div class="footer-nav"><a href="index.html">← Nodes Index</a></div>
+  </main>
+</div>
+<script src="../shared/shared.js"></script>
+</body></html>

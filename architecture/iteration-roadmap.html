@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ARCH-006 · Iteration Roadmap</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=IBM+Plex+Sans:wght@300;400;500;600;700&family=IBM+Plex+Serif:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../shared/shared.css">
+</head>
+<body>
+
+<div class="doc-bar">
+  <a class="doc-bar-crumb" href="../index.html">← HOME</a>
+  <span class="doc-bar-sep">·</span>
+  <a class="doc-bar-crumb" href="index.html">ARCHITECTURE</a>
+  <span class="doc-bar-sep">·</span>
+  <span class="doc-bar-id">ARCH-006</span>
+  <span class="doc-bar-sep">·</span>
+  <span class="doc-bar-path">Iteration Roadmap</span>
+  <span class="doc-bar-sep">·</span>
+  <span style="color: var(--ink-dim)">REV 0.2</span>
+  <div class="doc-bar-status">
+    <span class="status-dot"></span>
+    <span>DRAFT</span>
+  </div>
+  <div class="doc-bar-tools">
+    <button class="tool-btn" onclick="window.print()">PRINT</button>
+    <button class="tool-btn" onclick="copyLink(event)">COPY LINK</button>
+  </div>
+</div>
+
+<div class="container">
+
+  <nav class="toc">
+    <div class="toc-title">CONTENTS</div>
+    <ul class="toc-list">
+      <li class="toc-item"><a class="toc-link" href="#s1"><span class="toc-num">1.0</span>Purpose</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s2"><span class="toc-num">2.0</span>Iteration 1 — current</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s3"><span class="toc-num">3.0</span>Iteration 2 — autonomy</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s4"><span class="toc-num">4.0</span>Iteration 3 — mower chassis</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s5"><span class="toc-num">5.0</span>Iteration 4+ — productization</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s6"><span class="toc-num">6.0</span>Scope Discipline</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s7"><span class="toc-num">7.0</span>Milestones &amp; Dates</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s8"><span class="toc-num">8.0</span>Build Order</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s9"><span class="toc-num">9.0</span>Revision History</a></li>
+    </ul>
+  </nav>
+
+  <main>
+
+    <div class="doc-header">
+      <div class="doc-type arch">ARCHITECTURE · ROADMAP</div>
+      <h1 class="doc-title">Iteration Roadmap</h1>
+      <p class="doc-subtitle">Four iterations, roughly 18 months, from prove-the-platform to productization prep. What is in scope for each iteration, and — equally important — what is explicitly out.</p>
+
+      <div class="doc-meta">
+        <div class="meta-item"><div class="meta-label">Document ID</div><div class="meta-value">ARCH-006</div></div>
+        <div class="meta-item"><div class="meta-label">Revision</div><div class="meta-value">0.2 · draft</div></div>
+        <div class="meta-item"><div class="meta-label">Owner</div><div class="meta-value">systems</div></div>
+        <div class="meta-item"><div class="meta-label">Classification</div><div class="meta-value">Internal — Draft</div></div>
+        <div class="meta-item"><div class="meta-label">Last Updated</div><div class="meta-value">2026-04-20</div></div>
+      </div>
+    </div>
+
+    <section id="s1">
+      <div class="section-header">
+        <span class="section-num">1.0</span>
+        <h2 class="section-title">Purpose</h2>
+      </div>
+
+      <p>This document defines the iteration structure of the project as of April 2026. Its purpose is twofold: to lay out the long arc so that iteration 1 decisions can be made with iteration 3 in mind, and to establish scope discipline that keeps iteration 1 from drifting into iteration 2's territory.</p>
+
+      <p>Every "this is iteration 2" or "iteration 3+" reference elsewhere in the corpus ultimately resolves to the definitions in this document.</p>
+    </section>
+
+    <section id="s2">
+      <div class="section-header">
+        <span class="section-num">2.0</span>
+        <h2 class="section-title">Iteration 1 — prove the platform</h2>
+      </div>
+
+      <p><strong>Timeframe:</strong> 6 months, targeting an M6 field test demo.</p>
+
+      <p><strong>What it proves:</strong></p>
+      <ul class="indent-list">
+        <li>The platform-first architecture survives contact with real hardware.</li>
+        <li>A drone can autonomously map a yard well enough to draw a boundary on.</li>
+        <li>A tracked rover can be teleoperated within that boundary with end-to-end safety.</li>
+        <li>The safety architecture works: e-stop, tilt, person-detect, geofence all cut motion as specified.</li>
+      </ul>
+
+      <p><strong>In scope:</strong></p>
+      <ul class="indent-list">
+        <li>All 14 custom ROS nodes enumerated in the <a href="../nodes/index.html">node catalog</a>.</li>
+        <li>All 21 ICDs in the <a href="../interfaces/index.html">interface catalog</a>.</li>
+        <li>Mobile app with: "Map My Yard" button, polygon-draw UI, teleop joystick, live telemetry, soft e-stop.</li>
+        <li>Full test suite: unit, integration, and the M6 <a href="../verification/field-test-protocol.html">field test protocol</a>.</li>
+        <li>A single working demo path (phases A–F in <a href="data-flow-mission.html">ARCH-003</a>).</li>
+      </ul>
+
+      <p><strong>Out of scope — explicitly:</strong></p>
+      <ul class="indent-list">
+        <li>Autonomous navigation. Nav2 is integrated as a dependency only; the rover is teleop-only.</li>
+        <li>Coverage planning. Not built.</li>
+        <li>Multiple mission queuing.</li>
+        <li>Cloud services. Strictly local.</li>
+        <li>The blade / mower tool. The rover has no cutting implement in iteration 1.</li>
+        <li>Automatic charging / docking.</li>
+        <li>Safety MCU (remains software-only; hardware e-stop + software safety monitor).</li>
+        <li>Compliance engineering. Part 107, UL, CE all future.</li>
+      </ul>
+
+      <p><strong>Pass criterion:</strong> The M6 field test procedure runs to completion on five consecutive trial days.</p>
+    </section>
+
+    <section id="s3">
+      <div class="section-header">
+        <span class="section-num">3.0</span>
+        <h2 class="section-title">Iteration 2 — autonomy</h2>
+      </div>
+
+      <p><strong>Timeframe:</strong> 3–6 months post-M6.</p>
+
+      <p><strong>What it adds:</strong></p>
+      <ul class="indent-list">
+        <li><strong>Nav2 waypoint navigation.</strong> The rover can be sent to a pose and will get there, respecting obstacles.</li>
+        <li><strong>Coverage planner.</strong> Given a zone polygon, plan a coverage path. First-generation: simple boustrophedon.</li>
+        <li><strong>Obstacle avoidance.</strong> Populate the costmap with <code>/perception/obstacles</code>; local planner respects it.</li>
+        <li><strong>Behavior tree.</strong> Orchestrates coverage missions with pause/resume, battery-aware interruption.</li>
+        <li><strong>Autonomous dock approach.</strong> Fiducial-based approach to a known dock position.</li>
+        <li><strong>GPS / optional RTK.</strong> Upgrade localization fidelity to support larger yards.</li>
+      </ul>
+
+      <p><strong>Architectural changes:</strong> Layer 4 gains real content. Layer 5 gains queuing, scheduling. Platform-vs-application boundary is exercised for the first time by coverage logic.</p>
+
+      <p><strong>Still out:</strong> The physical blade. Commercial certification prep.</p>
+    </section>
+
+    <section id="s4">
+      <div class="section-header">
+        <span class="section-num">4.0</span>
+        <h2 class="section-title">Iteration 3 — mower chassis</h2>
+      </div>
+
+      <p><strong>Timeframe:</strong> 3–6 months post-iteration-2.</p>
+
+      <p><strong>What it adds:</strong></p>
+      <ul class="indent-list">
+        <li><strong>Actual mower chassis.</strong> Move off the tracked iteration-1 rover onto a purpose-built wheeled platform.</li>
+        <li><strong>Blade tool.</strong> Add a cutting deck with its own motor, safety interlocks, and tool_controller node (mower-layer).</li>
+        <li><strong>Safety MCU.</strong> The independent hardware safety board. Takes over blade power, enforces heartbeat + tilt + lift interlocks.</li>
+        <li><strong>Blade-specific state machine.</strong> Tool engage/disengage states; lift-interrupt behavior.</li>
+        <li><strong>Lift sensor.</strong> Detects if the mower has been picked up.</li>
+        <li><strong>Surface classification.</strong> Distinguishes grass / pavement / soil; platform exposes classes, mower reacts.</li>
+      </ul>
+
+      <p><strong>Architectural changes:</strong> First real test of the platform/application boundary under pressure. The <code>tool_controller</code>, <code>/hal/tool_cmd_safe</code>, and blade-specific safety logic all live in <code>applications/mower/</code>. The platform gains generic tool concepts in <code>platform_safety</code> without naming the blade.</p>
+    </section>
+
+    <section id="s5">
+      <div class="section-header">
+        <span class="section-num">5.0</span>
+        <h2 class="section-title">Iteration 4+ — productization</h2>
+      </div>
+
+      <p><strong>Timeframe:</strong> Ongoing, indefinite.</p>
+
+      <ul class="indent-list">
+        <li><strong>Compliance.</strong> UL safety assessment, FCC confirmations, Part 107 for commercial drone operation.</li>
+        <li><strong>Manufacturability.</strong> Bill of materials discipline, harness pre-fabrication, enclosure sealing (IP rating).</li>
+        <li><strong>Fleet management.</strong> If we sell units, they need software update, diagnostics export, remote support.</li>
+        <li><strong>Second application.</strong> A non-mower application that exercises the platform/application boundary seriously. Candidate: pool skimmer, garden inspection, snow clearance.</li>
+        <li><strong>Hazard analysis &amp; system safety.</strong> Formal HARA in line with ISO 13482 (for personal-care robots) or similar.</li>
+      </ul>
+
+      <p>This iteration is intentionally vague. The iteration-3 demo clarifies which direction makes sense commercially.</p>
+    </section>
+
+    <section id="s6">
+      <div class="section-header">
+        <span class="section-num">6.0</span>
+        <h2 class="section-title">Scope Discipline</h2>
+      </div>
+
+      <p>Three rules:</p>
+
+      <ol class="indent-list">
+        <li><strong>Do not build Nav2 integration in iteration 1.</strong> It's tempting. It will reward the work with a better demo. It will also push M6 out and force iteration-2 work to be redone.</li>
+        <li><strong>Do not design the iteration-3 safety MCU in iteration 1.</strong> The placeholders in <a href="../nodes/srs-safety-monitor.html">safety_monitor</a> (GPIO heartbeat, tool veto topic) are enough. Detailed design in iteration 2.</li>
+        <li><strong>Do not break the platform/application boundary "for just this one thing."</strong> See <a href="platform-vs-application.html">ARCH-005</a>.</li>
+      </ol>
+
+      <div class="callout warning">
+        <div class="callout-label">Scope creep triggers</div>
+        <p>If any of the following phrases come up in planning, stop and check against this roadmap:
+        "…and also we could…", "…while we're there…", "…this would be easier if we just…", "…iteration 1 should also…".</p>
+      </div>
+    </section>
+
+    <section id="s7">
+      <div class="section-header">
+        <span class="section-num">7.0</span>
+        <h2 class="section-title">Milestones &amp; Dates</h2>
+      </div>
+
+      <p>Indicative; solo project, nights-and-weekends cadence. Dates slip; the sequence doesn't.</p>
+
+      <div class="data-table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr><th>Milestone</th><th>Content</th><th>Target</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><span class="field-name">M1</span></td><td>Rover drives under teleop. RoboClaw + IMU + odometry working.</td><td>2026-05</td></tr>
+            <tr><td><span class="field-name">M2</span></td><td>Safety monitor + e-stop + person-detect ESTOP gating integrated.</td><td>2026-06</td></tr>
+            <tr><td><span class="field-name">M3</span></td><td>Drone flies autonomously and captures an image. ArduCopter + XIAO bridge stable.</td><td>2026-07</td></tr>
+            <tr><td><span class="field-name">M4</span></td><td>Georeferenced image delivered to mobile app; polygon drawing works.</td><td>2026-08</td></tr>
+            <tr><td><span class="field-name">M5</span></td><td>Geofence enforcement live; rover stops at boundary.</td><td>2026-09</td></tr>
+            <tr><td><span class="field-name">M6</span></td><td><strong>Iteration 1 demo.</strong> Full field test procedure passes on five consecutive trials.</td><td>2026-10</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="s8">
+      <div class="section-header">
+        <span class="section-num">8.0</span>
+        <h2 class="section-title">Build Order</h2>
+      </div>
+
+      <p>The milestone table in §7 says <em>what</em> each milestone delivers. This section says <em>what must be working</em> to deliver it — specifically, which nodes, ICDs, state machines, and test protocols need to be in place at each M-gate, listed in dependency order so the solo build has a forced sequence rather than a parallel wish-list.</p>
+
+      <p>A node or ICD listed under a milestone is expected to be <strong>at least first-pass functional</strong> — it honors the ICD's happy-path contract, publishes at the declared rate, and passes any cited unit test. Fault-branch polish and QoS tuning continue across later milestones.</p>
+
+      <div class="callout note">
+        <div class="callout-label">Reading the tables</div>
+        <p>Items marked <em>stub</em> are placeholders that satisfy the interface contract without real behavior (e.g. <a href="../nodes/srs-safety-monitor.html">safety_monitor</a> at M1 passes <code>cmd_vel_raw</code> through to <code>cmd_vel_safe</code> unconditionally). Items marked <em>(carried)</em> were introduced at a prior milestone and must remain green. <em>Upgraded</em> means an existing stub is replaced with real behavior.</p>
+      </div>
+
+      <div class="subsection-title">8.1 M1 — rover drives under teleop</div>
+
+      <div class="data-table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr><th style="width: 140px">Category</th><th>Item</th><th>Status at M1</th></tr>
+          </thead>
+          <tbody>
+            <tr><td rowspan="3">Nodes</td><td><a href="../nodes/srs-roboclaw-driver.html">roboclaw_driver</a></td><td>Functional — skid-steer kinematics, encoder odometry, battery readback</td></tr>
+            <tr><td><a href="../nodes/srs-imu-driver.html">imu_driver</a></td><td>Functional — gyro + accel at declared rate; magnetometer optional</td></tr>
+            <tr><td><a href="../nodes/srs-safety-monitor.html">safety_monitor</a></td><td>Stub — pass-through from <code>cmd_vel_raw</code> to <code>cmd_vel_safe</code></td></tr>
+            <tr><td rowspan="5">ICDs</td><td><a href="../interfaces/icd-hal-cmd-vel-raw.html">/hal/cmd_vel_raw</a></td><td>Functional</td></tr>
+            <tr><td><a href="../interfaces/icd-hal-cmd-vel-safe.html">/hal/cmd_vel_safe</a></td><td>Functional — gate is pass-through at M1</td></tr>
+            <tr><td><a href="../interfaces/icd-hal-odom.html">/hal/odom</a></td><td>Functional</td></tr>
+            <tr><td><a href="../interfaces/icd-hal-imu-data.html">/hal/imu_data</a></td><td>Functional</td></tr>
+            <tr><td><a href="../interfaces/icd-hal-battery.html">/hal/battery</a></td><td>Functional</td></tr>
+            <tr><td>Mobile app</td><td>Teleop-only harness</td><td>Minimum viable — WebSocket joystick on any framework. Final framework decision deferred.</td></tr>
+            <tr><td>Deploy</td><td>udev rules + systemd units</td><td>In repo under <code>deploy/</code>; rover comes up green after cold boot</td></tr>
+            <tr><td>Gating test</td><td><a href="../verification/test-hal-009.html">TEST-HAL-009</a> + RoboClaw unit tests</td><td>Pass on bench</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p><strong>Exit criterion.</strong> The rover can be driven in a figure-8 from the phone; odometry drift stays within the declared budget over a 10 m loop; a power cycle brings everything back green without manual intervention.</p>
+
+      <div class="subsection-title">8.2 M2 — safety integrated</div>
+
+      <div class="data-table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr><th style="width: 140px">Category</th><th>Item</th><th>Status at M2</th></tr>
+          </thead>
+          <tbody>
+            <tr><td rowspan="5">Nodes</td><td><a href="../nodes/srs-estop-monitor.html">estop_monitor</a></td><td>Functional — GPIO polled, latched-fault state published</td></tr>
+            <tr><td><a href="../nodes/srs-safety-monitor.html">safety_monitor</a></td><td>Upgraded — real gate driven by e-stop, tilt, person-detect, heartbeat</td></tr>
+            <tr><td><a href="../nodes/srs-yolo-detector.html">yolo_detector</a></td><td>Functional — detections on OAK-D NPU</td></tr>
+            <tr><td><a href="../nodes/srs-living-thing-filter.html">living_thing_filter</a></td><td>Functional — emits <code>/perception/people</code> from detections</td></tr>
+            <tr><td>roboclaw_driver, imu_driver</td><td>(carried)</td></tr>
+            <tr><td rowspan="5">ICDs</td><td><a href="../interfaces/icd-hal-estop-pressed.html">/hal/estop_pressed</a></td><td>Functional</td></tr>
+            <tr><td><a href="../interfaces/icd-safety-state.html">/safety/state</a></td><td>Functional</td></tr>
+            <tr><td><a href="../interfaces/icd-safety-reset-srv.html">/safety/reset</a></td><td>Functional</td></tr>
+            <tr><td><a href="../interfaces/icd-perception-detections.html">/perception/detections</a></td><td>Functional</td></tr>
+            <tr><td><a href="../interfaces/icd-perception-people.html">/perception/people</a></td><td>Functional</td></tr>
+            <tr><td>State machine</td><td><a href="../state-machines/sm-safety-monitor.html">safety_monitor state machine</a></td><td>Implemented to spec</td></tr>
+            <tr><td>Gating tests</td><td><a href="../verification/test-saf-011.html">TEST-SAF-011</a>, <a href="../verification/test-saf-016.html">TEST-SAF-016</a></td><td>Pass as bag-replay CI tests</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p><strong>Exit criterion.</strong> Teleop is now gated. Pressing the e-stop, tilting the rover past threshold, or walking in front of it all force <code>cmd_vel_safe</code> to zero inside the declared timing budget. Reset service returns the rover to operable.</p>
+
+      <div class="subsection-title">8.3 M3 — drone flies and captures an image</div>
+
+      <div class="data-table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr><th style="width: 140px">Category</th><th>Item</th><th>Status at M3</th></tr>
+          </thead>
+          <tbody>
+            <tr><td rowspan="2">Firmware</td><td><a href="../nodes/firmware-ardurover-config.html">FW-ACP · ArduCopter config</a></td><td>Parameters loaded, autotune complete, hover stable</td></tr>
+            <tr><td><a href="../nodes/firmware-xiao-bridge.html">FW-XIAO</a></td><td>MAVLink TCP bridge + OV2640 capture path working</td></tr>
+            <tr><td rowspan="2">Nodes</td><td><a href="../nodes/srs-drone-mission-coordinator.html">drone_mission_coordinator</a></td><td>Functional — arm, takeoff, waypoint loop, land</td></tr>
+            <tr><td><a href="../nodes/srs-image-retriever.html">image_retriever</a></td><td>Functional — pulls JPEG from XIAO after capture</td></tr>
+            <tr><td>Integration</td><td>mavros on the Pi</td><td>Connected to <code>tcp://xiao.local:5760</code>, heartbeat stable</td></tr>
+            <tr><td>State machine</td><td><a href="../state-machines/sm-drone-mission.html">drone mission state machine</a></td><td>Implemented to spec</td></tr>
+            <tr><td>Gating test</td><td>Bench MAVLink loopback + one outdoor takeoff-waypoint-land cycle</td><td>Pass</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p><strong>Exit criterion.</strong> From a cold start the operator can trigger <em>Map My Yard</em> and the drone takes off, flies a fixed pattern, captures at least one image, lands, and the image reaches the Pi.</p>
+
+      <div class="subsection-title">8.4 M4 — georeferenced image in the app, polygon drawing</div>
+
+      <div class="data-table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr><th style="width: 140px">Category</th><th>Item</th><th>Status at M4</th></tr>
+          </thead>
+          <tbody>
+            <tr><td rowspan="4">Nodes</td><td><a href="../nodes/srs-georeferencer.html">georeferencer</a></td><td>Functional — projects image using FC GPS + attitude at capture</td></tr>
+            <tr><td><a href="../nodes/srs-boundary-ingester.html">boundary_ingester</a></td><td>Functional — receives polygon, validates, stores as active zone</td></tr>
+            <tr><td><a href="../nodes/srs-mission-api.html">mission_api</a></td><td>Functional for map / boundary / teleop routes</td></tr>
+            <tr><td><a href="../nodes/srs-telemetry-publisher.html">telemetry_publisher</a></td><td>Functional — WebSocket telemetry stream</td></tr>
+            <tr><td rowspan="4">ICDs</td><td><a href="../interfaces/icd-mapping-aerial-image.html">/mapping/aerial_image</a></td><td>Functional</td></tr>
+            <tr><td><a href="../interfaces/icd-mapping-mission-action.html">mapping mission action</a></td><td>Functional</td></tr>
+            <tr><td><a href="../interfaces/icd-mission-rest-api.html">mission REST API</a></td><td>Functional for map / boundary / teleop routes</td></tr>
+            <tr><td><a href="../interfaces/icd-mission-telemetry-ws.html">mission telemetry WS</a></td><td>Functional</td></tr>
+            <tr><td>Mobile app</td><td>Polygon-draw UI</td><td>Tap-to-place vertices on georeferenced image, submit to boundary_ingester</td></tr>
+            <tr><td>Gating test</td><td>End-to-end <em>Map My Yard</em> → polygon submission</td><td>Pass on the real target yard</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p><strong>Exit criterion.</strong> The operator sees their own yard, outlined by their own finger, persisted as the active zone on the Pi. Georegistration error small enough that a drawn polygon aligns with physical features.</p>
+
+      <div class="subsection-title">8.5 M5 — geofence live, rover stops at boundary</div>
+
+      <div class="data-table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr><th style="width: 140px">Category</th><th>Item</th><th>Status at M5</th></tr>
+          </thead>
+          <tbody>
+            <tr><td rowspan="3">Nodes</td><td><a href="../nodes/srs-geofence-enforcer.html">geofence_enforcer</a></td><td>Functional — compares fused pose with active polygon, publishes state</td></tr>
+            <tr><td>EKF (local + global)</td><td>Configured — odometry + optional GPS fused to filtered odometry and pose</td></tr>
+            <tr><td>safety_monitor</td><td>Upgraded — consumes <code>/geofence/state</code> and forces ESTOP on breach</td></tr>
+            <tr><td rowspan="4">ICDs</td><td><a href="../interfaces/icd-geofence-state.html">/geofence/state</a></td><td>Functional</td></tr>
+            <tr><td><a href="../interfaces/icd-mapping-current-zone.html">/mapping/current_zone</a></td><td>Functional</td></tr>
+            <tr><td><a href="../interfaces/icd-odometry-filtered.html">/odometry/filtered</a></td><td>Functional</td></tr>
+            <tr><td><a href="../interfaces/icd-localization-pose.html">/localization/pose</a></td><td>Functional</td></tr>
+            <tr><td>State machine</td><td><a href="../state-machines/sm-geofence-enforcer.html">geofence_enforcer state machine</a></td><td>Implemented to spec</td></tr>
+            <tr><td>Gating test</td><td>Drive toward boundary under teleop — rover halts before crossing on 10/10 trials</td><td>Pass</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p><strong>Exit criterion.</strong> The geofence cannot be defeated by teleop intent. Driving the joystick hard into a boundary stops motion at or before the polygon edge with the declared margin.</p>
+
+      <div class="subsection-title">8.6 M6 — iteration-1 demo</div>
+
+      <div class="data-table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr><th style="width: 140px">Category</th><th>Item</th><th>Status at M6</th></tr>
+          </thead>
+          <tbody>
+            <tr><td rowspan="3">Nodes</td><td><a href="../nodes/srs-system-monitor.html">system_monitor</a></td><td>Functional — health, CPU, temps, link state published</td></tr>
+            <tr><td>mission_api, telemetry_publisher</td><td>Polished — fault branches, reconnection, degraded-mode reporting</td></tr>
+            <tr><td>All prior nodes</td><td>(carried) — no regressions</td></tr>
+            <tr><td rowspan="2">ICDs</td><td>Remaining ICDs not yet touched</td><td>Functional — notably <a href="../interfaces/icd-perception-obstacles.html">/perception/obstacles</a> (published, consumers are iter-2), <a href="../interfaces/icd-hal-gps-fix.html">/hal/gps_fix</a>, <a href="../interfaces/icd-hal-imu-mag.html">/hal/imu_mag</a></td></tr>
+            <tr><td>All prior ICDs</td><td>(carried)</td></tr>
+            <tr><td>State machine</td><td><a href="../state-machines/sm-mission-executor.html">mission executor state machine</a></td><td>Implemented to spec</td></tr>
+            <tr><td>Gating test</td><td><a href="../verification/field-test-protocol.html">Field test protocol</a></td><td>Pass on five consecutive trial days</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p><strong>Exit criterion.</strong> The iteration-1 pass criterion in §2 is met. Iteration-2 planning begins.</p>
+
+      <div class="callout warning">
+        <div class="callout-label">What this list is not</div>
+        <p>This is the <em>minimum</em> functional-by-milestone ordering, not a work breakdown. Integration shakedown, mobile-app polish, documentation, and field-test rehearsals sit outside this table and must be scheduled in addition to it.</p>
+      </div>
+    </section>
+
+    <section id="s9">
+      <div class="section-header">
+        <span class="section-num">9.0</span>
+        <h2 class="section-title">Revision History</h2>
+      </div>
+
+      <table class="revision-table">
+        <thead>
+          <tr><th style="width: 80px">Rev</th><th style="width: 120px">Date</th><th style="width: 140px">Author</th><th>Change</th></tr>
+        </thead>
+        <tbody>
+          <tr><td class="rev">0.1</td><td>2026-04-19</td><td>Louis Roig &amp; Claude Opus 4.7</td><td>Initial draft. Iterations 1–4 defined; scope discipline rules captured.</td></tr>
+          <tr><td class="rev">0.2</td><td>2026-04-20</td><td>Louis Roig &amp; Claude Opus 4.7</td><td>Added §8 Build Order — per-milestone node/ICD/test dependency list for iteration 1.</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <div class="footer-nav">
+      <a href="platform-vs-application.html">← Platform vs Application</a>
+      <span><a href="index.html">Architecture Index →</a></span>
+    </div>
+
+  </main>
+</div>
+
+<script src="../shared/shared.js"></script>
+</body>
+</html>

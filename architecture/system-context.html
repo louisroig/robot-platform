@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ARCH-001 · System Context</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=IBM+Plex+Sans:wght@300;400;500;600;700&family=IBM+Plex+Serif:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../shared/shared.css">
+</head>
+<body>
+
+<div class="doc-bar">
+  <a class="doc-bar-crumb" href="../index.html">← HOME</a>
+  <span class="doc-bar-sep">·</span>
+  <a class="doc-bar-crumb" href="index.html">ARCHITECTURE</a>
+  <span class="doc-bar-sep">·</span>
+  <span class="doc-bar-id">ARCH-001</span>
+  <span class="doc-bar-sep">·</span>
+  <span class="doc-bar-path">System Context</span>
+  <span class="doc-bar-sep">·</span>
+  <span style="color: var(--ink-dim)">REV 0.1</span>
+  <div class="doc-bar-status">
+    <span class="status-dot"></span>
+    <span>DRAFT</span>
+  </div>
+  <div class="doc-bar-tools">
+    <button class="tool-btn" onclick="window.print()">PRINT</button>
+    <button class="tool-btn" onclick="copyLink(event)">COPY LINK</button>
+  </div>
+</div>
+
+<div class="container">
+
+  <nav class="toc">
+    <div class="toc-title">CONTENTS</div>
+    <ul class="toc-list">
+      <li class="toc-item"><a class="toc-link" href="#s1"><span class="toc-num">1.0</span>Purpose</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s2"><span class="toc-num">2.0</span>System Boundary</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s3"><span class="toc-num">3.0</span>External Actors</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s4"><span class="toc-num">4.0</span>Context Diagram</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s5"><span class="toc-num">5.0</span>Environmental Conditions</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s6"><span class="toc-num">6.0</span>Regulatory Context</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s7"><span class="toc-num">7.0</span>Assumptions</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s8"><span class="toc-num">8.0</span>Open Issues</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s9"><span class="toc-num">9.0</span>Revision History</a></li>
+    </ul>
+  </nav>
+
+  <main>
+
+    <div class="doc-header">
+      <div class="doc-type arch">ARCHITECTURE · CONTEXT</div>
+      <h1 class="doc-title">System Context</h1>
+      <p class="doc-subtitle">The boundary between the ground-air platform and the world it operates in. Who the external actors are, what flows across the boundary, and what the platform does not own.</p>
+
+      <div class="doc-meta">
+        <div class="meta-item"><div class="meta-label">Document ID</div><div class="meta-value">ARCH-001</div></div>
+        <div class="meta-item"><div class="meta-label">Revision</div><div class="meta-value">0.1 · draft</div></div>
+        <div class="meta-item"><div class="meta-label">Owner</div><div class="meta-value">systems</div></div>
+        <div class="meta-item"><div class="meta-label">Classification</div><div class="meta-value">Internal — Draft</div></div>
+        <div class="meta-item"><div class="meta-label">Last Updated</div><div class="meta-value">2026-04-19</div></div>
+        <div class="meta-item"><div class="meta-label">Applies To</div><div class="meta-value">Iteration 1+</div></div>
+      </div>
+    </div>
+
+    <section id="s1">
+      <div class="section-header">
+        <span class="section-num">1.0</span>
+        <h2 class="section-title">Purpose</h2>
+      </div>
+
+      <p>This document establishes the boundary of the ground-air autonomous platform as a single system under development. It enumerates the external actors that cross that boundary, the nature of each interaction, and the environmental and regulatory conditions under which the system must operate. It explicitly identifies capabilities and responsibilities that fall <em>outside</em> the platform's scope.</p>
+
+      <p>All subsequent architecture documents assume this boundary. When a requirement references "the system," it refers to everything inside the boundary drawn here. When a requirement references an actor, it refers to one of the actors enumerated in §3.</p>
+
+      <div class="callout note">
+        <div class="callout-label">Reading notes</div>
+        <p>For deeper structure inside the boundary, see <a href="layered-architecture.html">Layered Architecture</a>. For the flow of information during a mission, see <a href="data-flow-mission.html">Mission Data Flow</a>. For physical allocation of the system across hardware, see <a href="deployment.html">Deployment</a>.</p>
+      </div>
+    </section>
+
+    <section id="s2">
+      <div class="section-header">
+        <span class="section-num">2.0</span>
+        <h2 class="section-title">System Boundary</h2>
+      </div>
+
+      <p>The ground-air autonomous platform comprises:</p>
+
+      <ul class="indent-list">
+        <li>The <strong>ground unit</strong> — a tracked rover carrying a Raspberry Pi 5, a stereo camera with onboard inference, an IMU, a physical e-stop, and a battery.</li>
+        <li>The <strong>aerial unit</strong> — a sub-250 g mapping drone carrying an ArduCopter-flashed flight controller, a Wi-Fi MAVLink bridge, and a payload camera.</li>
+        <li>The <strong>operator mobile application</strong> — the human interface for boundary drawing, teleoperation, mission triggering, and live telemetry. Runs on the operator's personal device.</li>
+        <li>All <strong>software nodes</strong> running on the ground unit (ROS 2 Humble), the drone (ArduCopter + XIAO firmware), and the mobile device (client app).</li>
+        <li>All <strong>communications</strong> linking the above — Wi-Fi between the operator and the rover, Wi-Fi between the XIAO bridge and the ground station, MAVLink over UART between XIAO and flight controller, serial USB between Pi and RoboClaw, and I²C between Pi and IMU.</li>
+      </ul>
+
+      <p>Not part of the platform:</p>
+
+      <ul class="indent-list">
+        <li>The <strong>residential yard environment</strong> itself — terrain, grass, trees, fixtures, weather.</li>
+        <li>The <strong>operator's personal device</strong> hardware, its operating system, its network provider.</li>
+        <li>The <strong>Wi-Fi access point</strong> and <strong>home network</strong> the operator's device and the rover attach to.</li>
+        <li>Any <strong>cloud backend</strong>. Iteration 1 is strictly local — no data leaves the home network.</li>
+        <li>The <strong>charging infrastructure</strong> for the rover battery in iteration 1 (the operator plugs it in manually).</li>
+        <li>The <strong>FAA LAANC or equivalent airspace authorization system</strong>. The operator is responsible for ensuring lawful flight.</li>
+      </ul>
+    </section>
+
+    <section id="s3">
+      <div class="section-header">
+        <span class="section-num">3.0</span>
+        <h2 class="section-title">External Actors</h2>
+      </div>
+
+      <div class="data-table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr><th style="width: 22%">Actor</th><th style="width: 28%">Interaction</th><th>Nature of exchange</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><span class="field-name">Operator (human)</span></td>
+              <td>Mobile app UI, physical e-stop button</td>
+              <td>Commands: "map my yard," boundary drawing, teleop directional inputs, soft e-stop. Observes: live telemetry, safety state, aerial imagery. Physically presses the e-stop button when required.</td>
+            </tr>
+            <tr>
+              <td><span class="field-name">Yard environment</span></td>
+              <td>Sensed via cameras, IMU, wheel encoders; acted upon via tracked motion</td>
+              <td>Inputs: terrain topology, lighting, obstacles, living things. Outputs: displaced soil, compacted tracks, and — in future iterations — cut grass.</td>
+            </tr>
+            <tr>
+              <td><span class="field-name">Weather</span></td>
+              <td>Implicit — not sensed directly by the platform</td>
+              <td>Bounded operating envelope: dry, light wind, above freezing, daylight. See §5. The operator is responsible for deferring operation outside this envelope.</td>
+            </tr>
+            <tr>
+              <td><span class="field-name">Living things (humans, pets, wildlife)</span></td>
+              <td>Detected by onboard perception; safety stop triggered when within danger radius</td>
+              <td>Not commanded. The system is a fail-safe observer of their presence. The platform does not attempt to communicate with living things.</td>
+            </tr>
+            <tr>
+              <td><span class="field-name">Wi-Fi network</span></td>
+              <td>All inter-device communication rides on this</td>
+              <td>Best-effort delivery. Loss of connectivity between operator app and rover is treated by the rover as "operator unavailable" — see fault behavior in <a href="../interfaces/icd-mission-telemetry-ws.html">ICD-API-002</a>.</td>
+            </tr>
+            <tr>
+              <td><span class="field-name">Regulatory authority (FAA, local)</span></td>
+              <td>Off-platform — the operator complies manually</td>
+              <td>The drone is sub-250 g to keep recreational operation under Part 107 exemption ceilings where applicable. Commercial operation would require Part 107 certification and LAANC.</td>
+            </tr>
+            <tr>
+              <td><span class="field-name">Power grid</span></td>
+              <td>Via wall charger; off-platform</td>
+              <td>Battery charging occurs between missions. No grid-tie, no autonomous docking in iteration 1.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="s4">
+      <div class="section-header">
+        <span class="section-num">4.0</span>
+        <h2 class="section-title">Context Diagram</h2>
+      </div>
+
+      <p>The diagram below situates the platform (enclosed boundary) among its external actors. Arrows show the dominant direction of information flow; many are bidirectional.</p>
+
+      <div class="state-diagram">
+        <svg viewBox="0 0 800 460" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <marker id="arr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+              <path d="M 0 0 L 10 5 L 0 10 z" fill="#7a8a99"/>
+            </marker>
+          </defs>
+
+          <!-- System boundary -->
+          <rect x="240" y="120" width="320" height="220" rx="6" fill="#121920" stroke="#f2e8d5" stroke-width="1.5" stroke-dasharray="6 6" opacity="0.9"/>
+          <text x="400" y="145" text-anchor="middle" fill="#f2e8d5" font-family="JetBrains Mono, monospace" font-size="11" letter-spacing="0.2em">SYSTEM BOUNDARY</text>
+
+          <!-- Inner blocks -->
+          <rect x="260" y="170" width="120" height="60" rx="4" fill="#070a0d" stroke="#4fc3a1" stroke-width="1.2"/>
+          <text x="320" y="195" text-anchor="middle" fill="#d5dde4" font-family="JetBrains Mono, monospace" font-size="11">Ground unit</text>
+          <text x="320" y="210" text-anchor="middle" fill="#7a8a99" font-family="JetBrains Mono, monospace" font-size="9">Pi 5 · ROS 2</text>
+
+          <rect x="420" y="170" width="120" height="60" rx="4" fill="#070a0d" stroke="#ffb347" stroke-width="1.2"/>
+          <text x="480" y="195" text-anchor="middle" fill="#d5dde4" font-family="JetBrains Mono, monospace" font-size="11">Aerial unit</text>
+          <text x="480" y="210" text-anchor="middle" fill="#7a8a99" font-family="JetBrains Mono, monospace" font-size="9">ArduCopter · XIAO</text>
+
+          <rect x="340" y="260" width="120" height="60" rx="4" fill="#070a0d" stroke="#6ba6ff" stroke-width="1.2"/>
+          <text x="400" y="285" text-anchor="middle" fill="#d5dde4" font-family="JetBrains Mono, monospace" font-size="11">Mobile app</text>
+          <text x="400" y="300" text-anchor="middle" fill="#7a8a99" font-family="JetBrains Mono, monospace" font-size="9">Client UI</text>
+
+          <!-- External actors -->
+          <!-- Operator left -->
+          <rect x="40" y="240" width="120" height="60" rx="30" fill="#121920" stroke="#6ba6ff" stroke-width="1.2"/>
+          <text x="100" y="265" text-anchor="middle" fill="#d5dde4" font-family="JetBrains Mono, monospace" font-size="11">Operator</text>
+          <text x="100" y="282" text-anchor="middle" fill="#7a8a99" font-family="JetBrains Mono, monospace" font-size="9">human</text>
+          <path d="M 160 280 L 340 290" stroke="#6ba6ff" stroke-width="1.2" fill="none" opacity="0.7" marker-end="url(#arr)"/>
+          <text x="250" y="275" fill="#6ba6ff" font-family="JetBrains Mono, monospace" font-size="9">commands · observation</text>
+
+          <!-- E-stop -->
+          <rect x="40" y="340" width="120" height="54" rx="4" fill="#121920" stroke="#e85d5d" stroke-width="1.2"/>
+          <text x="100" y="362" text-anchor="middle" fill="#d5dde4" font-family="JetBrains Mono, monospace" font-size="11">E-stop button</text>
+          <text x="100" y="378" text-anchor="middle" fill="#7a8a99" font-family="JetBrains Mono, monospace" font-size="9">physical NC</text>
+          <path d="M 160 360 Q 220 310 260 210" stroke="#e85d5d" stroke-width="1.2" fill="none" opacity="0.7" marker-end="url(#arr)"/>
+          <text x="200" y="380" fill="#e85d5d" font-family="JetBrains Mono, monospace" font-size="9">hardware interrupt</text>
+
+          <!-- Yard top -->
+          <ellipse cx="400" cy="55" rx="120" ry="32" fill="#121920" stroke="#d5dde4" stroke-width="1.2"/>
+          <text x="400" y="52" text-anchor="middle" fill="#d5dde4" font-family="JetBrains Mono, monospace" font-size="11">Yard environment</text>
+          <text x="400" y="68" text-anchor="middle" fill="#7a8a99" font-family="JetBrains Mono, monospace" font-size="9">terrain · obstacles · lighting</text>
+          <path d="M 350 85 Q 330 120 320 170" stroke="#d5dde4" stroke-width="1.2" fill="none" opacity="0.5" marker-end="url(#arr)"/>
+          <path d="M 450 85 Q 470 120 480 170" stroke="#d5dde4" stroke-width="1.2" fill="none" opacity="0.5" marker-end="url(#arr)"/>
+          <text x="310" y="110" fill="#d5dde4" font-family="JetBrains Mono, monospace" font-size="9">sensed</text>
+
+          <!-- Living things -->
+          <ellipse cx="640" cy="200" rx="110" ry="30" fill="#121920" stroke="#e85d5d" stroke-width="1.2"/>
+          <text x="640" y="197" text-anchor="middle" fill="#d5dde4" font-family="JetBrains Mono, monospace" font-size="11">Living things</text>
+          <text x="640" y="213" text-anchor="middle" fill="#7a8a99" font-family="JetBrains Mono, monospace" font-size="9">humans · pets · wildlife</text>
+          <path d="M 540 200 L 560 200" stroke="#e85d5d" stroke-width="1.2" fill="none" opacity="0.7" marker-end="url(#arr)"/>
+          <text x="540" y="192" fill="#e85d5d" font-family="JetBrains Mono, monospace" font-size="9">detected</text>
+
+          <!-- Wi-Fi -->
+          <rect x="620" y="280" width="140" height="54" rx="4" fill="#121920" stroke="#e0a458" stroke-width="1.2"/>
+          <text x="690" y="302" text-anchor="middle" fill="#d5dde4" font-family="JetBrains Mono, monospace" font-size="11">Wi-Fi network</text>
+          <text x="690" y="318" text-anchor="middle" fill="#7a8a99" font-family="JetBrains Mono, monospace" font-size="9">home AP · best-effort</text>
+          <path d="M 620 305 L 540 300" stroke="#e0a458" stroke-width="1.2" fill="none" opacity="0.5" marker-end="url(#arr)"/>
+          <text x="560" y="330" fill="#e0a458" font-family="JetBrains Mono, monospace" font-size="9">carries all traffic</text>
+
+          <!-- Weather -->
+          <text x="400" y="430" text-anchor="middle" fill="#7a8a99" font-family="IBM Plex Serif, serif" font-style="italic" font-size="12">Weather · regulatory context · power grid (implicit)</text>
+        </svg>
+      </div>
+    </section>
+
+    <section id="s5">
+      <div class="section-header">
+        <span class="section-num">5.0</span>
+        <h2 class="section-title">Environmental Conditions</h2>
+      </div>
+
+      <p>The platform's iteration 1 operating envelope is bounded by what is physically reasonable for a hobbyist-grade tracked rover and sub-250 g drone. The operator is responsible for not operating outside this envelope.</p>
+
+      <div class="data-table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr><th>Condition</th><th>Nominal</th><th>Boundary</th><th>Rationale</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Ambient temperature</td><td>5 – 35 °C</td><td>0 – 40 °C</td><td>LiFePO4/LiPo charge range; Pi thermal margin.</td></tr>
+            <tr><td>Precipitation</td><td>Dry</td><td>No rain, no standing water</td><td>No IP-rated enclosures yet; electronics exposed.</td></tr>
+            <tr><td>Wind (drone)</td><td>&lt; 5 m/s</td><td>&lt; 8 m/s gust</td><td>Sub-250 g frame with nominal thrust-to-weight; wind budget thin.</td></tr>
+            <tr><td>Illumination (perception)</td><td>Daylight</td><td>&gt; 500 lux</td><td>YOLO on OAK-D Lite validated at daylight intensities; low-light performance degraded.</td></tr>
+            <tr><td>Terrain slope</td><td>&lt; 15 °</td><td>&lt; 20 ° (rover stops at 25 °)</td><td>Tracked rover stability; tilt limit triggers safety stop.</td></tr>
+            <tr><td>Yard size</td><td>0.1 – 0.5 acre</td><td>≤ 1 acre</td><td>Drone endurance (&lt; 5 min) and rover battery budget (≥ 2 hours teleop).</td></tr>
+            <tr><td>Wi-Fi coverage</td><td>&gt; −70 dBm at yard edge</td><td>Line-of-sight within 50 m of AP</td><td>Telemetry round-trip budget and soft-estop latency.</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="callout warning">
+        <div class="callout-label">Outside the envelope</div>
+        <p>Operating outside the boundary values listed above is explicitly unsupported in iteration 1. The platform does not refuse operation autonomously in all such cases — wind speed and illumination are not sensed directly. The operator's pre-flight / pre-drive check is the enforcement mechanism.</p>
+      </div>
+    </section>
+
+    <section id="s6">
+      <div class="section-header">
+        <span class="section-num">6.0</span>
+        <h2 class="section-title">Regulatory Context</h2>
+      </div>
+
+      <p>The platform does not directly implement regulatory compliance. The operator is responsible. Design choices that touch regulatory scope:</p>
+
+      <ul class="indent-list">
+        <li><strong>Drone weight.</strong> The airframe plus battery plus payload is designed to remain below 250 g all-up. This keeps recreational operation within the lower-burden recreational exemption in the FAA Part 107 framework in the United States. Commercial or autonomous-beyond-line-of-sight operation would require Part 107 certification and possibly LAANC airspace authorization.</li>
+        <li><strong>FCC radio certification.</strong> All radio-emitting subsystems (Wi-Fi, ELRS, telemetry) use off-the-shelf, pre-certified modules (XIAO ESP32-S3, BETAFPV LiteRadio, etc.). The platform does not introduce new RF emissions that would require certification.</li>
+        <li><strong>Privacy / video capture.</strong> The drone captures aerial imagery of the operator's own yard for mapping purposes. No cloud upload, no persistence beyond the mission. Capture of neighboring property is avoided by flight-path design (center-of-yard, bounded altitude). An explicit review of FAA §107 and state privacy statutes is an open action for iteration 2.</li>
+        <li><strong>UL / CE marking.</strong> Not in scope for iteration 1. Productization (iteration 4+) will require safety certification including motor/battery/blade assessments.</li>
+      </ul>
+    </section>
+
+    <section id="s7">
+      <div class="section-header">
+        <span class="section-num">7.0</span>
+        <h2 class="section-title">Assumptions</h2>
+      </div>
+
+      <p>The system assumes the following about the environment and the operator:</p>
+
+      <ul class="indent-list">
+        <li><strong>A1.</strong> The operator is a technically engaged adult who has read the README and understands the physical e-stop location.</li>
+        <li><strong>A2.</strong> The yard is on private property under the operator's control. No third-party consent is required for operation.</li>
+        <li><strong>A3.</strong> The operator's mobile device and the rover are on the same Wi-Fi network. Cross-network operation (e.g., cellular to home) is not supported.</li>
+        <li><strong>A4.</strong> GPS, if enabled, has sky view. Iteration 1 makes GPS optional; visual SLAM is the primary localization source.</li>
+        <li><strong>A5.</strong> Children and pets are known to the operator and supervised; the detection system is a safety backstop, not a substitute for supervision.</li>
+        <li><strong>A6.</strong> The operator checks battery state before deploying. Iteration 1 has no automatic return-to-charge.</li>
+      </ul>
+    </section>
+
+    <section id="s8">
+      <div class="section-header">
+        <span class="section-num">8.0</span>
+        <h2 class="section-title">Open Issues</h2>
+      </div>
+
+      <ol class="indent-list">
+        <li><strong>OPEN-01</strong> — Weather sensing. Iteration 1 relies on operator judgment for wind/rain. Evaluate adding a local weather-API poll or a barometric/humidity sensor in iteration 2.</li>
+        <li><strong>OPEN-02</strong> — Home-network resilience. If the operator's Wi-Fi is down, the mobile app cannot issue commands. The rover's fail-safe is to stop — but this also means remote e-stop is unavailable. Consider a direct-to-rover Wi-Fi AP mode.</li>
+        <li><strong>OPEN-03</strong> — Privacy review. Explicit review against state statutes regarding aerial imagery of neighboring property. Currently mitigated by flight-path design only.</li>
+        <li><strong>OPEN-04</strong> — The "children and pets supervised" assumption (A5) is load-bearing for the safety argument. Needs a more rigorous hazard analysis in iteration 3 as blade is introduced.</li>
+      </ol>
+    </section>
+
+    <section id="s9">
+      <div class="section-header">
+        <span class="section-num">9.0</span>
+        <h2 class="section-title">Revision History</h2>
+      </div>
+
+      <table class="revision-table">
+        <thead>
+          <tr><th style="width: 80px">Rev</th><th style="width: 120px">Date</th><th style="width: 140px">Author</th><th>Change</th></tr>
+        </thead>
+        <tbody>
+          <tr><td class="rev">0.1</td><td>2026-04-19</td><td>Louis Roig &amp; Claude Opus 4.7</td><td>Initial draft. Boundary, actors, environment, regulatory context, assumptions.</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <div class="footer-nav">
+      <a href="index.html">← Architecture Index</a>
+      <span>Next: <a href="layered-architecture.html">Layered Architecture →</a></span>
+    </div>
+
+  </main>
+</div>
+
+<script src="../shared/shared.js"></script>
+</body>
+</html>

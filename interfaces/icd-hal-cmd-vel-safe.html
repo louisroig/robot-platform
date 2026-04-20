@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ICD-HAL-002 · /hal/cmd_vel_safe</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=IBM+Plex+Sans:wght@300;400;500;600;700&family=IBM+Plex+Serif:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../shared/shared.css">
+</head>
+<body>
+
+<div class="doc-bar">
+  <a class="doc-bar-crumb" href="../index.html">← HOME</a>
+  <span class="doc-bar-sep">·</span>
+  <a class="doc-bar-crumb" href="index.html">INTERFACES</a>
+  <span class="doc-bar-sep">·</span>
+  <span class="doc-bar-id">ICD-HAL-002</span>
+  <span class="doc-bar-sep">·</span>
+  <span class="doc-bar-path">/hal/cmd_vel_safe</span>
+  <span class="doc-bar-sep">·</span>
+  <span style="color: var(--ink-dim)">REV 0.2</span>
+  <div class="doc-bar-status">
+    <span class="status-dot"></span>
+    <span>DRAFT</span>
+  </div>
+  <div class="doc-bar-tools">
+    <button class="tool-btn" onclick="window.print()">PRINT</button>
+    <button class="tool-btn" onclick="copyLink(event)">COPY LINK</button>
+  </div>
+</div>
+
+<div class="container">
+
+  <nav class="toc">
+    <div class="toc-title">CONTENTS</div>
+    <ul class="toc-list">
+      <li class="toc-item"><a class="toc-link" href="#s1"><span class="toc-num">1.0</span>Purpose</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s2"><span class="toc-num">2.0</span>Participants</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s3"><span class="toc-num">3.0</span>Message Definition</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s4"><span class="toc-num">4.0</span>Semantics</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s5"><span class="toc-num">5.0</span>Timing &amp; Rate</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s6"><span class="toc-num">6.0</span>QoS Profile</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s7"><span class="toc-num">7.0</span>Behavior Under Fault</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s8"><span class="toc-num">8.0</span>Requirements</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s9"><span class="toc-num">9.0</span>Verification</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s10"><span class="toc-num">10.0</span>Open Issues</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s11"><span class="toc-num">11.0</span>Revision History</a></li>
+    </ul>
+  </nav>
+
+  <main class="prose-serif">
+
+    <div class="doc-header">
+      <div class="doc-type interface">INTERFACE CONTROL DOCUMENT</div>
+      <h1 class="doc-title"><code>/hal/cmd_vel_safe</code></h1>
+      <p class="doc-subtitle">Safety-gated velocity command from <code>safety_monitor</code> to the motor driver. Sole authorized path for commanded motion of the ground unit.</p>
+
+      <div class="doc-meta">
+        <div class="meta-item"><div class="meta-label">Document ID</div><div class="meta-value">ICD-HAL-002</div></div>
+        <div class="meta-item"><div class="meta-label">Revision</div><div class="meta-value">0.2 · draft</div></div>
+        <div class="meta-item"><div class="meta-label">Owner</div><div class="meta-value">platform_safety</div></div>
+        <div class="meta-item"><div class="meta-label">Classification</div><div class="meta-value">Safety-critical</div></div>
+        <div class="meta-item"><div class="meta-label">Last Updated</div><div class="meta-value">2026-04-19</div></div>
+        <div class="meta-item"><div class="meta-label">Applies To</div><div class="meta-value">Iteration 1+</div></div>
+      </div>
+    </div>
+
+    <section id="s1">
+      <div class="section-header">
+        <span class="section-num">1.0</span>
+        <h2 class="section-title">Purpose</h2>
+      </div>
+
+      <p>The <code>/hal/cmd_vel_safe</code> topic is the single authorized channel by which velocity commands reach the ground unit's motor driver. It carries the output of the <a href="../nodes/srs-safety-monitor.html">safety_monitor</a> node — either a pass-through of the upstream commanded velocity (when the system is in a safe state) or a controlled zeroed value (when safety conditions are violated).</p>
+
+      <p>The topic exists to enforce a hard architectural invariant: no actuator motion occurs without explicit safety gating. Any subsystem capable of commanding the rover — teleoperation, autonomous waypoint navigation, return-to-dock behavior, emergency recovery — funnels through <code>safety_monitor</code>, which publishes to this topic. The motor driver subscribes only to this topic and has no other source of velocity commands.</p>
+
+      <div class="callout safety">
+        <div class="callout-label">Safety-Critical Interface</div>
+        <p>This interface is part of the Layer 2 safety architecture (see <a href="../architecture/layered-architecture.html">ARCH-002 §3</a>). The hardware e-stop relay and (in iteration 2+) the independent safety MCU provide redundant paths. <code>/hal/cmd_vel_safe</code> is the software-layer gate; it is not the sole safety mechanism. Failure of this interface alone shall not defeat the overall safety architecture.</p>
+      </div>
+    </section>
+
+    <section id="s2">
+      <div class="section-header">
+        <span class="section-num">2.0</span>
+        <h2 class="section-title">Participants</h2>
+      </div>
+
+      <p>Exactly one publisher and exactly one subscriber are authorized for this topic. Additional subscribers for monitoring purposes are permitted; additional publishers are explicitly prohibited.</p>
+
+      <div class="participants">
+
+        <div class="participant-card pub">
+          <div class="participant-role">Publisher</div>
+          <div class="participant-name">safety_monitor</div>
+          <div class="participant-detail">
+            <strong>Package</strong>
+            platform_safety
+            <strong>SRS</strong>
+            <a href="../nodes/srs-safety-monitor.html">SRS-SAF-001</a>
+            <strong>Responsibility</strong>
+            Computes safety state from aggregated inputs. Publishes either the upstream velocity (gated passthrough) or a zeroed Twist with controlled deceleration ramp.
+            <strong>Failure behavior</strong>
+            On node crash, systemd restarts the process within 2 s. During the gap, the motor driver's command timeout (see §7) halts motors independently.
+          </div>
+        </div>
+
+        <div class="participant-card sub">
+          <div class="participant-role">Subscriber</div>
+          <div class="participant-name">roboclaw_driver</div>
+          <div class="participant-detail">
+            <strong>Package</strong>
+            platform_hal
+            <strong>SRS</strong>
+            <a href="../nodes/srs-roboclaw-driver.html">SRS-HAL-001</a>
+            <strong>Responsibility</strong>
+            Converts incoming Twist to per-side track velocities via skid-steer kinematics. Sends serial commands to the RoboClaw motor controller.
+            <strong>Failure behavior</strong>
+            Implements <code>cmd_vel_timeout_ms</code> (default 500 ms). If no message received within timeout, commands zero velocity. Provides a second independent safety layer against communication loss.
+          </div>
+        </div>
+
+      </div>
+
+      <p class="subsection-title">Monitoring subscribers (non-normative)</p>
+      <p>The following nodes may subscribe for observation without participating in the control loop:</p>
+      <ul class="indent-list">
+        <li><code>rosbag2</code> — records all commands for post-mission analysis.</li>
+        <li><a href="../nodes/srs-telemetry-publisher.html">telemetry_publisher</a> — forwards current commanded velocity to the operator app.</li>
+        <li><a href="../nodes/srs-system-monitor.html">system_monitor</a> — tracks topic publication rate for health diagnostics; detects unauthorized additional publishers.</li>
+      </ul>
+    </section>
+
+    <section id="s3">
+      <div class="section-header">
+        <span class="section-num">3.0</span>
+        <h2 class="section-title">Message Definition</h2>
+      </div>
+
+      <p>Message type: <code>geometry_msgs/msg/Twist</code> (ROS 2 standard).</p>
+
+      <div class="data-table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th style="width: 22%">Field</th>
+              <th style="width: 18%">Type</th>
+              <th style="width: 12%">Unit</th>
+              <th>Semantics</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><span class="field-name">linear.x</span></td>
+              <td><span class="field-type">float64</span></td>
+              <td><span class="field-unit">m/s</span></td>
+              <td>Forward (+) / reverse (−) velocity of the rover. Range bounded by <code>max_linear_vel</code> parameter in motor driver (default ±0.7 m/s for iteration 1).</td>
+            </tr>
+            <tr>
+              <td><span class="field-name">linear.y</span></td>
+              <td><span class="field-type">float64</span></td>
+              <td><span class="field-unit">m/s</span></td>
+              <td>Lateral velocity. <strong>Unused</strong> for skid-steer platform. Receiving nodes shall ignore. Publishers shall send zero.</td>
+            </tr>
+            <tr>
+              <td><span class="field-name">linear.z</span></td>
+              <td><span class="field-type">float64</span></td>
+              <td><span class="field-unit">m/s</span></td>
+              <td>Vertical velocity. <strong>Unused</strong>. Publishers shall send zero.</td>
+            </tr>
+            <tr>
+              <td><span class="field-name">angular.x</span></td>
+              <td><span class="field-type">float64</span></td>
+              <td><span class="field-unit">rad/s</span></td>
+              <td>Roll rate. <strong>Unused</strong>. Publishers shall send zero.</td>
+            </tr>
+            <tr>
+              <td><span class="field-name">angular.y</span></td>
+              <td><span class="field-type">float64</span></td>
+              <td><span class="field-unit">rad/s</span></td>
+              <td>Pitch rate. <strong>Unused</strong>. Publishers shall send zero.</td>
+            </tr>
+            <tr>
+              <td><span class="field-name">angular.z</span></td>
+              <td><span class="field-type">float64</span></td>
+              <td><span class="field-unit">rad/s</span></td>
+              <td>Yaw rate. Counter-clockwise positive (right-hand rule, z-axis up). Range bounded by <code>max_angular_vel</code> parameter (default ±1.5 rad/s).</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="callout rationale">
+        <div class="callout-label">Rationale: why reuse geometry_msgs/Twist instead of a custom type?</div>
+        <p>A custom <code>SafeTwist</code> message type was considered and rejected. Reusing the standard Twist type maintains compatibility with off-the-shelf ROS 2 packages (Nav2, twist_mux, rviz visualization), simplifies adapter code, and keeps downstream reasoning identical to any other ROS 2 robot. Safety semantics are enforced by the topic name and the architectural rule that only <code>safety_monitor</code> may publish to it — not by carrying extra fields in the message.</p>
+      </div>
+    </section>
+
+    <section id="s4">
+      <div class="section-header">
+        <span class="section-num">4.0</span>
+        <h2 class="section-title">Semantics</h2>
+      </div>
+
+      <p>The value published on <code>/hal/cmd_vel_safe</code> at any instant is determined by the current safety state and the upstream commanded velocity on <a href="icd-hal-cmd-vel-raw.html"><code>/hal/cmd_vel_raw</code></a>.</p>
+
+      <div class="state-diagram">
+        <svg viewBox="0 0 800 260" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+              <path d="M 0 0 L 10 5 L 0 10 z" fill="#7a8a99"/>
+            </marker>
+          </defs>
+
+          <g>
+            <rect class="state-node ok" x="50" y="100" width="140" height="60" rx="4"/>
+            <text class="state-label" x="120" y="128">OK</text>
+            <text class="state-label sub" x="120" y="146">cmd_vel_safe = cmd_vel_raw</text>
+          </g>
+
+          <g>
+            <rect class="state-node warn" x="250" y="100" width="140" height="60" rx="4"/>
+            <text class="state-label" x="320" y="128">WARNING</text>
+            <text class="state-label sub" x="320" y="146">cmd_vel_safe = cmd_vel_raw</text>
+          </g>
+
+          <g>
+            <rect class="state-node estop" x="450" y="100" width="140" height="60" rx="4"/>
+            <text class="state-label" x="520" y="128">ESTOP</text>
+            <text class="state-label sub" x="520" y="146">cmd_vel_safe → 0 (ramped)</text>
+          </g>
+
+          <g>
+            <rect class="state-node critical" x="650" y="100" width="120" height="60" rx="4"/>
+            <text class="state-label" x="710" y="128">CRITICAL</text>
+            <text class="state-label sub" x="710" y="146">passthrough + alert</text>
+          </g>
+
+          <path class="transition-line" d="M 190 125 L 250 125" marker-end="url(#arrow)"/>
+          <path class="transition-line" d="M 250 142 L 190 142" marker-end="url(#arrow)"/>
+          <text class="transition-label" x="220" y="95">trigger</text>
+          <text class="transition-label" x="220" y="165">clear+dwell</text>
+
+          <path class="transition-line" d="M 390 125 L 450 125" marker-end="url(#arrow)"/>
+          <path class="transition-line" d="M 450 142 L 390 142" marker-end="url(#arrow)"/>
+          <text class="transition-label" x="420" y="95">trigger</text>
+          <text class="transition-label" x="420" y="165">reset</text>
+
+          <path class="transition-line" d="M 590 125 L 650 125" marker-end="url(#arrow)"/>
+          <text class="transition-label" x="620" y="118">batt</text>
+
+          <g transform="translate(50, 220)">
+            <text class="state-label sub" x="0" y="0" text-anchor="start" style="font-size:10px">Ramp to zero: v(t) = sign(v₀) · max(0, |v₀| − decel_rate_mps2 × (t − t_estop))</text>
+          </g>
+        </svg>
+      </div>
+
+      <p class="subsection-title">4.1 Gated passthrough (states OK, WARNING, CRITICAL)</p>
+      <p>The message published on <code>/hal/cmd_vel_safe</code> is byte-for-byte identical to the most recent message received on <code>/hal/cmd_vel_raw</code>, subject to:</p>
+      <ul class="indent-list">
+        <li>No upstream message received within <code>raw_cmd_stale_ms</code> (default 200 ms): publish zero Twist.</li>
+        <li>Upstream <code>linear.x</code> exceeds <code>max_linear_vel</code>: clip to maximum magnitude, preserve sign, log warning.</li>
+        <li>Upstream <code>angular.z</code> exceeds <code>max_angular_vel</code>: clip, preserve sign, log warning.</li>
+      </ul>
+
+      <p class="subsection-title">4.2 Ramped halt (state ESTOP)</p>
+      <p>Upon entry to ESTOP, <code>safety_monitor</code> begins publishing a decelerating velocity profile instead of the upstream command. The profile satisfies:</p>
+
+      <div class="code-block" data-lang="Semantics"><span class="comment">// Let v₀ = velocity at t_estop (time of ESTOP entry)</span>
+<span class="comment">// Let t = current time, a = decel_rate_mps2 (default 2.0)</span>
+
+linear.x(t)  <span class="keyword">=</span> sign(v₀) <span class="keyword">×</span> max(<span class="number">0</span>, |v₀| <span class="keyword">−</span> a <span class="keyword">×</span> (t <span class="keyword">−</span> t_estop))
+angular.z(t) <span class="keyword">=</span> sign(ω₀) <span class="keyword">×</span> max(<span class="number">0</span>, |ω₀| <span class="keyword">−</span> a <span class="keyword">×</span> (t <span class="keyword">−</span> t_estop))
+
+<span class="comment">// Once both reach zero, subsequent messages publish zero.</span></div>
+
+      <p>The ramp prevents mechanical shock to the chassis and reduces tip-over risk on inclines. Maximum ramp duration at default parameters is <code>0.7 / 2.0 = 0.35 seconds</code>, bounded by the maximum commanded velocity.</p>
+
+      <div class="callout warning">
+        <div class="callout-label">Exception to the Ramp</div>
+        <p>If ESTOP is triggered by a tilt condition exceeding <code>tilt_limit_deg</code>, the ramp is bypassed and zero Twist is published immediately. Rationale: a tilting rover is already unstable; the ramp's purpose is to prevent destabilization, not to preserve it.</p>
+      </div>
+    </section>
+
+    <section id="s5">
+      <div class="section-header">
+        <span class="section-num">5.0</span>
+        <h2 class="section-title">Timing &amp; Rate</h2>
+      </div>
+
+      <div class="data-table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Parameter</th>
+              <th>Value</th>
+              <th>Tolerance</th>
+              <th>Notes</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>Publication rate</td><td>50 Hz</td><td>±5 Hz</td><td>Synchronized to <code>safety_monitor</code> control timer.</td></tr>
+            <tr><td>Worst-case callback latency</td><td>≤ 20 ms</td><td>hard</td><td>From reception of <code>/hal/cmd_vel_raw</code> to publication of <code>/hal/cmd_vel_safe</code> under nominal load.</td></tr>
+            <tr><td>ESTOP reaction latency</td><td>≤ 50 ms</td><td>hard</td><td>From safety trigger arrival at <code>safety_monitor</code> to first zeroed message on topic.</td></tr>
+            <tr><td>Ramp completion (worst case)</td><td>≤ 350 ms</td><td>soft</td><td>At v₀ = v_max = 0.7 m/s, a = 2.0 m/s². Bounded by velocity limits.</td></tr>
+            <tr><td>Subscriber staleness timeout</td><td>500 ms</td><td>configurable</td><td>Motor driver halts motors if no message received within this window.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="s6">
+      <div class="section-header">
+        <span class="section-num">6.0</span>
+        <h2 class="section-title">QoS Profile</h2>
+      </div>
+
+      <p>The DDS Quality of Service profile for this topic is defined below. Both publisher and subscriber shall use compatible settings.</p>
+
+      <div class="data-table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr><th>Setting</th><th>Value</th><th>Rationale</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><span class="field-name">Reliability</span></td><td><span class="field-type">RELIABLE</span></td><td>Command loss is unacceptable; commands must arrive.</td></tr>
+            <tr><td><span class="field-name">Durability</span></td><td><span class="field-type">VOLATILE</span></td><td>Late-joining subscribers do not need historical commands.</td></tr>
+            <tr><td><span class="field-name">History</span></td><td><span class="field-type">KEEP_LAST</span></td><td>Only the most recent command is relevant.</td></tr>
+            <tr><td><span class="field-name">Depth</span></td><td><span class="field-type">1</span></td><td>Deliberately shallow — prevents queue buildup during transient slowdowns. Older commands would be stale and dangerous to apply.</td></tr>
+            <tr><td><span class="field-name">Deadline</span></td><td><span class="field-type">50 ms</span></td><td>Subscriber receives DEADLINE_MISSED event if publication exceeds this interval, triggering safe-halt.</td></tr>
+            <tr><td><span class="field-name">Lifespan</span></td><td><span class="field-type">100 ms</span></td><td>Messages older than 100 ms are discarded by the subscriber before delivery.</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="callout note">
+        <div class="callout-label">QoS Compatibility</div>
+        <p>ROS 2 QoS compatibility rules require the subscriber's requested profile to be equal or weaker than the publisher's offered profile. The settings above are symmetric; both participants use identical profiles. Monitoring subscribers (e.g., <code>rosbag2</code>) may use weaker profiles (e.g., BEST_EFFORT) without disrupting the primary subscription.</p>
+      </div>
+    </section>
+
+    <section id="s7">
+      <div class="section-header">
+        <span class="section-num">7.0</span>
+        <h2 class="section-title">Behavior Under Fault</h2>
+      </div>
+
+      <div class="data-table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr><th style="width: 28%">Fault</th><th style="width: 36%">System Response</th><th>Verification</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Publisher (safety_monitor) crash</td><td>systemd restarts process within 2 s. During gap, no messages published. Subscriber's 500 ms staleness timeout halts motors.</td><td>Integration test: <code>TEST-SAF-014</code></td></tr>
+            <tr><td>Subscriber (motor driver) crash</td><td>Messages continue publishing but are not received. Physical motor power cut by hardware e-stop remains effective. systemd restarts driver within 2 s.</td><td>Integration test: <code>TEST-HAL-008</code></td></tr>
+            <tr><td>Network / DDS disruption</td><td>Publisher receives publication failure. Subscriber's deadline timer expires, triggering safe-halt. System treats as equivalent to publisher crash.</td><td>Chaos test: <code>TEST-SAF-015</code></td></tr>
+            <tr><td>Malformed Twist (NaN, Inf)</td><td>Subscriber validates all six fields. Any non-finite value triggers safe-halt and diagnostic warning. Publisher shall never emit non-finite values.</td><td>Unit test: <a href="../verification/test-saf-011.html">TEST-HAL-011</a></td></tr>
+            <tr><td>Commanded velocity exceeds bounds</td><td>Subscriber clips to configured max and logs warning. Publisher should clip upstream; exceedance indicates a bug in the chain.</td><td>Unit test: <code>TEST-HAL-012</code></td></tr>
+            <tr><td>Unauthorized additional publisher</td><td>ROS 2 permits multiple publishers. This ICD prohibits them. A runtime check in <a href="../nodes/srs-system-monitor.html">system_monitor</a> detects multiple publishers and transitions safety to ESTOP with diagnostic.</td><td>Integration test: <a href="../verification/test-saf-016.html">TEST-SAF-016</a></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="s8">
+      <div class="section-header">
+        <span class="section-num">8.0</span>
+        <h2 class="section-title">Requirements</h2>
+      </div>
+
+      <p>Requirements levied on this interface. All are verifiable via the test cases listed in §9.</p>
+
+      <ul class="req-list">
+        <li class="req-item">
+          <div class="req-id">REQ-ICD-002-01</div>
+          <div>
+            <div class="req-text">The publisher shall emit messages on <code>/hal/cmd_vel_safe</code> at 50 Hz ± 5 Hz during all non-fault operation.</div>
+            <div class="req-trace">allocated to: <a href="../nodes/srs-safety-monitor.html">safety_monitor</a> · verified by: <a href="../verification/test-saf-011.html">TEST-SAF-010</a></div>
+          </div>
+        </li>
+        <li class="req-item">
+          <div class="req-id">REQ-ICD-002-02</div>
+          <div>
+            <div class="req-text">The publisher shall emit a zero-velocity Twist within 50 ms of safety state entering ESTOP, following the decel ramp defined in §4.2.</div>
+            <div class="req-trace">allocated to: <a href="../nodes/srs-safety-monitor.html">safety_monitor</a> · verified by: <a href="../verification/test-saf-011.html">TEST-SAF-011</a></div>
+          </div>
+        </li>
+        <li class="req-item">
+          <div class="req-id">REQ-ICD-002-03</div>
+          <div>
+            <div class="req-text">The subscriber shall halt motor commands within 500 ms of the last received message.</div>
+            <div class="req-trace">allocated to: <a href="../nodes/srs-roboclaw-driver.html">roboclaw_driver</a> · verified by: <a href="../verification/test-hal-009.html">TEST-HAL-009</a></div>
+          </div>
+        </li>
+        <li class="req-item">
+          <div class="req-id">REQ-ICD-002-04</div>
+          <div>
+            <div class="req-text">The subscriber shall reject messages containing non-finite values (NaN, ±Inf) in any Twist field and trigger safe-halt.</div>
+            <div class="req-trace">allocated to: <a href="../nodes/srs-roboclaw-driver.html">roboclaw_driver</a> · verified by: <code>TEST-HAL-011</code></div>
+          </div>
+        </li>
+        <li class="req-item">
+          <div class="req-id">REQ-ICD-002-05</div>
+          <div>
+            <div class="req-text">Only <code>safety_monitor</code> shall publish on <code>/hal/cmd_vel_safe</code>. The presence of additional publishers shall be detected at runtime and treated as a safety fault.</div>
+            <div class="req-trace">allocated to: <a href="../nodes/srs-system-monitor.html">system_monitor</a> · verified by: <a href="../verification/test-saf-016.html">TEST-SAF-016</a></div>
+          </div>
+        </li>
+        <li class="req-item">
+          <div class="req-id">REQ-ICD-002-06</div>
+          <div>
+            <div class="req-text">The QoS profile of both publisher and subscriber shall match §6. Deviations shall be caught by <code>TEST-QOS-003</code> at startup.</div>
+            <div class="req-trace">allocated to: safety_monitor, roboclaw_driver · verified by: <code>TEST-QOS-003</code></div>
+          </div>
+        </li>
+        <li class="req-item">
+          <div class="req-id">REQ-ICD-002-07</div>
+          <div>
+            <div class="req-text">Tilt-triggered ESTOP shall bypass the decel ramp and publish zero Twist immediately.</div>
+            <div class="req-trace">allocated to: <a href="../nodes/srs-safety-monitor.html">safety_monitor</a> · verified by: <code>TEST-SAF-018</code></div>
+          </div>
+        </li>
+      </ul>
+    </section>
+
+    <section id="s9">
+      <div class="section-header">
+        <span class="section-num">9.0</span>
+        <h2 class="section-title">Verification</h2>
+      </div>
+
+      <div class="data-table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr><th>Test ID</th><th>Method</th><th>Description</th><th>Verifies</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><a href="../verification/test-saf-011.html" class="field-name">TEST-SAF-010</a></td><td>Integration</td><td>Launch safety_monitor in isolated mode. Observe topic rate over 60 s.</td><td>REQ-ICD-002-01</td></tr>
+            <tr><td><a href="../verification/test-saf-011.html" class="field-name">TEST-SAF-011</a></td><td>Integration</td><td>Inject person detection via mock perception. Measure time from injection to first zero-velocity message.</td><td>REQ-ICD-002-02</td></tr>
+            <tr><td><a href="../verification/test-hal-009.html" class="field-name">TEST-HAL-009</a></td><td>Integration</td><td>Stop publishing to motor driver. Verify motor commands cease within 500 ms.</td><td>REQ-ICD-002-03</td></tr>
+            <tr><td><span class="field-name">TEST-HAL-011</span></td><td>Unit</td><td>Publish Twist containing NaN. Verify driver logs fault and halts motors.</td><td>REQ-ICD-002-04</td></tr>
+            <tr><td><a href="../verification/test-saf-016.html" class="field-name">TEST-SAF-016</a></td><td>Integration</td><td>Launch rogue publisher on topic. Verify system_monitor detects and triggers ESTOP.</td><td>REQ-ICD-002-05</td></tr>
+            <tr><td><span class="field-name">TEST-QOS-003</span></td><td>Unit</td><td>Inspect publisher and subscriber QoS at runtime. Validate against §6 table.</td><td>REQ-ICD-002-06</td></tr>
+            <tr><td><span class="field-name">TEST-SAF-018</span></td><td>Integration</td><td>Inject tilt &gt; tilt_limit_deg. Verify first post-trigger message is zero with no intermediate ramp values.</td><td>REQ-ICD-002-07</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="s10">
+      <div class="section-header">
+        <span class="section-num">10.0</span>
+        <h2 class="section-title">Open Issues</h2>
+      </div>
+
+      <ol class="indent-list">
+        <li><strong>OPEN-01</strong> — Decel rate (2.0 m/s²) is a first-pass estimate. Requires field validation on actual tracked chassis with varied surface conditions. May need per-surface calibration.</li>
+        <li><strong>OPEN-02</strong> — Unclear whether to include a header timestamp field. Standard Twist lacks one. Consider extending to <code>TwistStamped</code> if latency diagnostics become necessary. Evaluate at iteration 1 retrospective.</li>
+        <li><strong>OPEN-03</strong> — ROS 2 does not natively prevent multiple publishers on a topic. REQ-ICD-002-05 relies on runtime detection rather than architectural prevention. Consider DDS partitions or secure ROS 2 (SROS2) for hard enforcement if the safety case requires it.</li>
+        <li><strong>OPEN-04</strong> — Iteration 2 (with blade) introduces <code>/hal/tool_cmd_safe</code> as a peer to this topic. The interaction between velocity gating and tool gating needs definition. Some safety states may permit motion while prohibiting tool engagement (e.g., return-to-dock on low battery).</li>
+      </ol>
+    </section>
+
+    <section id="s11">
+      <div class="section-header">
+        <span class="section-num">11.0</span>
+        <h2 class="section-title">Revision History</h2>
+      </div>
+
+      <table class="revision-table">
+        <thead>
+          <tr><th style="width: 80px">Rev</th><th style="width: 120px">Date</th><th style="width: 140px">Author</th><th>Change</th></tr>
+        </thead>
+        <tbody>
+          <tr><td class="rev">0.1</td><td>2026-04-15</td><td>Louis Roig &amp; Claude Opus 4.7</td><td>Initial draft. Purpose, participants, message definition, basic semantics.</td></tr>
+          <tr><td class="rev">0.2</td><td>2026-04-18</td><td>Louis Roig &amp; Claude Opus 4.7</td><td>Added QoS profile (§6), fault behavior (§7), verification matrix (§9), revision history. Expanded semantics with ramp formalization. Added OPEN-04 for iteration 2 coordination.</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <div class="footer-nav">
+      <a href="index.html">← Interfaces Index</a>
+      <span>Related: <a href="icd-hal-cmd-vel-raw.html">/hal/cmd_vel_raw</a> · <a href="icd-safety-state.html">/safety/state</a></span>
+    </div>
+
+  </main>
+</div>
+
+<script src="../shared/shared.js"></script>
+</body>
+</html>

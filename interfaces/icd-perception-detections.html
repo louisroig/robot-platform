@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ICD-PER-001 · /perception/detections</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=IBM+Plex+Sans:wght@300;400;500;600;700&family=IBM+Plex+Serif:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../shared/shared.css">
+</head>
+<body>
+<div class="doc-bar">
+  <a class="doc-bar-crumb" href="../index.html">← HOME</a><span class="doc-bar-sep">·</span>
+  <a class="doc-bar-crumb" href="index.html">INTERFACES</a><span class="doc-bar-sep">·</span>
+  <span class="doc-bar-id">ICD-PER-001</span><span class="doc-bar-sep">·</span>
+  <span class="doc-bar-path">/perception/detections</span><span class="doc-bar-sep">·</span>
+  <span style="color: var(--ink-dim)">REV 0.1</span>
+  <div class="doc-bar-status"><span class="status-dot"></span><span>DRAFT</span></div>
+  <div class="doc-bar-tools">
+    <button class="tool-btn" onclick="window.print()">PRINT</button>
+    <button class="tool-btn" onclick="copyLink(event)">COPY LINK</button>
+  </div>
+</div>
+
+<div class="container">
+  <nav class="toc">
+    <div class="toc-title">CONTENTS</div>
+    <ul class="toc-list">
+      <li class="toc-item"><a class="toc-link" href="#s1"><span class="toc-num">1.0</span>Purpose</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s2"><span class="toc-num">2.0</span>Participants</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s3"><span class="toc-num">3.0</span>Message</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s4"><span class="toc-num">4.0</span>Semantics</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s5"><span class="toc-num">5.0</span>Timing</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s6"><span class="toc-num">6.0</span>QoS</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s7"><span class="toc-num">7.0</span>Fault</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s8"><span class="toc-num">8.0</span>Requirements</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s9"><span class="toc-num">9.0</span>Verification</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s10"><span class="toc-num">10.0</span>Open Issues</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s11"><span class="toc-num">11.0</span>Revision</a></li>
+    </ul>
+  </nav>
+
+  <main class="prose-serif">
+    <div class="doc-header">
+      <div class="doc-type interface">INTERFACE CONTROL DOCUMENT</div>
+      <h1 class="doc-title"><code>/perception/detections</code></h1>
+      <p class="doc-subtitle">Raw YOLO object detections from the OAK-D Lite. All classes, no filtering. Input to the living-thing filter.</p>
+      <div class="doc-meta">
+        <div class="meta-item"><div class="meta-label">Document ID</div><div class="meta-value">ICD-PER-001</div></div>
+        <div class="meta-item"><div class="meta-label">Revision</div><div class="meta-value">0.1 · draft</div></div>
+        <div class="meta-item"><div class="meta-label">Owner</div><div class="meta-value">platform_perception</div></div>
+        <div class="meta-item"><div class="meta-label">Classification</div><div class="meta-value">Sensing</div></div>
+        <div class="meta-item"><div class="meta-label">Last Updated</div><div class="meta-value">2026-04-19</div></div>
+      </div>
+    </div>
+
+    <section id="s1"><div class="section-header"><span class="section-num">1.0</span><h2 class="section-title">Purpose</h2></div>
+      <p>The <code>/perception/detections</code> topic carries all object detections from the YOLO model running on the OAK-D Lite's onboard NPU. Every detection regardless of class is published here. Downstream, the <a href="../nodes/srs-living-thing-filter.html">living_thing_filter</a> bifurcates the stream into <a href="icd-perception-people.html">/perception/people</a> and <a href="icd-perception-obstacles.html">/perception/obstacles</a>.</p>
+      <p>This topic is not directly consumed by safety. Safety listens to the filtered <code>/perception/people</code> topic; this raw stream exists for observability, debugging, and for any downstream consumer that wants custom filtering.</p>
+    </section>
+
+    <section id="s2"><div class="section-header"><span class="section-num">2.0</span><h2 class="section-title">Participants</h2></div>
+      <div class="participants">
+        <div class="participant-card pub"><div class="participant-role">Publisher</div><div class="participant-name">yolo_detector</div>
+          <div class="participant-detail"><strong>SRS</strong><a href="../nodes/srs-yolo-detector.html">SRS-PER-001</a><strong>Pipeline</strong>OAK-D Lite color stream → YOLO model on onboard NPU → driver-side post-processing → publish.</div></div>
+        <div class="participant-card sub"><div class="participant-role">Subscriber</div><div class="participant-name">living_thing_filter</div>
+          <div class="participant-detail"><strong>Role</strong>Splits into people vs. obstacles by COCO class.</div></div>
+      </div>
+      <p class="subsection-title">Monitoring subscribers</p>
+      <ul class="indent-list">
+        <li><code>rosbag2</code> — records for replay / dataset collection.</li>
+        <li>Debug RViz display (dev-mode only).</li>
+      </ul>
+    </section>
+
+    <section id="s3"><div class="section-header"><span class="section-num">3.0</span><h2 class="section-title">Message</h2></div>
+      <p>Type: <code>platform_msgs/msg/DetectionArray</code>. Array of <code>Detection</code> records:</p>
+      <div class="code-block" data-lang="IDL"><span class="comment"># platform_msgs/msg/Detection</span>
+std_msgs/Header header
+string class           <span class="comment"># COCO class label, e.g. "person", "dog", "chair"</span>
+float32 confidence     <span class="comment"># 0.0 to 1.0</span>
+geometry_msgs/Point position_rover_frame  <span class="comment"># 3D position in base_link frame, meters</span>
+float32 distance_m     <span class="comment"># Euclidean distance from rover origin</span>
+string source          <span class="comment"># "ground_camera" (iter 1) | "drone_camera" (future)</span></div>
+      <p>The <code>header.stamp</code> is the OAK-D capture time; <code>frame_id</code> is <code>oak_color_camera_frame</code>. Driver performs the coordinate transform from camera frame to <code>base_link</code> for <code>position_rover_frame</code>.</p>
+    </section>
+
+    <section id="s4"><div class="section-header"><span class="section-num">4.0</span><h2 class="section-title">Semantics</h2></div>
+      <p>Each array represents all detections from one inference cycle. An empty array means "no detections above confidence threshold," not "camera failed" (that would cause the topic to stop publishing).</p>
+      <p>Classes follow the COCO 80-class label set. The default confidence threshold is 0.4, tunable via <code>confidence_threshold</code> parameter. Below-threshold detections are dropped before publication to reduce bandwidth.</p>
+      <p>Position is derived from the stereo depth at the bounding-box centroid. Stereo baseline 7.5 cm (OAK-D Lite). Distance accuracy at 3 m is approximately ± 10 cm; at 10 m approximately ± 1 m.</p>
+    </section>
+
+    <section id="s5"><div class="section-header"><span class="section-num">5.0</span><h2 class="section-title">Timing</h2></div>
+      <p>Target 10 Hz; floor 8 Hz under nominal Pi load. Inference runs on OAK-D NPU; Pi overhead is post-processing and ROS serialization only.</p>
+    </section>
+
+    <section id="s6"><div class="section-header"><span class="section-num">6.0</span><h2 class="section-title">QoS</h2></div>
+      <p>RELIABLE, KEEP_LAST depth 2, VOLATILE. Small depth: an old detection is stale enough to be misleading; newest wins.</p>
+    </section>
+
+    <section id="s7"><div class="section-header"><span class="section-num">7.0</span><h2 class="section-title">Fault</h2></div>
+      <div class="data-table-wrap"><table class="data-table"><thead><tr><th>Fault</th><th>Response</th></tr></thead>
+        <tbody>
+          <tr><td>OAK-D USB disconnect</td><td>depthai_ros_driver reports error; yolo_detector sees no frames; stops publishing. Downstream staleness in safety path.</td></tr>
+          <tr><td>Inference rate &lt; 5 Hz</td><td>Diagnostic warning. CPU/thermal cause suspected; see dev SOP.</td></tr>
+          <tr><td>Model file missing</td><td>Node fails to start; systemd logs.</td></tr>
+          <tr><td>Wildly inaccurate depth</td><td>Not detected automatically. Manual calibration required after mechanical shock.</td></tr>
+        </tbody></table></div>
+    </section>
+
+    <section id="s8"><div class="section-header"><span class="section-num">8.0</span><h2 class="section-title">Requirements</h2></div>
+      <ul class="req-list">
+        <li class="req-item"><div class="req-id">REQ-ICD-PER-001-01</div><div><div class="req-text">Detection publish rate shall be ≥ 8 Hz under nominal Pi load.</div><div class="req-trace">verified by: <code>TEST-PER-001</code></div></div></li>
+        <li class="req-item"><div class="req-id">REQ-ICD-PER-001-02</div><div><div class="req-text">Detections below the configured confidence threshold shall not appear in the published array.</div><div class="req-trace">verified by: <code>TEST-PER-002</code></div></div></li>
+        <li class="req-item"><div class="req-id">REQ-ICD-PER-001-03</div><div><div class="req-text">Position shall be reported in the <code>base_link</code> frame regardless of camera orientation.</div><div class="req-trace">verified by: <code>TEST-PER-003</code></div></div></li>
+      </ul>
+    </section>
+
+    <section id="s9"><div class="section-header"><span class="section-num">9.0</span><h2 class="section-title">Verification</h2></div>
+      <div class="data-table-wrap"><table class="data-table"><thead><tr><th>Test</th><th>Method</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td><span class="field-name">TEST-PER-001</span></td><td>Integration</td><td>60 s rate monitor with a single person standing in view.</td></tr>
+          <tr><td><span class="field-name">TEST-PER-002</span></td><td>Unit</td><td>Feed synthetic detection with confidence below threshold; verify suppressed.</td></tr>
+          <tr><td><span class="field-name">TEST-PER-003</span></td><td>Bench</td><td>Rotate camera on gimbal; verify detected object's position in base_link remains consistent.</td></tr>
+        </tbody></table></div>
+    </section>
+
+    <section id="s10"><div class="section-header"><span class="section-num">10.0</span><h2 class="section-title">Open Issues</h2></div>
+      <ol class="indent-list">
+        <li><strong>OPEN-01</strong> — YOLO model version and weights TBD pending quantization testing on OAK-D NPU. Currently YOLOv8n 5-class subset.</li>
+        <li><strong>OPEN-02</strong> — Drone-camera detections (<code>source = "drone_camera"</code>) are a future capability; iteration 1 uses drone only for still capture.</li>
+        <li><strong>OPEN-03</strong> — Detection latency vs. rate is a tradeoff; current config favors latency (smaller model, higher rate) over higher-fidelity detection.</li>
+      </ol>
+    </section>
+
+    <section id="s11"><div class="section-header"><span class="section-num">11.0</span><h2 class="section-title">Revision</h2></div>
+      <table class="revision-table"><thead><tr><th>Rev</th><th>Date</th><th>Author</th><th>Change</th></tr></thead>
+        <tbody><tr><td class="rev">0.1</td><td>2026-04-19</td><td>Louis Roig &amp; Claude Opus 4.7</td><td>Initial draft.</td></tr></tbody></table>
+    </section>
+
+    <div class="footer-nav"><a href="index.html">← Interfaces Index</a><span>Next: <a href="icd-perception-people.html">/perception/people →</a></span></div>
+  </main>
+</div>
+<script src="../shared/shared.js"></script>
+</body></html>

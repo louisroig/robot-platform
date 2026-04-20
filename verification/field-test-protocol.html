@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VRF-FIELD · M6 Field Test Protocol</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=IBM+Plex+Sans:wght@300;400;500;600;700&family=IBM+Plex+Serif:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../shared/shared.css">
+</head>
+<body>
+<div class="doc-bar">
+  <a class="doc-bar-crumb" href="../index.html">← HOME</a><span class="doc-bar-sep">·</span>
+  <a class="doc-bar-crumb" href="index.html">VERIFICATION</a><span class="doc-bar-sep">·</span>
+  <span class="doc-bar-id">VRF-FIELD</span><span class="doc-bar-sep">·</span>
+  <span class="doc-bar-path">M6 Field Test</span><span class="doc-bar-sep">·</span>
+  <span style="color: var(--ink-dim)">REV 0.1</span>
+  <div class="doc-bar-status"><span class="status-dot"></span><span>DRAFT</span></div>
+  <div class="doc-bar-tools"><button class="tool-btn" onclick="window.print()">PRINT</button><button class="tool-btn" onclick="copyLink(event)">COPY LINK</button></div>
+</div>
+
+<div class="container">
+  <nav class="toc">
+    <div class="toc-title">CONTENTS</div>
+    <ul class="toc-list">
+      <li class="toc-item"><a class="toc-link" href="#s1"><span class="toc-num">1.0</span>Purpose</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s2"><span class="toc-num">2.0</span>Setup</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s3"><span class="toc-num">3.0</span>Safety Briefing</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s4"><span class="toc-num">4.0</span>Procedure</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s5"><span class="toc-num">5.0</span>Abort Conditions</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s6"><span class="toc-num">6.0</span>Pass Criteria</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s7"><span class="toc-num">7.0</span>Data Capture</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s8"><span class="toc-num">8.0</span>Post-Test</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s9"><span class="toc-num">9.0</span>Revision</a></li>
+    </ul>
+  </nav>
+
+  <main class="prose-serif">
+
+    <div class="doc-header">
+      <div class="doc-type test">TEST PROTOCOL · FIELD · M6 MILESTONE</div>
+      <h1 class="doc-title">M6 Field Test Protocol</h1>
+      <p class="doc-subtitle">End-to-end field procedure. The single pass/fail gate for iteration 1. Twelve steps from power-on to park-and-shutdown. Must pass on five consecutive days.</p>
+      <div class="doc-meta">
+        <div class="meta-item"><div class="meta-label">Document ID</div><div class="meta-value">VRF-FIELD</div></div>
+        <div class="meta-item"><div class="meta-label">Method</div><div class="meta-value">Field</div></div>
+        <div class="meta-item"><div class="meta-label">Automation</div><div class="meta-value">Manual (operator-driven)</div></div>
+        <div class="meta-item"><div class="meta-label">Milestone</div><div class="meta-value">M6 · iteration 1 close</div></div>
+      </div>
+    </div>
+
+    <section id="s1"><div class="section-header"><span class="section-num">1.0</span><h2 class="section-title">Purpose</h2></div>
+      <p>Verify the full iteration-1 mission path works in a real yard with real hardware under operator control. This is the acceptance gate for iteration 1.</p>
+      <p>Requirements verified (primary): <a href="../requirements/functional.html">FR-001 through FR-010</a>, <a href="../requirements/safety.html">SR-002 through SR-004</a>, <a href="../requirements/performance.html">PR-008</a>. Others indirectly exercised.</p>
+    </section>
+
+    <section id="s2"><div class="section-header"><span class="section-num">2.0</span><h2 class="section-title">Setup</h2></div>
+
+      <div class="subsection-title">Environment</div>
+      <ul class="indent-list">
+        <li>Clear daylight conditions. No precipitation. Wind &lt; 5 m/s at ground level.</li>
+        <li>Yard size 0.1 – 0.5 acre. Reasonably flat (slopes &lt; 15°).</li>
+        <li>No uninvolved persons in the test area (family, neighbors, or pets) during the drone flight phase.</li>
+      </ul>
+
+      <div class="subsection-title">Equipment</div>
+      <ul class="indent-list">
+        <li>Rover assembled per <a href="../architecture/deployment.html">ARCH-004</a>, batteries charged.</li>
+        <li>Drone assembled, batteries charged, ELRS transmitter paired and functional.</li>
+        <li>Operator's phone with the mobile app; paired with a valid bearer token.</li>
+        <li>One additional person present acting as observer / fallback operator for the drone's manual controller.</li>
+      </ul>
+
+      <div class="subsection-title">Pre-test checks</div>
+      <ul class="indent-list">
+        <li>Physical e-stop tested (press + release; motors confirmed cut then restored).</li>
+        <li>All systemd services reported green in <code>/rover/state</code>.</li>
+        <li>Safety state = OK.</li>
+        <li>Drone arms and disarms successfully on the bench.</li>
+      </ul>
+    </section>
+
+    <section id="s3"><div class="section-header"><span class="section-num">3.0</span><h2 class="section-title">Safety Briefing</h2></div>
+      <ul class="indent-list">
+        <li>The e-stop button is located <em>[location per platform build]</em>. If anything looks wrong, press it.</li>
+        <li>The drone has a manual-override transmitter. The observer holds it and can take over via mode switch at any time.</li>
+        <li>If the rover approaches a boundary and does not stop, press the e-stop.</li>
+        <li>If a person or pet enters the test area during flight, abort via app or drone controller.</li>
+      </ul>
+    </section>
+
+    <section id="s4"><div class="section-header"><span class="section-num">4.0</span><h2 class="section-title">Procedure</h2></div>
+
+      <ol class="indent-list">
+        <li><strong>Power up.</strong> Power on rover and drone. Wait 30 s for boot. Verify mobile app reports all systems green (safety = OK, battery ≥ 80%, all services reporting).</li>
+        <li><strong>Trigger mapping.</strong> Tap "Map My Yard" in app. The drone autonomously arms and takes off.</li>
+        <li><strong>Observe drone.</strong> The drone climbs to 30 m, hovers ~3 s while capturing, then descends and lands.</li>
+        <li><strong>Receive imagery.</strong> Within 60 s of landing, the aerial image appears in the app. [Verifies <a href="../requirements/performance.html">PR-008</a>.]</li>
+        <li><strong>Draw outer boundary.</strong> User draws the outer polygon by tapping vertices on the image. App displays the polygon overlay.</li>
+        <li><strong>Add no-mow zone.</strong> User draws a no-mow exclusion around a tree or a feature. User saves the zone.</li>
+        <li><strong>Switch to teleop.</strong> User activates the saved zone. Switches the app to teleop mode. Rover responds to virtual-joystick commands within 1 s. [Verifies <a href="../requirements/functional.html">FR-005</a>, <a href="../requirements/functional.html">FR-006</a>.]</li>
+        <li><strong>Approach boundary.</strong> Drive the rover toward the outer boundary. Verify: the app shows a "boundary near" warning as the rover enters WARNING state (distance &lt; 1 m).</li>
+        <li><strong>Cross boundary.</strong> Continue driving toward the boundary. Verify: the rover stops before crossing (or within 0.5 m if it crossed); app shows ESTOP with reason "geofence_violated". Reset via app after backing off. [Verifies <a href="../requirements/functional.html">FR-003</a>, <a href="../requirements/safety.html">SR-004</a>.]</li>
+        <li><strong>Step-in test.</strong> User steps in front of the rover during teleop. Verify: the rover stops within 500 ms; app reports ESTOP with reason "person_in_danger_radius". [Verifies <a href="../requirements/safety.html">SR-002</a>.]</li>
+        <li><strong>Clear and resume.</strong> User steps back. After dwell, safety auto-clears. Resume teleop. Park the rover.</li>
+        <li><strong>Shutdown.</strong> Press physical e-stop. Verify: rover is inert. Close mobile app. Power down. Rosbag file closed; system_monitor final report written.</li>
+      </ol>
+    </section>
+
+    <section id="s5"><div class="section-header"><span class="section-num">5.0</span><h2 class="section-title">Abort Conditions</h2></div>
+      <p>Abort the trial and record as FAIL if any of the following occur at any step:</p>
+      <ul class="indent-list">
+        <li>The rover crosses the boundary by more than 1 m.</li>
+        <li>The rover fails to stop within 1 s of a person stepping into its path.</li>
+        <li>The physical e-stop fails to cut motor power (the safety-argument ground truth must hold).</li>
+        <li>The drone fails a flight mode transition and the observer must take manual control.</li>
+        <li>Any unexpected service crash that is not automatically recovered within 5 s.</li>
+        <li>Mobile app disconnects and cannot reconnect within 30 s.</li>
+      </ul>
+    </section>
+
+    <section id="s6"><div class="section-header"><span class="section-num">6.0</span><h2 class="section-title">Pass Criteria</h2></div>
+      <p><strong>Pass:</strong> All 12 steps complete without operator intervention (beyond normal teleop), and no abort condition occurs. The trial is logged as PASS.</p>
+      <p><strong>Iteration 1 closure gate:</strong> 5 consecutive trial days PASS. A single abort resets the count.</p>
+    </section>
+
+    <section id="s7"><div class="section-header"><span class="section-num">7.0</span><h2 class="section-title">Data Capture</h2></div>
+      <ul class="indent-list">
+        <li>rosbag2 recording throughout (automatic; system_monitor confirms).</li>
+        <li>Operator journal: one page per trial with wall-clock timestamps of each step, observed behavior, any anomalies.</li>
+        <li>Photo / video of the test site with boundary drawn (for documentation).</li>
+        <li>Mobile-app session ID recorded for later cross-referencing with bag data.</li>
+      </ul>
+    </section>
+
+    <section id="s8"><div class="section-header"><span class="section-num">8.0</span><h2 class="section-title">Post-Test</h2></div>
+      <ul class="indent-list">
+        <li>Review rosbag for any error-level diagnostics; cross-check with journal.</li>
+        <li>If any requirement was observed to fail, open a bug with trace to the relevant <a href="../requirements/index.html">requirement</a>.</li>
+        <li>After 5 consecutive PASS days, publish a closure report and bump iteration status to "M6 complete."</li>
+      </ul>
+    </section>
+
+    <section id="s9"><div class="section-header"><span class="section-num">9.0</span><h2 class="section-title">Revision</h2></div>
+      <table class="revision-table"><thead><tr><th>Rev</th><th>Date</th><th>Author</th><th>Change</th></tr></thead><tbody><tr><td class="rev">0.1</td><td>2026-04-19</td><td>Louis Roig &amp; Claude Opus 4.7</td><td>Initial draft.</td></tr></tbody></table>
+    </section>
+
+    <div class="footer-nav"><a href="index.html">← Verification Index</a></div>
+  </main>
+</div>
+<script src="../shared/shared.js"></script>
+</body></html>

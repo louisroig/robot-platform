@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en" class="anatomy">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ANAT-YOL · yolo_detector anatomy</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=IBM+Plex+Sans:wght@300;400;500;600&family=IBM+Plex+Serif:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../shared/shared.css">
+</head>
+<body class="anatomy">
+
+<div class="anatomy-header">
+  <div class="anatomy-header-title">NODE ANATOMY · <strong>yolo_detector</strong></div>
+  <div class="anatomy-header-subtitle">onboard NPU perception pipeline</div>
+  <div class="anatomy-header-controls">
+    <a href="srs-yolo-detector.html" class="ctrl-btn">SRS</a>
+    <a href="index.html" class="ctrl-btn">← NODES</a>
+    <span class="zoom-indicator" id="zoomIndicator">100%</span>
+    <button class="ctrl-btn" id="zoomOut">−</button><button class="ctrl-btn" id="zoomIn">+</button>
+    <button class="ctrl-btn" id="resetView">RESET</button>
+    <button class="ctrl-btn" id="expandAll">EXPAND ALL</button><button class="ctrl-btn" id="collapseAll">COLLAPSE</button>
+  </div>
+</div>
+
+<div class="canvas-wrap" id="canvasWrap">
+  <div class="canvas" id="canvas">
+    <svg class="lines" id="lines" viewBox="0 0 3600 2400" preserveAspectRatio="none"></svg>
+
+    <div class="center-node" id="centerNode">
+      <div class="reticle tl"></div><div class="reticle tr"></div><div class="reticle bl"></div><div class="reticle br"></div>
+      <div class="center-label">ROS 2 NODE · PERCEPTION</div>
+      <div class="center-name">yolo_detector</div>
+      <div class="center-desc">Runs a quantized YOLO model on the OAK-D Lite's VPU. Fuses 2D detections with onboard stereo depth to yield 3D positions in the rover frame. The perceptual starting point of the safety chain.</div>
+      <div class="center-meta">
+        <span>LANG · <strong>Python</strong></span>
+        <span>PKG · <strong>platform_perception</strong></span>
+        <span>INFERENCE · <strong>OAK-D NPU</strong></span>
+        <span>CRITICAL · <strong>NO</strong> (but safety-feeding)</span>
+      </div>
+    </div>
+
+    <div class="branch hw" style="left: 60px; top: 200px;">
+      <div class="branch-header"><span class="branch-letter">A</span><span class="branch-title">OAK-D Lite Pipeline</span><span class="branch-count">vpu</span></div>
+
+      <div class="leaf"><div class="leaf-header"><span class="leaf-name">Color stream</span><span class="leaf-type">1280×720 · 15 fps</span></div>
+        <div class="leaf-desc">RGB input to the detection network.</div></div>
+      <div class="leaf"><div class="leaf-header"><span class="leaf-name">Stereo depth</span><span class="leaf-type">internal</span></div>
+        <div class="leaf-desc">Onboard stereo pair computes disparity; yolo_detector reads depth per-pixel for centroid depth.</div></div>
+      <div class="leaf"><div class="leaf-header"><span class="leaf-name">YOLOv8n blob</span><span class="leaf-type">6-class</span></div>
+        <div class="leaf-desc">Model loaded on VPU at startup. Classes: person, dog, cat, bicycle, chair, couch.</div>
+        <div class="leaf-details"><div class="leaf-details-inner">
+          <span class="label">Blob path</span>$HOME/.config/platform/yolov8n.blob
+          <span class="label">Precision</span>INT8 quantization
+        </div></div>
+      </div>
+      <div class="leaf"><div class="leaf-header"><span class="leaf-name">Spatial-detection node</span><span class="leaf-type">DepthAI API</span></div>
+        <div class="leaf-desc">Fuses 2D bbox with depth — returns 3D centroid in camera frame.</div></div>
+    </div>
+
+    <div class="branch internal" style="left: 1630px; top: 200px; width: 400px;">
+      <div class="branch-header"><span class="branch-letter">B</span><span class="branch-title">Internal Logic</span><span class="branch-count">pi-side</span></div>
+
+      <div class="leaf"><div class="leaf-header"><span class="leaf-name">Confidence filter</span><span class="leaf-type">threshold</span></div>
+        <div class="leaf-desc">Drop detections below <code>confidence_threshold</code> before publication.</div></div>
+
+      <div class="leaf"><div class="leaf-header"><span class="leaf-name">Frame transform</span><span class="leaf-type">static</span></div>
+        <div class="leaf-desc">Convert camera-frame position to base_link using <code>camera_frame_to_base_link</code>.</div>
+        <div class="leaf-details"><div class="leaf-details-inner">
+          <span class="label">Why not TF</span>Camera is statically mounted; TF lookup overhead avoided. Pose parameter re-read on config change.
+        </div></div>
+      </div>
+
+      <div class="leaf"><div class="leaf-header"><span class="leaf-name">Max-detection cap</span><span class="leaf-type">limit</span></div>
+        <div class="leaf-desc">Emit at most <code>max_detections</code> per array to bound serialization time.</div></div>
+
+      <div class="leaf"><div class="leaf-header"><span class="leaf-name">Latency budget</span><span class="leaf-type">real-time</span></div>
+        <div class="leaf-desc">Frame → published DetectionArray ≤ 150 ms p95.</div></div>
+    </div>
+
+    <div class="branch param" style="left: 3200px; top: 200px;">
+      <div class="branch-header"><span class="branch-letter">C</span><span class="branch-title">Parameters</span><span class="branch-count">config</span></div>
+
+      <div class="leaf"><div class="leaf-header"><span class="leaf-name">model_blob_path</span><span class="leaf-type">string</span></div></div>
+      <div class="leaf"><div class="leaf-header"><span class="leaf-name">confidence_threshold</span><span class="leaf-type">double · 0.4</span></div></div>
+      <div class="leaf"><div class="leaf-header"><span class="leaf-name">max_detections</span><span class="leaf-type">int · 20</span></div></div>
+      <div class="leaf"><div class="leaf-header"><span class="leaf-name">camera_frame_to_base_link</span><span class="leaf-type">double[6]</span></div></div>
+      <div class="leaf"><div class="leaf-header"><span class="leaf-name">classes_enabled</span><span class="leaf-type">string[]</span></div></div>
+    </div>
+
+    <div class="branch pub" style="left: 3200px; top: 1050px;">
+      <div class="branch-header"><span class="branch-letter">D</span><span class="branch-title">Publishers</span><span class="branch-count">1 topic</span></div>
+
+      <div class="leaf"><div class="leaf-header"><span class="leaf-name">/perception/detections</span><span class="leaf-type">≥ 8 Hz</span></div>
+        <div class="leaf-desc">Raw DetectionArray, all classes. Consumed by living_thing_filter.</div>
+        <div class="leaf-details"><div class="leaf-details-inner">
+          <span class="label">Per-detection</span>class, confidence, 3D position (base_link), distance, source="ground_camera"
+        </div></div>
+      </div>
+    </div>
+
+    <div class="branch safety" style="left: 60px; top: 1500px;">
+      <div class="branch-header"><span class="branch-letter">E</span><span class="branch-title">Lifecycle &amp; Diagnostics</span><span class="branch-count">runtime</span></div>
+
+      <div class="leaf"><div class="leaf-header"><span class="leaf-name">Model load check</span><span class="leaf-type">startup</span></div>
+        <div class="leaf-desc">Refuses to start if blob file missing or wrong version.</div></div>
+
+      <div class="leaf"><div class="leaf-header"><span class="leaf-name">USB reconnect</span><span class="leaf-type">fault</span></div>
+        <div class="leaf-desc">On DepthAI exception, exit; systemd restarts; pipeline rebuilt.</div></div>
+
+      <div class="leaf"><div class="leaf-header"><span class="leaf-name">Thermal diagnostic</span><span class="leaf-type">health</span></div>
+        <div class="leaf-desc">Monitor VPU temperature; emit warning above 80 °C.</div>
+        <div class="leaf-details"><div class="leaf-details-inner">
+          <span class="label">Consequence</span>Inference rate drops; downstream staleness may trigger ESTOP.
+        </div></div>
+      </div>
+
+      <div class="leaf"><div class="leaf-header"><span class="leaf-name">No-fabrication rule</span><span class="leaf-type">safety</span></div>
+        <div class="leaf-desc">Never emit last-known detections when camera is unavailable. Stop publishing instead.</div></div>
+    </div>
+
+  </div>
+</div>
+
+<div class="legend">
+  <div class="legend-title">CHANNEL TYPES</div>
+  <div class="legend-item"><span class="legend-swatch" style="background:var(--accent-hw)"></span>Hardware pipeline</div>
+  <div class="legend-item"><span class="legend-swatch" style="background:var(--accent-internal)"></span>Internal logic</div>
+  <div class="legend-item"><span class="legend-swatch" style="background:var(--accent-param)"></span>Parameters</div>
+  <div class="legend-item"><span class="legend-swatch" style="background:var(--accent-pub)"></span>Publishers</div>
+  <div class="legend-item"><span class="legend-swatch" style="background:var(--accent-safety)"></span>Lifecycle</div>
+</div>
+
+<div class="hint">Click any leaf to expand. Drag to pan, scroll to zoom.</div>
+<script src="../shared/shared.js"></script>
+</body></html>

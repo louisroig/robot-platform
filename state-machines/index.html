@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>State Machines · Ground-Air Platform Spec</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=IBM+Plex+Sans:wght@300;400;500;600;700&family=IBM+Plex+Serif:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../shared/shared.css">
+</head>
+<body>
+
+<div class="doc-bar">
+  <a class="doc-bar-crumb" href="../index.html">← HOME</a>
+  <span class="doc-bar-sep">·</span>
+  <span class="doc-bar-id">SM-INDEX</span>
+  <span class="doc-bar-sep">·</span>
+  <span class="doc-bar-path">/state-machines</span>
+  <span class="doc-bar-sep">·</span>
+  <span style="color: var(--ink-dim)">REV 0.1</span>
+  <div class="doc-bar-status">
+    <span class="status-dot"></span>
+    <span>DRAFT</span>
+  </div>
+  <div class="doc-bar-tools">
+    <button class="tool-btn" onclick="window.print()">PRINT</button>
+    <button class="tool-btn" onclick="copyLink(event)">COPY LINK</button>
+  </div>
+</div>
+
+<div class="container single">
+  <main>
+
+    <div class="doc-header">
+      <div class="doc-type state">§ 04 · BEHAVIOR</div>
+      <h1 class="doc-title">State Machines</h1>
+      <p class="doc-subtitle">Dedicated state-machine documents for the four nodes whose behavior cannot be captured by requirements alone. Each includes the diagram, the transition table, and the invariants.</p>
+
+      <div class="doc-meta">
+        <div class="meta-item"><div class="meta-label">Section ID</div><div class="meta-value">SM</div></div>
+        <div class="meta-item"><div class="meta-label">Documents</div><div class="meta-value">4</div></div>
+        <div class="meta-item"><div class="meta-label">Status</div><div class="meta-value">Draft · Rev 0.1</div></div>
+      </div>
+    </div>
+
+    <section>
+      <div class="section-header">
+        <span class="section-num">1.0</span>
+        <h2 class="section-title">Why these are separate</h2>
+      </div>
+
+      <p class="prose-serif" style="font-family: var(--font-serif); font-size: 15px;">
+        A node's SRS describes what the node does; a state machine document describes how its behavior unfolds over time.
+        Most nodes are stateless enough that their SRS suffices. The four documents here are for nodes where the state
+        transitions carry safety or mission meaning on their own — the machine is not an implementation detail but part
+        of the contract.
+      </p>
+
+      <p class="prose-serif" style="font-family: var(--font-serif); font-size: 15px;">
+        Each document pairs a drawn SVG diagram with a full transition table (source, target, trigger, guard, action), a
+        list of per-state invariants, and timing constraints. Diagrams are hand-authored SVG — they are readable without
+        opening Cameo.
+      </p>
+    </section>
+
+    <section>
+      <div class="section-header">
+        <span class="section-num">2.0</span>
+        <h2 class="section-title">State machine catalog</h2>
+      </div>
+
+      <ul class="doc-list">
+        <li data-filterable="SM-SAF-001 safety monitor ok warning estop critical">
+          <span class="doc-id">SM-SAF-001</span>
+          <div>
+            <a class="doc-link" href="sm-safety-monitor.html">safety_monitor — OK / WARNING / ESTOP / CRITICAL</a>
+            <div class="doc-oneliner">Four-state machine gating all motion. The most safety-load-bearing document in the corpus.</div>
+          </div>
+          <span class="doc-status">DRAFT</span>
+        </li>
+        <li data-filterable="SM-MIS-001 mission executor idle mapping mowing paused returning">
+          <span class="doc-id">SM-MIS-001</span>
+          <div>
+            <a class="doc-link" href="sm-mission-executor.html">mission_executor — IDLE / MAPPING / MOWING / PAUSED / RETURNING</a>
+            <div class="doc-oneliner">High-level mission state: what the rover is doing at any moment. Iteration 1 is largely IDLE / TELEOP.</div>
+          </div>
+          <span class="doc-status">DRAFT</span>
+        </li>
+        <li data-filterable="SM-DRN-001 drone mission disarmed armed takeoff capturing descending landed">
+          <span class="doc-id">SM-DRN-001</span>
+          <div>
+            <a class="doc-link" href="sm-drone-mission.html">drone_mission — DISARMED / ARMED / TAKEOFF / CAPTURING / LANDING</a>
+            <div class="doc-oneliner">Drone mapping mission state. Also enforces abort sequencing and the hard landing rule.</div>
+          </div>
+          <span class="doc-status">DRAFT</span>
+        </li>
+        <li data-filterable="SM-GEO-001 geofence inside warning outside">
+          <span class="doc-id">SM-GEO-001</span>
+          <div>
+            <a class="doc-link" href="sm-geofence-enforcer.html">geofence_enforcer — INSIDE / WARNING / OUTSIDE</a>
+            <div class="doc-oneliner">Three-state machine on rover position relative to active zone.</div>
+          </div>
+          <span class="doc-status">DRAFT</span>
+        </li>
+      </ul>
+    </section>
+
+    <div class="footer-nav">
+      <a href="../interfaces/index.html">← Interfaces</a>
+      <span>Next: <a href="../requirements/index.html">Requirements →</a></span>
+    </div>
+
+  </main>
+</div>
+
+<script src="../shared/shared.js"></script>
+</body>
+</html>

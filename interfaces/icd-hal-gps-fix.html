@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ICD-HAL-008 · /hal/gps/fix</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=IBM+Plex+Sans:wght@300;400;500;600;700&family=IBM+Plex+Serif:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../shared/shared.css">
+</head>
+<body>
+<div class="doc-bar">
+  <a class="doc-bar-crumb" href="../index.html">← HOME</a><span class="doc-bar-sep">·</span>
+  <a class="doc-bar-crumb" href="index.html">INTERFACES</a><span class="doc-bar-sep">·</span>
+  <span class="doc-bar-id">ICD-HAL-008</span><span class="doc-bar-sep">·</span>
+  <span class="doc-bar-path">/hal/gps/fix</span><span class="doc-bar-sep">·</span>
+  <span style="color: var(--ink-dim)">REV 0.1</span>
+  <div class="doc-bar-status"><span class="status-dot"></span><span>DRAFT</span></div>
+  <div class="doc-bar-tools">
+    <button class="tool-btn" onclick="window.print()">PRINT</button>
+    <button class="tool-btn" onclick="copyLink(event)">COPY LINK</button>
+  </div>
+</div>
+
+<div class="container">
+  <nav class="toc">
+    <div class="toc-title">CONTENTS</div>
+    <ul class="toc-list">
+      <li class="toc-item"><a class="toc-link" href="#s1"><span class="toc-num">1.0</span>Purpose</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s2"><span class="toc-num">2.0</span>Participants</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s3"><span class="toc-num">3.0</span>Message</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s4"><span class="toc-num">4.0</span>Semantics</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s5"><span class="toc-num">5.0</span>Timing</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s6"><span class="toc-num">6.0</span>QoS</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s7"><span class="toc-num">7.0</span>Fault</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s8"><span class="toc-num">8.0</span>Requirements</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s9"><span class="toc-num">9.0</span>Verification</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s10"><span class="toc-num">10.0</span>Open Issues</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s11"><span class="toc-num">11.0</span>Revision</a></li>
+    </ul>
+  </nav>
+
+  <main class="prose-serif">
+    <div class="doc-header">
+      <div class="doc-type interface">INTERFACE CONTROL DOCUMENT · OPTIONAL</div>
+      <h1 class="doc-title"><code>/hal/gps/fix</code></h1>
+      <p class="doc-subtitle">GPS position fix from the HGLRC M80 receiver. Optional input for the global EKF in iteration 1; promoted to required in iteration 2 if RTK is integrated.</p>
+      <div class="doc-meta">
+        <div class="meta-item"><div class="meta-label">Document ID</div><div class="meta-value">ICD-HAL-008</div></div>
+        <div class="meta-item"><div class="meta-label">Revision</div><div class="meta-value">0.1 · draft</div></div>
+        <div class="meta-item"><div class="meta-label">Owner</div><div class="meta-value">platform_hal</div></div>
+        <div class="meta-item"><div class="meta-label">Classification</div><div class="meta-value">Sensing · optional</div></div>
+        <div class="meta-item"><div class="meta-label">Last Updated</div><div class="meta-value">2026-04-19</div></div>
+      </div>
+    </div>
+
+    <section id="s1"><div class="section-header"><span class="section-num">1.0</span><h2 class="section-title">Purpose</h2></div>
+      <p>Provides absolute (Earth-frame) position from the GPS receiver. In iteration 1, this is optional — the global EKF fuses SLAM pose with local EKF; GPS adds drift correction when available. For yards fully visible to the sky, GPS is beneficial; for tree-canopy yards, disable it.</p>
+      <p>Not used for safety. Not used for geofencing (geofence runs in fused-pose frame).</p>
+    </section>
+
+    <section id="s2"><div class="section-header"><span class="section-num">2.0</span><h2 class="section-title">Participants</h2></div>
+      <div class="participants">
+        <div class="participant-card pub"><div class="participant-role">Publisher</div><div class="participant-name">gps_driver (u-blox ROS 2)</div>
+          <div class="participant-detail"><strong>Package</strong>ublox_gnss (off-the-shelf)<strong>Hardware</strong>HGLRC M80 (u-blox UBX protocol) on <code>/dev/ttyAMA0</code></div></div>
+        <div class="participant-card sub"><div class="participant-role">Subscriber</div><div class="participant-name">ekf_global (optional)</div>
+          <div class="participant-detail"><strong>Use</strong>Fuses with local EKF + SLAM when enabled via launch parameter <code>use_gps: true</code>.</div></div>
+      </div>
+    </section>
+
+    <section id="s3"><div class="section-header"><span class="section-num">3.0</span><h2 class="section-title">Message</h2></div>
+      <p>Type: <code>sensor_msgs/msg/NavSatFix</code>. Standard fields populated:</p>
+      <div class="data-table-wrap"><table class="data-table"><thead><tr><th>Field</th><th>Notes</th></tr></thead><tbody>
+        <tr><td><span class="field-name">status.status</span></td><td>−1 NO_FIX, 0 FIX, 1 SBAS_FIX.</td></tr>
+        <tr><td><span class="field-name">status.service</span></td><td>SERVICE_GPS (1) primarily; GLONASS also enabled on M80.</td></tr>
+        <tr><td><span class="field-name">latitude, longitude</span></td><td>WGS84 degrees.</td></tr>
+        <tr><td><span class="field-name">altitude</span></td><td>WGS84 meters.</td></tr>
+        <tr><td><span class="field-name">position_covariance</span></td><td>3×3 diagonal; variance from DOP * calibration factor.</td></tr>
+        <tr><td><span class="field-name">position_covariance_type</span></td><td>COVARIANCE_TYPE_DIAGONAL_KNOWN.</td></tr>
+      </tbody></table></div>
+    </section>
+
+    <section id="s4"><div class="section-header"><span class="section-num">4.0</span><h2 class="section-title">Semantics</h2></div>
+      <p>When <code>status.status &lt; 0</code>, the message is still published but covariance is set to infinity. Downstream consumers (EKF) reject such messages by covariance check.</p>
+      <p>Typical accuracy in a residential yard with clear sky: ± 2.5 m CEP on standalone GPS; ± 1 m with SBAS. Iteration 2 targets RTK (± 2 cm) when adding a base station.</p>
+    </section>
+
+    <section id="s5"><div class="section-header"><span class="section-num">5.0</span><h2 class="section-title">Timing</h2></div>
+      <p>5 Hz when fixed; 1 Hz (with status.status = NO_FIX) when searching. Driver bridges u-blox UBX at 9600 baud.</p>
+    </section>
+
+    <section id="s6"><div class="section-header"><span class="section-num">6.0</span><h2 class="section-title">QoS</h2></div>
+      <p>RELIABLE, KEEP_LAST depth 5, VOLATILE.</p>
+    </section>
+
+    <section id="s7"><div class="section-header"><span class="section-num">7.0</span><h2 class="section-title">Fault</h2></div>
+      <div class="data-table-wrap"><table class="data-table"><thead><tr><th>Fault</th><th>Response</th></tr></thead>
+        <tbody>
+          <tr><td>No fix</td><td>Messages published with <code>status = −1</code>, infinite covariance. EKF rejects.</td></tr>
+          <tr><td>UART silent</td><td>Driver reports on <code>/diagnostics</code>; stops publishing.</td></tr>
+          <tr><td>Jamming / spoofing</td><td>Not detected in iteration 1. Consider u-blox jamming detection in iteration 2.</td></tr>
+        </tbody></table></div>
+    </section>
+
+    <section id="s8"><div class="section-header"><span class="section-num">8.0</span><h2 class="section-title">Requirements</h2></div>
+      <ul class="req-list">
+        <li class="req-item"><div class="req-id">REQ-ICD-008-01</div><div><div class="req-text">When use_gps is enabled and a fix is available, publication rate shall be 5 Hz ± 1 Hz.</div><div class="req-trace">verified by: <code>TEST-HAL-050</code></div></div></li>
+        <li class="req-item"><div class="req-id">REQ-ICD-008-02</div><div><div class="req-text">No-fix messages shall be emitted with infinite covariance so downstream consumers can reject without additional checks.</div><div class="req-trace">verified by: <code>TEST-HAL-051</code></div></div></li>
+      </ul>
+    </section>
+
+    <section id="s9"><div class="section-header"><span class="section-num">9.0</span><h2 class="section-title">Verification</h2></div>
+      <div class="data-table-wrap"><table class="data-table"><thead><tr><th>Test</th><th>Method</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td><span class="field-name">TEST-HAL-050</span></td><td>Field</td><td>Open-sky 5-minute observation; verify rate and accuracy.</td></tr>
+          <tr><td><span class="field-name">TEST-HAL-051</span></td><td>Bench</td><td>Cover antenna; verify no-fix messages carry infinite covariance.</td></tr>
+        </tbody></table></div>
+    </section>
+
+    <section id="s10"><div class="section-header"><span class="section-num">10.0</span><h2 class="section-title">Open Issues</h2></div>
+      <ol class="indent-list">
+        <li><strong>OPEN-01</strong> — RTK integration (iteration 2+). Requires base station and correction stream.</li>
+        <li><strong>OPEN-02</strong> — Antenna placement on a small tracked chassis; likely on a mast extending above the top plate to avoid multipath.</li>
+      </ol>
+    </section>
+
+    <section id="s11"><div class="section-header"><span class="section-num">11.0</span><h2 class="section-title">Revision</h2></div>
+      <table class="revision-table"><thead><tr><th>Rev</th><th>Date</th><th>Author</th><th>Change</th></tr></thead>
+        <tbody><tr><td class="rev">0.1</td><td>2026-04-19</td><td>Louis Roig &amp; Claude Opus 4.7</td><td>Initial draft. Optional in iteration 1.</td></tr></tbody></table>
+    </section>
+
+    <div class="footer-nav"><a href="index.html">← Interfaces Index</a><span>Related: <a href="icd-localization-pose.html">/localization/pose</a></span></div>
+  </main>
+</div>
+<script src="../shared/shared.js"></script>
+</body></html>

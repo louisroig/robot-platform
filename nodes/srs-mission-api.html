@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SRS-API-001 · mission_api</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=IBM+Plex+Sans:wght@300;400;500;600;700&family=IBM+Plex+Serif:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../shared/shared.css">
+</head>
+<body>
+<div class="doc-bar">
+  <a class="doc-bar-crumb" href="../index.html">← HOME</a><span class="doc-bar-sep">·</span>
+  <a class="doc-bar-crumb" href="index.html">NODES</a><span class="doc-bar-sep">·</span>
+  <span class="doc-bar-id">SRS-API-001</span><span class="doc-bar-sep">·</span>
+  <span class="doc-bar-path">mission_api</span><span class="doc-bar-sep">·</span>
+  <span style="color: var(--ink-dim)">REV 0.1</span>
+  <div class="doc-bar-status"><span class="status-dot"></span><span>DRAFT</span></div>
+  <div class="doc-bar-tools"><button class="tool-btn" onclick="window.print()">PRINT</button><button class="tool-btn" onclick="copyLink(event)">COPY LINK</button></div>
+</div>
+<div class="container">
+  <nav class="toc">
+    <div class="toc-title">CONTENTS</div>
+    <ul class="toc-list">
+      <li class="toc-item"><a class="toc-link" href="#s1"><span class="toc-num">1.0</span>Purpose</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s2"><span class="toc-num">2.0</span>Scope</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s3"><span class="toc-num">3.0</span>Interfaces</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s4"><span class="toc-num">4.0</span>Functional</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s5"><span class="toc-num">5.0</span>Performance</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s6"><span class="toc-num">6.0</span>Safety</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s7"><span class="toc-num">7.0</span>Security</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s8"><span class="toc-num">8.0</span>Dependencies</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s9"><span class="toc-num">9.0</span>Config</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s10"><span class="toc-num">10.0</span>Failure</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s11"><span class="toc-num">11.0</span>Verification</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s12"><span class="toc-num">12.0</span>Open Issues</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s13"><span class="toc-num">13.0</span>Revision</a></li>
+    </ul>
+  </nav>
+  <main class="prose-serif">
+    <div class="doc-header">
+      <div class="doc-type">SOFTWARE REQUIREMENTS SPECIFICATION · API</div>
+      <h1 class="doc-title">mission_api</h1>
+      <p class="doc-subtitle">FastAPI service bridging the mobile app to ROS 2. Hosts the REST surface and owns the bearer-token store.</p>
+      <div class="doc-meta">
+        <div class="meta-item"><div class="meta-label">Document ID</div><div class="meta-value">SRS-API-001</div></div>
+        <div class="meta-item"><div class="meta-label">Revision</div><div class="meta-value">0.1 · draft</div></div>
+        <div class="meta-item"><div class="meta-label">Owner</div><div class="meta-value">platform_api</div></div>
+        <div class="meta-item"><div class="meta-label">Language</div><div class="meta-value">Python (FastAPI + rclpy)</div></div>
+        <div class="meta-item"><div class="meta-label">Classification</div><div class="meta-value">External API</div></div>
+        <div class="meta-item"><div class="meta-label">Last Updated</div><div class="meta-value">2026-04-19</div></div>
+      </div>
+    </div>
+
+    <section id="s1"><div class="section-header"><span class="section-num">1.0</span><h2 class="section-title">Purpose</h2></div>
+      <p>Serves the REST surface defined in <a href="../interfaces/icd-mission-rest-api.html">ICD-API-001</a>. Translates between HTTP requests and ROS 2 topics/services/actions. Enforces authentication. Validates incoming data (polygon well-formedness, Twist bounds).</p>
+    </section>
+
+    <section id="s2"><div class="section-header"><span class="section-num">2.0</span><h2 class="section-title">Scope</h2></div>
+      <p>In: HTTP handlers, request validation, token store, ROS 2 bridge layer, response shaping. Out: WebSocket telemetry (lives in <a href="srs-telemetry-publisher.html">telemetry_publisher</a>); mobile app UI.</p>
+    </section>
+
+    <section id="s3"><div class="section-header"><span class="section-num">3.0</span><h2 class="section-title">Interfaces</h2></div>
+      <p>External: HTTPS on TCP 8443. Full endpoint list: <a href="../interfaces/icd-mission-rest-api.html">ICD-API-001</a>. Internal ROS 2: subscribes to <a href="../interfaces/icd-safety-state.html">/safety/state</a>, <a href="../interfaces/icd-localization-pose.html">/localization/pose</a>, <a href="../interfaces/icd-hal-battery.html">/hal/battery</a>; publishes <code>/hal/cmd_vel_teleop</code>; calls <a href="../interfaces/icd-safety-reset-srv.html">/safety/reset</a>, <code>/mapping/load_zone</code>; invokes <a href="../interfaces/icd-mapping-mission-action.html">/mapping/run_mission</a> action.</p>
+    </section>
+
+    <section id="s4"><div class="section-header"><span class="section-num">4.0</span><h2 class="section-title">Functional</h2></div>
+      <ul class="req-list">
+        <li class="req-item"><div class="req-id">SRS-API-001-F01</div><div><div class="req-text">Expose every endpoint defined in <a href="../interfaces/icd-mission-rest-api.html">ICD-API-001 §3</a> with the documented request/response contract.</div><div class="req-trace">verified by: <code>TEST-API-001</code>..<code>TEST-API-003</code></div></div></li>
+        <li class="req-item"><div class="req-id">SRS-API-001-F02</div><div><div class="req-text">Reject any request without a valid bearer token with HTTP 401 before any side effect.</div><div class="req-trace">verified by: <code>TEST-API-001</code></div></div></li>
+        <li class="req-item"><div class="req-id">SRS-API-001-F03</div><div><div class="req-text">Before forwarding teleop commands to ROS, verify safety state = OK; return 503 otherwise.</div><div class="req-trace">verified by: <code>TEST-API-003</code></div></div></li>
+      </ul>
+    </section>
+
+    <section id="s5"><div class="section-header"><span class="section-num">5.0</span><h2 class="section-title">Performance</h2></div>
+      <p>p95 latency: <code>/rover/state</code> ≤ 50 ms; <code>/rover/teleop</code> ≤ 30 ms; <code>/missions/map</code> ≤ 500 ms to accept; image fetch dominated by network.</p>
+    </section>
+
+    <section id="s6"><div class="section-header"><span class="section-num">6.0</span><h2 class="section-title">Safety</h2></div>
+      <ul class="req-list">
+        <li class="req-item"><div class="req-id">SRS-API-001-S01</div><div><div class="req-text">A successful /rover/estop call shall result in safety_monitor observing the request within 200 ms.</div><div class="req-trace">verified by: <code>TEST-API-002</code></div></div></li>
+      </ul>
+    </section>
+
+    <section id="s7"><div class="section-header"><span class="section-num">7.0</span><h2 class="section-title">Security</h2></div>
+      <ul class="indent-list">
+        <li>TLS 1.2+ required on all endpoints.</li>
+        <li>Bearer tokens stored hashed (Argon2id).</li>
+        <li>Per-request audit trail written to <code>/var/log/platform/api-access.log</code>.</li>
+      </ul>
+    </section>
+
+    <section id="s8"><div class="section-header"><span class="section-num">8.0</span><h2 class="section-title">Dependencies</h2></div>
+      <p>FastAPI, uvicorn, rclpy, platform_msgs, passlib (Argon2), pydantic.</p>
+    </section>
+
+    <section id="s9"><div class="section-header"><span class="section-num">9.0</span><h2 class="section-title">Configuration</h2></div>
+      <div class="data-table-wrap"><table class="data-table"><thead><tr><th>Parameter</th><th>Default</th></tr></thead><tbody>
+        <tr><td><span class="field-name">listen_addr</span></td><td>0.0.0.0:8443</td></tr>
+        <tr><td><span class="field-name">tls_cert_path</span></td><td>/etc/platform/tls/fullchain.pem</td></tr>
+        <tr><td><span class="field-name">tls_key_path</span></td><td>/etc/platform/tls/privkey.pem</td></tr>
+        <tr><td><span class="field-name">token_store</span></td><td>/var/lib/platform/tokens.db</td></tr>
+        <tr><td><span class="field-name">image_dir</span></td><td>/var/lib/platform/images</td></tr>
+      </tbody></table></div>
+    </section>
+
+    <section id="s10"><div class="section-header"><span class="section-num">10.0</span><h2 class="section-title">Failure Modes</h2></div>
+      <p>ROS 2 node unavailable: endpoints return 503 with diagnostic message. TLS cert missing: refuse to start. Token store corrupt: refuse to start (log instructions).</p>
+    </section>
+
+    <section id="s11"><div class="section-header"><span class="section-num">11.0</span><h2 class="section-title">Verification</h2></div>
+      <p>TEST-API-001 / 002 / 003 (see <a href="../interfaces/icd-mission-rest-api.html">ICD-API-001 §9</a>). TEST-API-004 (token store), TEST-API-005 (TLS enforcement).</p>
+    </section>
+
+    <section id="s12"><div class="section-header"><span class="section-num">12.0</span><h2 class="section-title">Open Issues</h2></div>
+      <ol class="indent-list">
+        <li><strong>OPEN-01</strong> — Teleop transport: REST is inefficient. Consider dedicated WS channel in iteration 2.</li>
+        <li><strong>OPEN-02</strong> — Self-service token enrollment (QR-code pairing). Iteration 2 UX.</li>
+        <li><strong>OPEN-03</strong> — Rate-limiting (e.g., per-token).</li>
+      </ol>
+    </section>
+
+    <section id="s13"><div class="section-header"><span class="section-num">13.0</span><h2 class="section-title">Revision</h2></div>
+      <table class="revision-table"><thead><tr><th>Rev</th><th>Date</th><th>Author</th><th>Change</th></tr></thead><tbody><tr><td class="rev">0.1</td><td>2026-04-19</td><td>Louis Roig &amp; Claude Opus 4.7</td><td>Initial draft.</td></tr></tbody></table>
+    </section>
+
+    <div class="footer-nav"><a href="index.html">← Nodes Index</a><span>Anatomy: <a href="anatomy-mission-api.html">ANAT-API</a></span></div>
+  </main>
+</div>
+<script src="../shared/shared.js"></script>
+</body></html>

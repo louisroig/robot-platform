@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ICD-API-002 · Telemetry WebSocket</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=IBM+Plex+Sans:wght@300;400;500;600;700&family=IBM+Plex+Serif:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../shared/shared.css">
+</head>
+<body>
+<div class="doc-bar">
+  <a class="doc-bar-crumb" href="../index.html">← HOME</a><span class="doc-bar-sep">·</span>
+  <a class="doc-bar-crumb" href="index.html">INTERFACES</a><span class="doc-bar-sep">·</span>
+  <span class="doc-bar-id">ICD-API-002</span><span class="doc-bar-sep">·</span>
+  <span class="doc-bar-path">Telemetry WebSocket</span><span class="doc-bar-sep">·</span>
+  <span style="color: var(--ink-dim)">REV 0.1</span>
+  <div class="doc-bar-status"><span class="status-dot"></span><span>DRAFT</span></div>
+  <div class="doc-bar-tools">
+    <button class="tool-btn" onclick="window.print()">PRINT</button>
+    <button class="tool-btn" onclick="copyLink(event)">COPY LINK</button>
+  </div>
+</div>
+
+<div class="container">
+  <nav class="toc">
+    <div class="toc-title">CONTENTS</div>
+    <ul class="toc-list">
+      <li class="toc-item"><a class="toc-link" href="#s1"><span class="toc-num">1.0</span>Purpose</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s2"><span class="toc-num">2.0</span>Participants</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s3"><span class="toc-num">3.0</span>Connection</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s4"><span class="toc-num">4.0</span>Payload</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s5"><span class="toc-num">5.0</span>Timing</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s6"><span class="toc-num">6.0</span>QoS / Transport</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s7"><span class="toc-num">7.0</span>Fault</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s8"><span class="toc-num">8.0</span>Requirements</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s9"><span class="toc-num">9.0</span>Verification</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s10"><span class="toc-num">10.0</span>Open Issues</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s11"><span class="toc-num">11.0</span>Revision</a></li>
+    </ul>
+  </nav>
+
+  <main class="prose-serif">
+    <div class="doc-header">
+      <div class="doc-type interface">INTERFACE CONTROL DOCUMENT · EXTERNAL</div>
+      <h1 class="doc-title">Telemetry WebSocket</h1>
+      <p class="doc-subtitle">Persistent WebSocket stream pushing live telemetry from the rover to the operator's mobile app.</p>
+      <div class="doc-meta">
+        <div class="meta-item"><div class="meta-label">Document ID</div><div class="meta-value">ICD-API-002</div></div>
+        <div class="meta-item"><div class="meta-label">Revision</div><div class="meta-value">0.1 · draft</div></div>
+        <div class="meta-item"><div class="meta-label">Owner</div><div class="meta-value">platform_api</div></div>
+        <div class="meta-item"><div class="meta-label">Classification</div><div class="meta-value">External</div></div>
+        <div class="meta-item"><div class="meta-label">Last Updated</div><div class="meta-value">2026-04-19</div></div>
+      </div>
+    </div>
+
+    <section id="s1"><div class="section-header"><span class="section-num">1.0</span><h2 class="section-title">Purpose</h2></div>
+      <p>A single push channel from the rover to the mobile app. The app connects once at startup; the rover streams pose, safety state, battery, detection counts, and mission state at 5 Hz. Replaces per-second polling on <code>/rover/state</code>.</p>
+    </section>
+
+    <section id="s2"><div class="section-header"><span class="section-num">2.0</span><h2 class="section-title">Participants</h2></div>
+      <div class="participants">
+        <div class="participant-card pub"><div class="participant-role">Server</div><div class="participant-name">telemetry_publisher</div>
+          <div class="participant-detail"><strong>SRS</strong><a href="../nodes/srs-telemetry-publisher.html">SRS-API-002</a><strong>Path</strong>wss://rover.local:8443/ws/telemetry</div></div>
+        <div class="participant-card sub"><div class="participant-role">Client</div><div class="participant-name">Operator mobile app</div>
+          <div class="participant-detail"><strong>Auth</strong>Bearer token passed in <code>Sec-WebSocket-Protocol</code> header; validated at handshake.</div></div>
+      </div>
+    </section>
+
+    <section id="s3"><div class="section-header"><span class="section-num">3.0</span><h2 class="section-title">Connection</h2></div>
+      <p>Single WebSocket. On successful handshake, server sends an initial snapshot message, then periodic updates. Client may send <code>ping</code> control frames; server responds with <code>pong</code>. No other client-to-server messages are defined in iteration 1.</p>
+      <p>Multiple client connections are permitted (e.g., a phone and a tablet). Each connection independently receives the same stream.</p>
+    </section>
+
+    <section id="s4"><div class="section-header"><span class="section-num">4.0</span><h2 class="section-title">Payload</h2></div>
+      <p>Server messages are JSON text frames:</p>
+      <div class="code-block" data-lang="JSON">{
+  <span class="string">"timestamp"</span>: <span class="number">1745084320.247</span>,
+  <span class="string">"pose"</span>: {<span class="string">"x"</span>: <span class="number">12.34</span>, <span class="string">"y"</span>: <span class="number">5.67</span>, <span class="string">"yaw_rad"</span>: <span class="number">1.234</span>, <span class="string">"covariance_trace"</span>: <span class="number">0.08</span>},
+  <span class="string">"safety_state"</span>: {
+    <span class="string">"state"</span>: <span class="string">"OK"</span>,
+    <span class="string">"reasons"</span>: [],
+    <span class="string">"motion_permitted"</span>: <span class="keyword">true</span>,
+    <span class="string">"tool_permitted"</span>: <span class="keyword">true</span>
+  },
+  <span class="string">"battery"</span>: {<span class="string">"percentage"</span>: <span class="number">0.82</span>, <span class="string">"voltage"</span>: <span class="number">15.4</span>},
+  <span class="string">"detection_count"</span>: {<span class="string">"people"</span>: <span class="number">0</span>, <span class="string">"obstacles"</span>: <span class="number">2</span>},
+  <span class="string">"mission_state"</span>: <span class="string">"IDLE"</span>,
+  <span class="string">"geofence"</span>: {<span class="string">"state"</span>: <span class="string">"INSIDE"</span>, <span class="string">"distance_m"</span>: <span class="number">3.2</span>}
+}</div>
+      <p>Fields MAY be extended (additive) in future revisions; clients must tolerate unknown keys. Removal or type change requires a new document revision.</p>
+    </section>
+
+    <section id="s5"><div class="section-header"><span class="section-num">5.0</span><h2 class="section-title">Timing</h2></div>
+      <p>5 Hz nominal. Burst updates (on safety state change) push an additional message immediately so operator feedback is not limited by cadence.</p>
+    </section>
+
+    <section id="s6"><div class="section-header"><span class="section-num">6.0</span><h2 class="section-title">QoS / Transport</h2></div>
+      <p>TCP-based. Latency-sensitive but not loss-sensitive at the transport layer (TCP handles). If the connection is idle &gt; 30 s, server sends a ping; if client does not respond within 10 s, connection is closed and client is expected to reconnect.</p>
+    </section>
+
+    <section id="s7"><div class="section-header"><span class="section-num">7.0</span><h2 class="section-title">Fault</h2></div>
+      <div class="data-table-wrap"><table class="data-table"><thead><tr><th>Fault</th><th>Response</th></tr></thead>
+        <tbody>
+          <tr><td>Network disconnect</td><td>Client reconnects with exponential backoff (1 s → 2 s → 4 s → max 30 s). Server accepts.</td></tr>
+          <tr><td>telemetry_publisher crash</td><td>Connection closed by server-side termination; systemd restart; client reconnects.</td></tr>
+          <tr><td>Upstream ROS 2 topics silent</td><td>Server continues publishing with stale fields; flags staleness in payload (TBD field).</td></tr>
+          <tr><td>Invalid token at handshake</td><td>HTTP 401 before WebSocket upgrade.</td></tr>
+        </tbody></table></div>
+    </section>
+
+    <section id="s8"><div class="section-header"><span class="section-num">8.0</span><h2 class="section-title">Requirements</h2></div>
+      <ul class="req-list">
+        <li class="req-item"><div class="req-id">REQ-ICD-API-002-01</div><div><div class="req-text">Messages shall be pushed at 5 Hz ± 1 Hz during a healthy connection.</div><div class="req-trace">verified by: <code>TEST-API-010</code></div></div></li>
+        <li class="req-item"><div class="req-id">REQ-ICD-API-002-02</div><div><div class="req-text">Safety-state changes shall trigger an immediate burst message (out-of-cadence) within 100 ms of the change.</div><div class="req-trace">verified by: <code>TEST-API-011</code></div></div></li>
+        <li class="req-item"><div class="req-id">REQ-ICD-API-002-03</div><div><div class="req-text">Handshake shall fail with 401 when an invalid bearer token is provided.</div><div class="req-trace">verified by: <code>TEST-API-012</code></div></div></li>
+      </ul>
+    </section>
+
+    <section id="s9"><div class="section-header"><span class="section-num">9.0</span><h2 class="section-title">Verification</h2></div>
+      <div class="data-table-wrap"><table class="data-table"><thead><tr><th>Test</th><th>Method</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td><span class="field-name">TEST-API-010</span></td><td>Integration</td><td>Connect; count messages in 30 s window.</td></tr>
+          <tr><td><span class="field-name">TEST-API-011</span></td><td>Integration</td><td>Trigger soft e-stop via REST; measure time to burst message on WS.</td></tr>
+          <tr><td><span class="field-name">TEST-API-012</span></td><td>Integration</td><td>Attempt handshake with bogus token; verify 401.</td></tr>
+        </tbody></table></div>
+    </section>
+
+    <section id="s10"><div class="section-header"><span class="section-num">10.0</span><h2 class="section-title">Open Issues</h2></div>
+      <ol class="indent-list">
+        <li><strong>OPEN-01</strong> — Compression. Not needed at iter-1 payload size (~350 bytes); revisit if detection arrays are added.</li>
+        <li><strong>OPEN-02</strong> — Client-to-server messages for teleop. Deferred — currently REST-only. See REST ICD OPEN-01.</li>
+        <li><strong>OPEN-03</strong> — Schema versioning: consider a top-level <code>schema_version</code> field for forward-compat communication.</li>
+      </ol>
+    </section>
+
+    <section id="s11"><div class="section-header"><span class="section-num">11.0</span><h2 class="section-title">Revision</h2></div>
+      <table class="revision-table"><thead><tr><th>Rev</th><th>Date</th><th>Author</th><th>Change</th></tr></thead>
+        <tbody><tr><td class="rev">0.1</td><td>2026-04-19</td><td>Louis Roig &amp; Claude Opus 4.7</td><td>Initial draft.</td></tr></tbody></table>
+    </section>
+
+    <div class="footer-nav"><a href="index.html">← Interfaces Index</a><span>Related: <a href="icd-mission-rest-api.html">Mission REST API</a></span></div>
+  </main>
+</div>
+<script src="../shared/shared.js"></script>
+</body></html>

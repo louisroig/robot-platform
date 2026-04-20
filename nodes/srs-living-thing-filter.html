@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SRS-PER-002 · living_thing_filter</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=IBM+Plex+Sans:wght@300;400;500;600;700&family=IBM+Plex+Serif:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../shared/shared.css">
+</head>
+<body>
+<div class="doc-bar">
+  <a class="doc-bar-crumb" href="../index.html">← HOME</a><span class="doc-bar-sep">·</span>
+  <a class="doc-bar-crumb" href="index.html">NODES</a><span class="doc-bar-sep">·</span>
+  <span class="doc-bar-id">SRS-PER-002</span><span class="doc-bar-sep">·</span>
+  <span class="doc-bar-path">living_thing_filter</span><span class="doc-bar-sep">·</span>
+  <span style="color: var(--ink-dim)">REV 0.1</span>
+  <div class="doc-bar-status"><span class="status-dot"></span><span>DRAFT</span></div>
+  <div class="doc-bar-tools"><button class="tool-btn" onclick="window.print()">PRINT</button><button class="tool-btn" onclick="copyLink(event)">COPY LINK</button></div>
+</div>
+<div class="container">
+  <nav class="toc">
+    <div class="toc-title">CONTENTS</div>
+    <ul class="toc-list">
+      <li class="toc-item"><a class="toc-link" href="#s1"><span class="toc-num">1.0</span>Purpose</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s2"><span class="toc-num">2.0</span>Scope</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s3"><span class="toc-num">3.0</span>Interfaces</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s4"><span class="toc-num">4.0</span>Functional</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s5"><span class="toc-num">5.0</span>Performance</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s6"><span class="toc-num">6.0</span>Safety</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s7"><span class="toc-num">7.0</span>Dependencies</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s8"><span class="toc-num">8.0</span>Config</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s9"><span class="toc-num">9.0</span>Failure</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s10"><span class="toc-num">10.0</span>Verification</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s11"><span class="toc-num">11.0</span>Open Issues</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s12"><span class="toc-num">12.0</span>Revision</a></li>
+    </ul>
+  </nav>
+  <main class="prose-serif">
+    <div class="doc-header">
+      <div class="doc-type">SOFTWARE REQUIREMENTS SPECIFICATION · PERCEPTION</div>
+      <h1 class="doc-title">living_thing_filter</h1>
+      <p class="doc-subtitle">Bifurcates the raw YOLO detection stream into living things (for safety) and non-living things (for navigation).</p>
+      <div class="doc-meta">
+        <div class="meta-item"><div class="meta-label">Document ID</div><div class="meta-value">SRS-PER-002</div></div>
+        <div class="meta-item"><div class="meta-label">Revision</div><div class="meta-value">0.1 · draft</div></div>
+        <div class="meta-item"><div class="meta-label">Owner</div><div class="meta-value">platform_perception</div></div>
+        <div class="meta-item"><div class="meta-label">Language</div><div class="meta-value">Python (rclpy)</div></div>
+        <div class="meta-item"><div class="meta-label">Classification</div><div class="meta-value">Safety-relevant</div></div>
+        <div class="meta-item"><div class="meta-label">Last Updated</div><div class="meta-value">2026-04-19</div></div>
+      </div>
+    </div>
+
+    <section id="s1"><div class="section-header"><span class="section-num">1.0</span><h2 class="section-title">Purpose</h2></div>
+      <p>Subscribes to <a href="../interfaces/icd-perception-detections.html">/perception/detections</a> and splits it into <a href="../interfaces/icd-perception-people.html">/perception/people</a> (safety-critical) and <a href="../interfaces/icd-perception-obstacles.html">/perception/obstacles</a> (navigation). The split is by class name against a configured whitelist.</p>
+    </section>
+
+    <section id="s2"><div class="section-header"><span class="section-num">2.0</span><h2 class="section-title">Scope</h2></div>
+      <p>In: class-based routing, forward-only filtering (no tracking, no confidence reweighting). Out: any temporal smoothing; size- or motion-based classification.</p>
+    </section>
+
+    <section id="s3"><div class="section-header"><span class="section-num">3.0</span><h2 class="section-title">Interfaces</h2></div>
+      <p>Subscriber: <a href="../interfaces/icd-perception-detections.html">/perception/detections</a>. Publishers: <a href="../interfaces/icd-perception-people.html">/perception/people</a>, <a href="../interfaces/icd-perception-obstacles.html">/perception/obstacles</a>, <code>/diagnostics</code>.</p>
+    </section>
+
+    <section id="s4"><div class="section-header"><span class="section-num">4.0</span><h2 class="section-title">Functional</h2></div>
+      <ul class="req-list">
+        <li class="req-item"><div class="req-id">SRS-PER-002-F01</div><div><div class="req-text">For each incoming DetectionArray, partition detections into the two output topics by matching <code>class</code> against the living-thing whitelist.</div><div class="req-trace">verified by: <code>TEST-PER-021</code></div></div></li>
+        <li class="req-item"><div class="req-id">SRS-PER-002-F02</div><div><div class="req-text">Preserve the original detection fields (confidence, position, distance) unchanged.</div><div class="req-trace">verified by: <code>TEST-PER-022</code></div></div></li>
+        <li class="req-item"><div class="req-id">SRS-PER-002-F03</div><div><div class="req-text">Publish both topics in the same callback, within the same cycle as the upstream arrival.</div><div class="req-trace">verified by: <code>TEST-PER-010</code></div></div></li>
+      </ul>
+    </section>
+
+    <section id="s5"><div class="section-header"><span class="section-num">5.0</span><h2 class="section-title">Performance</h2></div>
+      <p>Added latency ≤ 2 ms; CPU usage negligible (&lt; 1%).</p>
+    </section>
+
+    <section id="s6"><div class="section-header"><span class="section-num">6.0</span><h2 class="section-title">Safety</h2></div>
+      <ul class="req-list">
+        <li class="req-item"><div class="req-id">SRS-PER-002-S01</div><div><div class="req-text">The whitelist shall err on the side of inclusion; any class that could plausibly be a living thing shall be routed to /perception/people.</div><div class="req-trace">maps to: <a href="../requirements/safety.html">SR-002</a></div></div></li>
+      </ul>
+    </section>
+
+    <section id="s7"><div class="section-header"><span class="section-num">7.0</span><h2 class="section-title">Dependencies</h2></div>
+      <p>rclpy, platform_msgs.</p>
+    </section>
+
+    <section id="s8"><div class="section-header"><span class="section-num">8.0</span><h2 class="section-title">Configuration</h2></div>
+      <p>Single parameter: <code>living_things</code> — list of class strings. Default: <code>[person, dog, cat, bird, horse, sheep, cow, bear]</code>. Override via application config.</p>
+    </section>
+
+    <section id="s9"><div class="section-header"><span class="section-num">9.0</span><h2 class="section-title">Failure Modes</h2></div>
+      <p>Upstream silence → filter silent. Own crash → systemd restart; during gap, safety_monitor staleness triggers ESTOP on /perception/people.</p>
+    </section>
+
+    <section id="s10"><div class="section-header"><span class="section-num">10.0</span><h2 class="section-title">Verification</h2></div>
+      <p>TEST-PER-010 (person latency), TEST-PER-011 (whitelist override), TEST-PER-012 (deadline diagnostic), TEST-PER-020 (obstacle pass-through), TEST-PER-021 (partition completeness), TEST-PER-022 (field preservation).</p>
+    </section>
+
+    <section id="s11"><div class="section-header"><span class="section-num">11.0</span><h2 class="section-title">Open Issues</h2></div>
+      <ol class="indent-list">
+        <li><strong>OPEN-01</strong> — Small-human misclassification (backpack, couch). See <a href="../interfaces/icd-perception-people.html">ICD-PER-002</a> OPEN-01.</li>
+      </ol>
+    </section>
+
+    <section id="s12"><div class="section-header"><span class="section-num">12.0</span><h2 class="section-title">Revision</h2></div>
+      <table class="revision-table"><thead><tr><th>Rev</th><th>Date</th><th>Author</th><th>Change</th></tr></thead><tbody><tr><td class="rev">0.1</td><td>2026-04-19</td><td>Louis Roig &amp; Claude Opus 4.7</td><td>Initial draft.</td></tr></tbody></table>
+    </section>
+
+    <div class="footer-nav"><a href="index.html">← Nodes Index</a></div>
+  </main>
+</div>
+<script src="../shared/shared.js"></script>
+</body></html>

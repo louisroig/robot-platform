@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ARCH-005 · Platform vs Application</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=IBM+Plex+Sans:wght@300;400;500;600;700&family=IBM+Plex+Serif:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../shared/shared.css">
+</head>
+<body>
+
+<div class="doc-bar">
+  <a class="doc-bar-crumb" href="../index.html">← HOME</a>
+  <span class="doc-bar-sep">·</span>
+  <a class="doc-bar-crumb" href="index.html">ARCHITECTURE</a>
+  <span class="doc-bar-sep">·</span>
+  <span class="doc-bar-id">ARCH-005</span>
+  <span class="doc-bar-sep">·</span>
+  <span class="doc-bar-path">Platform vs Application</span>
+  <span class="doc-bar-sep">·</span>
+  <span style="color: var(--ink-dim)">REV 0.1</span>
+  <div class="doc-bar-status">
+    <span class="status-dot"></span>
+    <span>DRAFT</span>
+  </div>
+  <div class="doc-bar-tools">
+    <button class="tool-btn" onclick="window.print()">PRINT</button>
+    <button class="tool-btn" onclick="copyLink(event)">COPY LINK</button>
+  </div>
+</div>
+
+<div class="container">
+
+  <nav class="toc">
+    <div class="toc-title">CONTENTS</div>
+    <ul class="toc-list">
+      <li class="toc-item"><a class="toc-link" href="#s1"><span class="toc-num">1.0</span>Purpose</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s2"><span class="toc-num">2.0</span>The Rule</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s3"><span class="toc-num">3.0</span>Vocabulary Discipline</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s4"><span class="toc-num">4.0</span>What Goes Where</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s5"><span class="toc-num">5.0</span>Message-Level Discipline</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s6"><span class="toc-num">6.0</span>Configuration &amp; Parameters</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s7"><span class="toc-num">7.0</span>Review Checklist</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s8"><span class="toc-num">8.0</span>Open Issues</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s9"><span class="toc-num">9.0</span>Revision History</a></li>
+    </ul>
+  </nav>
+
+  <main>
+
+    <div class="doc-header">
+      <div class="doc-type arch">ARCHITECTURE · DISCIPLINE</div>
+      <h1 class="doc-title">Platform vs Application</h1>
+      <p class="doc-subtitle">The boundary between generic platform code and mower-specific application code. The discipline document: what goes where, what the forbidden words are, and how reviews enforce it.</p>
+
+      <div class="doc-meta">
+        <div class="meta-item"><div class="meta-label">Document ID</div><div class="meta-value">ARCH-005</div></div>
+        <div class="meta-item"><div class="meta-label">Revision</div><div class="meta-value">0.1 · draft</div></div>
+        <div class="meta-item"><div class="meta-label">Owner</div><div class="meta-value">systems</div></div>
+        <div class="meta-item"><div class="meta-label">Classification</div><div class="meta-value">Internal — Draft</div></div>
+        <div class="meta-item"><div class="meta-label">Last Updated</div><div class="meta-value">2026-04-19</div></div>
+      </div>
+    </div>
+
+    <section id="s1">
+      <div class="section-header">
+        <span class="section-num">1.0</span>
+        <h2 class="section-title">Purpose</h2>
+      </div>
+
+      <p>This platform is named platform-first and built application-first. The intended arc is that the lawn mower is the first application; the next might be a pool-cleaning variant, a snowplow, a dog-walk companion. For that arc to pay off, there has to be an enforced discipline about what kind of code is allowed to reference "mowing."</p>
+
+      <p>This document is that discipline. It is the most prescriptive document in the corpus. When in doubt about where something belongs, reread §2 and §4.</p>
+
+      <div class="callout rationale">
+        <div class="callout-label">Why this matters</div>
+        <p>Every commercial robotics project either maintains this discipline from day one and then pivots smoothly when the second application arrives, or lets the discipline slip and spends the second application's first year doing an ugly extract. We are doing this from day one.</p>
+      </div>
+    </section>
+
+    <section id="s2">
+      <div class="section-header">
+        <span class="section-num">2.0</span>
+        <h2 class="section-title">The Rule</h2>
+      </div>
+
+      <div class="callout safety">
+        <div class="callout-label">Fundamental rule</div>
+        <p><strong>Nothing in <code>/platform/</code> references lawn mowing, grass, blades, or any other mower-specific concept. Any code that does belongs in <code>/applications/mower/</code>.</strong></p>
+      </div>
+
+      <p>This is a simple, testable, lint-enforceable rule. Violations are caught by (a) code review, (b) a CI lint that rejects the forbidden vocabulary below in <code>platform/**</code>, and (c) the corpus itself — no <code>platform_*</code> ICD or SRS names a mower-specific concept.</p>
+    </section>
+
+    <section id="s3">
+      <div class="section-header">
+        <span class="section-num">3.0</span>
+        <h2 class="section-title">Vocabulary Discipline</h2>
+      </div>
+
+      <p>When writing <em>platform</em> code or <em>platform</em> documents, use the generic term. The mower-specific term is reserved for <code>/applications/mower/</code>.</p>
+
+      <div class="data-table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr><th>Application term (mower)</th><th>Generic platform term</th><th>Rationale</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><span class="field-type">blade</span></td><td><span class="field-name">tool</span></td><td>A blade is one of many possible end-effectors. The platform has a generic "tool" concept with engage/disengage semantics.</td></tr>
+            <tr><td><span class="field-type">grass</span></td><td><span class="field-name">terrain</span> · <span class="field-name">surface</span></td><td>Grass is one of many surfaces. Sensing and traction models are surface-generic.</td></tr>
+            <tr><td><span class="field-type">yard</span></td><td><span class="field-name">area</span> · <span class="field-name">zone</span></td><td>A yard is one instance of an area. Zones are polygons; the platform doesn't know what's inside them.</td></tr>
+            <tr><td><span class="field-type">lawn</span></td><td><span class="field-name">zone</span></td><td>Same reason as yard.</td></tr>
+            <tr><td><span class="field-type">mow</span></td><td><span class="field-name">cover</span> · <span class="field-name">traverse</span></td><td>Coverage planning is a platform concern; mowing is application-specific.</td></tr>
+            <tr><td><span class="field-type">mowing session</span></td><td><span class="field-name">mission</span></td><td>The platform has missions. Mowing missions are a mower-layer concept.</td></tr>
+            <tr><td><span class="field-type">cut height</span></td><td><span class="field-name">tool.intensity</span></td><td>Platform has a 0.0–1.0 tool-intensity field; mower maps that to cut height.</td></tr>
+            <tr><td><span class="field-type">mulch / collect / bag</span></td><td><span class="field-name">tool_mode</span></td><td>Application-defined enum. The platform does not know these modes.</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="callout warning">
+        <div class="callout-label">The lint</div>
+        <p>A CI lint checks <code>platform/**/*.{py,cpp,hpp,msg,srv,action,yaml,md,html}</code> for the regex <code>(blade|grass|yard|lawn|mow|mulch)</code> (case-insensitive, word boundaries). Matches fail CI. Overrides require an inline <code>PLATFORM_LINT_OK: &lt;reason&gt;</code> comment that is reviewed as part of code review.</p>
+      </div>
+    </section>
+
+    <section id="s4">
+      <div class="section-header">
+        <span class="section-num">4.0</span>
+        <h2 class="section-title">What Goes Where</h2>
+      </div>
+
+      <div class="subsection-title">4.1 Platform packages</div>
+
+      <ul class="indent-list">
+        <li><code>platform_hal</code> — motor, IMU, e-stop, camera drivers. Vendor-specific internally; vendor-neutral at the ROS surface.</li>
+        <li><code>platform_msgs</code> — all generic message types (<code>SafetyState</code>, <code>ToolCommand</code>, <code>ZoneBoundary</code>, <code>AerialImageMeta</code>).</li>
+        <li><code>platform_localization</code> — wheel/IMU fusion, SLAM integration, EKF configuration.</li>
+        <li><code>platform_perception</code> — YOLO, detection filtering, costmap producers.</li>
+        <li><code>platform_planning</code> — coverage planner (iter 2+), waypoint navigation.</li>
+        <li><code>platform_safety</code> — safety_monitor, geofence_enforcer.</li>
+        <li><code>platform_mapping</code> — drone mission coordinator, image retrieval, georeferencing, boundary ingestion.</li>
+        <li><code>platform_api</code> — FastAPI mission service, telemetry WebSocket.</li>
+      </ul>
+
+      <div class="subsection-title">4.2 Application packages (mower)</div>
+
+      <ul class="indent-list">
+        <li><code>applications/mower/mower_app</code> — mower-specific mission logic: start mowing, pause mowing, "always mow in straight lines," etc.</li>
+        <li><code>applications/mower/mower_launch</code> — launch files that compose the platform nodes with mower-specific parameter files.</li>
+        <li><code>applications/mower/mower_urdf</code> — URDF describing the mower chassis (iter 3+).</li>
+        <li><code>applications/mower/mower_config</code> — mower-tuned parameters: tool-type enum, tilt limits for blade operation, blade RPM targets.</li>
+        <li><code>applications/mower/mower_calibration</code> — blade-specific calibration procedures (iter 2+).</li>
+        <li><code>applications/mower/tool_controller</code> — future blade-on/off and cut-height logic. Subscribes to <code>/hal/tool_cmd_safe</code>; drives the physical blade motor.</li>
+      </ul>
+
+      <div class="subsection-title">4.3 Ambiguous cases, resolved</div>
+
+      <div class="data-table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr><th>Question</th><th>Answer</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Where do mower-specific tilt limits live?</td><td>Platform accepts a <code>tilt_limit_deg</code> parameter. The mower config overrides the default. Platform code does not know that "blade needs tighter limits."</td></tr>
+            <tr><td>Where does "no mowing while it's raining" live?</td><td>Application. The platform has no weather sensor (see <a href="system-context.html">system context</a>). A future rain-detection node would be application-level unless weather becomes a platform-wide concern.</td></tr>
+            <tr><td>Where does "sharpen blade every N hours" live?</td><td>Application. The platform has a <code>tool_hours</code> diagnostics field; the mower interprets and notifies.</td></tr>
+            <tr><td>Where does "slow down on dewy grass" live?</td><td>Application, when it exists. The platform has velocity scaling based on terrain surface classification (iteration 3+); the mower maps "dewy" to "lower traction."</td></tr>
+            <tr><td>Where does "pose must be inside zone" live?</td><td>Platform. Geofencing is not mower-specific. The platform enforces it; applications set the active zone.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="s5">
+      <div class="section-header">
+        <span class="section-num">5.0</span>
+        <h2 class="section-title">Message-Level Discipline</h2>
+      </div>
+
+      <p>Message types are part of the contract surface. A message named <code>BladeCommand</code> would taint every node that touches it. Two rules:</p>
+
+      <ol class="indent-list">
+        <li>Platform messages (in <code>platform_msgs</code>) are generic. <code>ToolCommand</code>, not <code>BladeCommand</code>. <code>ZoneBoundary</code>, not <code>YardBoundary</code>.</li>
+        <li>Application messages (in <code>mower_msgs</code>, when needed) may carry application vocabulary, but should be rare. The strong preference is to add fields to platform messages with generic names that applications interpret.</li>
+      </ol>
+
+      <p>Example: the <code>ToolCommand</code> message has a <code>tool_type</code> field of type <code>uint8</code>. The <em>values</em> of that field are application-defined. The platform doesn't know that <code>tool_type == 1</code> means "blade" — that mapping lives in <code>mower_config</code>.</p>
+
+      <div class="callout note">
+        <div class="callout-label">Defaults are fine; values are not names</div>
+        <p>Platform code may hard-code a parameter default named <code>max_linear_vel: 0.7</code>. It may not hard-code a parameter default named <code>mower_max_vel</code>. Names leak intent; values don't.</p>
+      </div>
+    </section>
+
+    <section id="s6">
+      <div class="section-header">
+        <span class="section-num">6.0</span>
+        <h2 class="section-title">Configuration &amp; Parameters</h2>
+      </div>
+
+      <p>Parameter precedence (highest wins):</p>
+
+      <ol class="indent-list">
+        <li>Runtime overrides (command-line, environment, operator app setting).</li>
+        <li>Application config (<code>mower_config/config/*.yaml</code>).</li>
+        <li>Platform default (declared in the node's C++/Python source).</li>
+      </ol>
+
+      <p>Platform defaults are <em>reasonable generic values</em>, not tuned for any application. The mower application provides tuned values as overrides. A pool-cleaner application in the future would provide a different set.</p>
+
+      <p>Both platform defaults and application overrides are documented in the relevant SRS under the "Configuration Parameters" section.</p>
+    </section>
+
+    <section id="s7">
+      <div class="section-header">
+        <span class="section-num">7.0</span>
+        <h2 class="section-title">Review Checklist</h2>
+      </div>
+
+      <p>For any PR touching <code>platform/**</code>, the reviewer asks:</p>
+
+      <ul class="indent-list">
+        <li>Does any identifier or comment contain a forbidden word (blade, grass, yard, lawn, mow, mulch)?</li>
+        <li>If the change introduces a new parameter, is the name generic?</li>
+        <li>If the change adds a branch on tool type, is the branch in the mower layer rather than the platform?</li>
+        <li>If the change is to a platform message, is the field name generic?</li>
+        <li>Does the change preserve the dependency direction from <a href="layered-architecture.html">ARCH-002 §9</a> (no upward dependency on application code)?</li>
+      </ul>
+
+      <p>For any PR touching <code>applications/mower/**</code>:</p>
+
+      <ul class="indent-list">
+        <li>Could this logic be generalized and moved into the platform? If yes, move it and replace with a config file.</li>
+        <li>Is the mower layer reimplementing something the platform already offers?</li>
+      </ul>
+    </section>
+
+    <section id="s8">
+      <div class="section-header">
+        <span class="section-num">8.0</span>
+        <h2 class="section-title">Open Issues</h2>
+      </div>
+
+      <ol class="indent-list">
+        <li><strong>OPEN-01</strong> — The name "tool" in the platform is slightly awkward for a "tool-less" application (e.g., mapping-only drone). Consider "effector" or "payload." Decision deferred until the second application arrives.</li>
+        <li><strong>OPEN-02</strong> — Documentation lint. This corpus itself should be lint-enforced for the platform/application distinction. A simple grep in a CI job is sufficient; hold until the corpus is stable.</li>
+        <li><strong>OPEN-03</strong> — Some safety thresholds are "platform-reasonable but mower-loose" (e.g., tilt limits). Should the platform expose a "safety profile" abstraction rather than individual parameters? Evaluate in iteration 2.</li>
+      </ol>
+    </section>
+
+    <section id="s9">
+      <div class="section-header">
+        <span class="section-num">9.0</span>
+        <h2 class="section-title">Revision History</h2>
+      </div>
+
+      <table class="revision-table">
+        <thead>
+          <tr><th style="width: 80px">Rev</th><th style="width: 120px">Date</th><th style="width: 140px">Author</th><th>Change</th></tr>
+        </thead>
+        <tbody>
+          <tr><td class="rev">0.1</td><td>2026-04-19</td><td>Louis Roig &amp; Claude Opus 4.7</td><td>Initial draft. Vocabulary table, package placement rules, review checklist.</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <div class="footer-nav">
+      <a href="deployment.html">← Deployment</a>
+      <span>Next: <a href="iteration-roadmap.html">Iteration Roadmap →</a></span>
+    </div>
+
+  </main>
+</div>
+
+<script src="../shared/shared.js"></script>
+</body>
+</html>

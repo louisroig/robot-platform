@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ARCH-002 · Layered Architecture</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=IBM+Plex+Sans:wght@300;400;500;600;700&family=IBM+Plex+Serif:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../shared/shared.css">
+</head>
+<body>
+
+<div class="doc-bar">
+  <a class="doc-bar-crumb" href="../index.html">← HOME</a>
+  <span class="doc-bar-sep">·</span>
+  <a class="doc-bar-crumb" href="index.html">ARCHITECTURE</a>
+  <span class="doc-bar-sep">·</span>
+  <span class="doc-bar-id">ARCH-002</span>
+  <span class="doc-bar-sep">·</span>
+  <span class="doc-bar-path">Layered Architecture</span>
+  <span class="doc-bar-sep">·</span>
+  <span style="color: var(--ink-dim)">REV 0.1</span>
+  <div class="doc-bar-status">
+    <span class="status-dot"></span>
+    <span>DRAFT</span>
+  </div>
+  <div class="doc-bar-tools">
+    <button class="tool-btn" onclick="window.print()">PRINT</button>
+    <button class="tool-btn" onclick="copyLink(event)">COPY LINK</button>
+  </div>
+</div>
+
+<div class="container">
+
+  <nav class="toc">
+    <div class="toc-title">CONTENTS</div>
+    <ul class="toc-list">
+      <li class="toc-item"><a class="toc-link" href="#s1"><span class="toc-num">1.0</span>Purpose</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s2"><span class="toc-num">2.0</span>Layers at a Glance</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s3"><span class="toc-num">3.0</span>Layer 0 · Safety</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s4"><span class="toc-num">4.0</span>Layer 1 · HAL</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s5"><span class="toc-num">5.0</span>Layer 2 · Control</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s6"><span class="toc-num">6.0</span>Layer 3 · Perception &amp; Localization</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s7"><span class="toc-num">7.0</span>Layer 4 · Autonomy</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s8"><span class="toc-num">8.0</span>Layer 5 · Mission &amp; UI</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s9"><span class="toc-num">9.0</span>Crossings &amp; Rules</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s10"><span class="toc-num">10.0</span>Open Issues</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s11"><span class="toc-num">11.0</span>Revision History</a></li>
+    </ul>
+  </nav>
+
+  <main>
+
+    <div class="doc-header">
+      <div class="doc-type arch">ARCHITECTURE · STRUCTURE</div>
+      <h1 class="doc-title">Layered Architecture</h1>
+      <p class="doc-subtitle">Five functional layers plus a cross-cutting safety layer. Each layer owns a concern, exposes its capabilities through a defined interface, and is permitted to depend only on strictly lower layers.</p>
+
+      <div class="doc-meta">
+        <div class="meta-item"><div class="meta-label">Document ID</div><div class="meta-value">ARCH-002</div></div>
+        <div class="meta-item"><div class="meta-label">Revision</div><div class="meta-value">0.1 · draft</div></div>
+        <div class="meta-item"><div class="meta-label">Owner</div><div class="meta-value">systems</div></div>
+        <div class="meta-item"><div class="meta-label">Classification</div><div class="meta-value">Internal — Draft</div></div>
+        <div class="meta-item"><div class="meta-label">Last Updated</div><div class="meta-value">2026-04-19</div></div>
+        <div class="meta-item"><div class="meta-label">Applies To</div><div class="meta-value">Iteration 1+</div></div>
+      </div>
+    </div>
+
+    <section id="s1">
+      <div class="section-header">
+        <span class="section-num">1.0</span>
+        <h2 class="section-title">Purpose</h2>
+      </div>
+
+      <p>This document defines the five functional layers of the platform and the cross-cutting safety layer. It is the reference all node SRSes implicitly obey — each node has a primary home layer, each interface crosses zero or one layer boundaries, and the permitted dependency direction is strictly downward (plus Layer 0).</p>
+
+      <p>The pattern is standard: isolate hardware in a vendor-specific HAL, build abstract capabilities above it, compose them into mission logic at the top. What distinguishes this system is the independent cross-cutting <strong>safety layer</strong>, which reads from every relevant layer and has veto authority over actuator outputs.</p>
+
+      <div class="callout note">
+        <div class="callout-label">Sibling docs</div>
+        <p>For the physical allocation of layers to hardware, see <a href="deployment.html">Deployment</a>. For the boundary between platform code and application code (orthogonal to layering), see <a href="platform-vs-application.html">Platform vs Application</a>.</p>
+      </div>
+    </section>
+
+    <section id="s2">
+      <div class="section-header">
+        <span class="section-num">2.0</span>
+        <h2 class="section-title">Layers at a Glance</h2>
+      </div>
+
+      <div class="layer-stack">
+
+        <div class="layer-row miss">
+          <div class="layer-label"><strong>Layer 5</strong>Mission &amp; UI</div>
+          <div class="layer-body">
+            <div class="layer-title">Intent, authorization, presentation.</div>
+            mobile app · <a href="../nodes/srs-mission-api.html">mission_api</a> (FastAPI) · <a href="../nodes/srs-telemetry-publisher.html">telemetry_publisher</a> · <a href="../nodes/srs-boundary-ingester.html">boundary_ingester</a>
+          </div>
+        </div>
+
+        <div class="layer-row auto">
+          <div class="layer-label"><strong>Layer 4</strong>Autonomy</div>
+          <div class="layer-body">
+            <div class="layer-title">Orchestration, planning, high-level decisions.</div>
+            behavior tree (iter 2+) · coverage planner (iter 2+) · waypoint navigator · <a href="../nodes/srs-drone-mission-coordinator.html">drone_mission_coordinator</a>
+          </div>
+        </div>
+
+        <div class="layer-row perc">
+          <div class="layer-label"><strong>Layer 3</strong>Perception · Localization · Mapping</div>
+          <div class="layer-body">
+            <div class="layer-title">World model: where am I, what's around me, what is the yard.</div>
+            <a href="../nodes/srs-yolo-detector.html">yolo_detector</a> · <a href="../nodes/srs-living-thing-filter.html">living_thing_filter</a> · <a href="../nodes/integration-rtabmap.html">RTAB-Map</a> · EKF (local + global) · <a href="../nodes/srs-georeferencer.html">georeferencer</a> · <a href="../nodes/srs-image-retriever.html">image_retriever</a>
+          </div>
+        </div>
+
+        <div class="layer-row ctrl">
+          <div class="layer-label"><strong>Layer 2</strong>Control</div>
+          <div class="layer-body">
+            <div class="layer-title">Arbitration and kinematics for motion commands.</div>
+            twist_mux (priority arbitration) · skid-steer kinematics inside <a href="../nodes/srs-roboclaw-driver.html">roboclaw_driver</a>
+          </div>
+        </div>
+
+        <div class="layer-row hal">
+          <div class="layer-label"><strong>Layer 1</strong>HAL</div>
+          <div class="layer-body">
+            <div class="layer-title">Hardware abstraction — vendor boundary.</div>
+            <a href="../nodes/srs-roboclaw-driver.html">roboclaw_driver</a> · <a href="../nodes/srs-imu-driver.html">imu_driver</a> · <a href="../nodes/srs-estop-monitor.html">estop_monitor</a> · depthai_ros_driver · mavros (drone side)
+          </div>
+        </div>
+
+        <div class="layer-row safety">
+          <div class="layer-label"><strong>Layer 0</strong>Safety · cross-cutting</div>
+          <div class="layer-body">
+            <div class="layer-title">Independent of mission logic. Veto authority over actuators.</div>
+            physical e-stop (hardware) · safety MCU (iter 2+) · <a href="../nodes/srs-safety-monitor.html">safety_monitor</a> (ROS) · <a href="../nodes/srs-geofence-enforcer.html">geofence_enforcer</a>
+          </div>
+        </div>
+
+      </div>
+
+      <p>Layer 0 is drawn at the bottom by convention but it reads from and writes to every layer. It is not a "stage" data flows through — it is a constant presence that can interrupt at any point.</p>
+    </section>
+
+    <section id="s3">
+      <div class="section-header">
+        <span class="section-num">3.0</span>
+        <h2 class="section-title">Layer 0 · Safety (cross-cutting)</h2>
+      </div>
+
+      <p><strong>Concern.</strong> Ensure no actuator commanded motion occurs when safety conditions are violated. Operate independently of all higher layers so that a bug in mission, autonomy, or even perception cannot defeat the safety constraint.</p>
+
+      <p><strong>Composition.</strong></p>
+      <ul class="indent-list">
+        <li><strong>Physical e-stop.</strong> NC bulkhead switch in series with the motor power path. Pressing it cuts motor power without software involvement. Iteration 1 implementation.</li>
+        <li><strong>Safety MCU.</strong> Independent microcontroller with its own firmware. Iteration 2+ when a blade tool is introduced. Enforces heartbeat, tilt, and blade-on-lift interlocks in hardware.</li>
+        <li><strong>ROS safety monitor.</strong> The software-layer gate. Aggregates perception, sensor, and hardware inputs into a unified <a href="../interfaces/icd-safety-state.html"><code>/safety/state</code></a> and controls the <a href="../interfaces/icd-hal-cmd-vel-safe.html"><code>/hal/cmd_vel_safe</code></a> gate. See <a href="../nodes/srs-safety-monitor.html">SRS-SAF-001</a>.</li>
+        <li><strong>Geofence enforcer.</strong> Compares fused pose with active zone polygon. Publishes <a href="../interfaces/icd-geofence-state.html"><code>/geofence/state</code></a> that the safety monitor consumes.</li>
+      </ul>
+
+      <div class="callout safety">
+        <div class="callout-label">Independence principle</div>
+        <p>The three safety layers (hardware e-stop, safety MCU, ROS safety monitor) are designed to fail independently. Loss of any one layer degrades safety but does not defeat it. This is the single most important invariant in the architecture.</p>
+      </div>
+    </section>
+
+    <section id="s4">
+      <div class="section-header">
+        <span class="section-num">4.0</span>
+        <h2 class="section-title">Layer 1 · HAL</h2>
+      </div>
+
+      <p><strong>Concern.</strong> Translate between vendor-specific hardware protocols and vendor-neutral platform message types. Above this layer, a swap of motor controller, IMU, or flight controller affects no code — only the driver.</p>
+
+      <p><strong>Nodes and their hardware.</strong></p>
+
+      <div class="data-table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr><th>Node</th><th>Hardware</th><th>Up-interface</th><th>Down-interface</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><a href="../nodes/srs-roboclaw-driver.html">roboclaw_driver</a></td><td>RoboClaw 2x15A over USB serial</td><td><a href="../interfaces/icd-hal-odom.html"><code>/hal/odom</code></a>, <a href="../interfaces/icd-hal-battery.html"><code>/hal/battery</code></a></td><td>RoboClaw binary protocol</td></tr>
+            <tr><td><a href="../nodes/srs-imu-driver.html">imu_driver</a></td><td>ISM330DHCX + MMC5983MA on Qwiic I²C</td><td><a href="../interfaces/icd-hal-imu-data.html"><code>/hal/imu/data</code></a>, <a href="../interfaces/icd-hal-imu-mag.html"><code>/hal/imu/mag</code></a></td><td>I²C register reads</td></tr>
+            <tr><td><a href="../nodes/srs-estop-monitor.html">estop_monitor</a></td><td>GPIO pin (physical NC switch)</td><td><a href="../interfaces/icd-hal-estop-pressed.html"><code>/hal/estop_pressed</code></a></td><td>libgpiod</td></tr>
+            <tr><td>depthai_ros_driver</td><td>OAK-D Lite over USB3</td><td>RGB/depth streams, NPU inference</td><td>depthai SDK</td></tr>
+            <tr><td>mavros</td><td>drone FC via XIAO Wi-Fi bridge</td><td>standard mavros topics</td><td>MAVLink over TCP</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p><strong>Rule.</strong> A HAL node may only publish platform-generic message types. A HAL node is permitted to read vendor-specific registers and speak vendor-specific protocols, but must not leak those details into its ROS topics.</p>
+    </section>
+
+    <section id="s5">
+      <div class="section-header">
+        <span class="section-num">5.0</span>
+        <h2 class="section-title">Layer 2 · Control</h2>
+      </div>
+
+      <p><strong>Concern.</strong> Turn a desired velocity (from the operator, from the autonomy layer, or from a teleop stick) into motor-level commands. Arbitrate between competing velocity sources.</p>
+
+      <p><strong>Components:</strong></p>
+
+      <ul class="indent-list">
+        <li><strong>twist_mux.</strong> Off-the-shelf node. Accepts multiple <code>Twist</code> inputs (teleop, autonomous, recovery) with priorities. Publishes the highest-priority currently-active source on <a href="../interfaces/icd-hal-cmd-vel-raw.html"><code>/hal/cmd_vel_raw</code></a>.</li>
+        <li><strong>skid-steer kinematics.</strong> Lives inside <a href="../nodes/srs-roboclaw-driver.html">roboclaw_driver</a> and converts <code>Twist</code> to per-track velocities. Not a separate node in iteration 1; may become one in iteration 3 if the rover chassis changes.</li>
+      </ul>
+
+      <div class="callout rationale">
+        <div class="callout-label">Rationale: twist_mux instead of custom arbitration</div>
+        <p>twist_mux is well-tested, timeout-aware, and ROS-native. Writing a custom priority multiplexer would be strictly worse at day one and no better at year three. The one thing it doesn't do is safety gating — which is why the pipeline is twist_mux → safety_monitor → motor driver, not twist_mux → motor driver.</p>
+      </div>
+    </section>
+
+    <section id="s6">
+      <div class="section-header">
+        <span class="section-num">6.0</span>
+        <h2 class="section-title">Layer 3 · Perception, Localization, Mapping</h2>
+      </div>
+
+      <p><strong>Concern.</strong> Build the world model the rover reasons against. Three sub-concerns:</p>
+
+      <ul class="indent-list">
+        <li><strong>Perception.</strong> What objects are where. YOLO on OAK-D Lite produces detections; a filter splits them into living things (safety input) and generic obstacles (navigation input in iter 2+).</li>
+        <li><strong>Localization.</strong> Where is the rover. Local pose from wheel odometry + IMU fused via EKF; global pose from local + SLAM (RTAB-Map) + optional GPS fused via a second EKF.</li>
+        <li><strong>Mapping.</strong> What is the yard. Drone-captured aerial image georeferenced into world coordinates; user draws boundary polygons on it; the polygon becomes the active geofence zone.</li>
+      </ul>
+
+      <p>The perception and localization sub-layers are operationally independent of each other (an EKF does not need detections; YOLO does not need pose in iteration 1), but both feed upward into autonomy and safety.</p>
+    </section>
+
+    <section id="s7">
+      <div class="section-header">
+        <span class="section-num">7.0</span>
+        <h2 class="section-title">Layer 4 · Autonomy</h2>
+      </div>
+
+      <p><strong>Concern.</strong> Higher-order decisions: "go to this waypoint," "cover this area," "return to dock," "execute a mapping mission." This layer is deliberately small in iteration 1.</p>
+
+      <ul class="indent-list">
+        <li><strong>drone_mission_coordinator.</strong> The one substantial iteration-1 autonomy component. Orchestrates arm → takeoff → climb → capture → descent → land via MAVROS. Exposed as a ROS action.</li>
+        <li><strong>Waypoint navigator.</strong> Stubbed in iteration 1 (manual teleop). Full Nav2 stack in iteration 2+.</li>
+        <li><strong>Coverage planner.</strong> Not implemented until iteration 2.</li>
+        <li><strong>Behavior tree.</strong> Not implemented until iteration 2.</li>
+      </ul>
+    </section>
+
+    <section id="s8">
+      <div class="section-header">
+        <span class="section-num">8.0</span>
+        <h2 class="section-title">Layer 5 · Mission &amp; UI</h2>
+      </div>
+
+      <p><strong>Concern.</strong> The operator-facing surface. Authorization, presentation, and the translation of human intent into layer-4 actions.</p>
+
+      <ul class="indent-list">
+        <li><strong>Mobile app.</strong> Presents the aerial image, captures boundary polygons, offers teleop controls, displays live telemetry. Built as a client in React Native or Flutter (decision open).</li>
+        <li><strong>mission_api.</strong> FastAPI service on the Pi. Holds all REST endpoints; bridges to ROS 2 via rclpy. See <a href="../interfaces/icd-mission-rest-api.html">ICD-API-001</a>.</li>
+        <li><strong>telemetry_publisher.</strong> WebSocket publisher at 5 Hz. See <a href="../interfaces/icd-mission-telemetry-ws.html">ICD-API-002</a>.</li>
+        <li><strong>boundary_ingester.</strong> Persists drawn polygons to disk; serves them via service and publishes the active zone.</li>
+      </ul>
+
+      <p>This layer is the only one the operator's device touches. Everything below it runs on the Pi or on the drone.</p>
+    </section>
+
+    <section id="s9">
+      <div class="section-header">
+        <span class="section-num">9.0</span>
+        <h2 class="section-title">Crossings &amp; Rules</h2>
+      </div>
+
+      <p><strong>Permitted dependency directions.</strong></p>
+
+      <div class="data-table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr><th>From</th><th>May depend on</th><th>May not depend on</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Layer 5</td><td>Layer 4, Layer 3, Layer 0</td><td>Layer 1 directly (must go through 2/3)</td></tr>
+            <tr><td>Layer 4</td><td>Layer 3, Layer 2, Layer 0</td><td>Layer 5, Layer 1 directly</td></tr>
+            <tr><td>Layer 3</td><td>Layer 1, Layer 0</td><td>Layer 2, 4, 5</td></tr>
+            <tr><td>Layer 2</td><td>Layer 1, Layer 0</td><td>Layer 3, 4, 5</td></tr>
+            <tr><td>Layer 1</td><td>Layer 0</td><td>Layer 2, 3, 4, 5</td></tr>
+            <tr><td>Layer 0</td><td>Reads from all; writes only to Layer 1 (via veto topic) and Layer 5 (via <code>/safety/state</code>)</td><td>—</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p><strong>Violations that are rejected in review:</strong></p>
+
+      <ul class="indent-list">
+        <li>A layer-5 node directly subscribing to <code>/hal/imu/data</code> (skip) — must go through an EKF or dedicated aggregator.</li>
+        <li>A layer-3 node writing to <code>/hal/cmd_vel_*</code> (skip + downward write) — detection nodes must not drive motors.</li>
+        <li>A layer-2 node including YOLO output in its kinematics (upward dependency) — control logic must not depend on perception.</li>
+        <li>Bypassing the safety gate with a direct publication to motor commands.</li>
+      </ul>
+
+      <div class="callout warning">
+        <div class="callout-label">The one exception: diagnostics</div>
+        <p>Any node may publish to <code>/diagnostics</code>. Any node may subscribe to <code>/diagnostics</code> for observability. This is explicit cross-cutting concern handling and is not considered a layer violation.</p>
+      </div>
+    </section>
+
+    <section id="s10">
+      <div class="section-header">
+        <span class="section-num">10.0</span>
+        <h2 class="section-title">Open Issues</h2>
+      </div>
+
+      <ol class="indent-list">
+        <li><strong>OPEN-01</strong> — Should skid-steer kinematics be a separate node for testability, or is inlining it in <code>roboclaw_driver</code> acceptable? Current plan: inline for iteration 1, split if iteration 3 chassis work demands it.</li>
+        <li><strong>OPEN-02</strong> — Layer-5 endpoints on the Pi bridging to ROS 2 via rclpy are a single process today. At scale, should REST and telemetry be split into separate processes for isolation? Deferred to post-M6.</li>
+        <li><strong>OPEN-03</strong> — The <code>living_thing_filter</code> sits in Layer 3 but is safety-critical. Should safety-critical Layer 3 nodes be mirrored under Layer 0's governance? Currently: no, they emit to Layer 0 topics but run as Layer 3 nodes.</li>
+      </ol>
+    </section>
+
+    <section id="s11">
+      <div class="section-header">
+        <span class="section-num">11.0</span>
+        <h2 class="section-title">Revision History</h2>
+      </div>
+
+      <table class="revision-table">
+        <thead>
+          <tr><th style="width: 80px">Rev</th><th style="width: 120px">Date</th><th style="width: 140px">Author</th><th>Change</th></tr>
+        </thead>
+        <tbody>
+          <tr><td class="rev">0.1</td><td>2026-04-19</td><td>Louis Roig &amp; Claude Opus 4.7</td><td>Initial draft. Five layers, safety cross-cutting, dependency rules.</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <div class="footer-nav">
+      <a href="system-context.html">← System Context</a>
+      <span>Next: <a href="data-flow-mission.html">Mission Data Flow →</a></span>
+    </div>
+
+  </main>
+</div>
+
+<script src="../shared/shared.js"></script>
+</body>
+</html>

@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en" class="anatomy">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ANAT-SAF · safety_monitor anatomy</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=IBM+Plex+Sans:wght@300;400;500;600&family=IBM+Plex+Serif:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../shared/shared.css">
+</head>
+<body class="anatomy">
+
+<div class="anatomy-header">
+  <div class="anatomy-header-title">NODE ANATOMY · <strong>safety_monitor</strong></div>
+  <div class="anatomy-header-subtitle">ground-air-platform · iteration 1 · ros 2 humble</div>
+  <div class="anatomy-header-controls">
+    <a href="srs-safety-monitor.html" class="ctrl-btn">SRS</a>
+    <a href="../state-machines/sm-safety-monitor.html" class="ctrl-btn">STATE MACHINE</a>
+    <a href="index.html" class="ctrl-btn">← NODES</a>
+    <span class="zoom-indicator" id="zoomIndicator">100%</span>
+    <button class="ctrl-btn" id="zoomOut">−</button>
+    <button class="ctrl-btn" id="zoomIn">+</button>
+    <button class="ctrl-btn" id="resetView">RESET</button>
+    <button class="ctrl-btn" id="expandAll">EXPAND ALL</button>
+    <button class="ctrl-btn" id="collapseAll">COLLAPSE</button>
+  </div>
+</div>
+
+<div class="canvas-wrap" id="canvasWrap">
+  <div class="canvas" id="canvas">
+    <svg class="lines" id="lines" viewBox="0 0 3600 2400" preserveAspectRatio="none"></svg>
+
+    <div class="center-node" id="centerNode">
+      <div class="reticle tl"></div><div class="reticle tr"></div><div class="reticle bl"></div><div class="reticle br"></div>
+      <div class="center-label">ROS 2 NODE · SAFETY-CRITICAL</div>
+      <div class="center-name">safety_monitor</div>
+      <div class="center-desc">Single authority for motion and tool engagement. Aggregates safety-relevant signals from perception, sensors, and hardware into a unified safety state. Gates all actuator commands. Operates independently of mission logic.</div>
+      <div class="center-meta">
+        <span>LANG · <strong>C++</strong></span>
+        <span>PKG · <strong>platform_safety</strong></span>
+        <span>LIFECYCLE · <strong>YES</strong></span>
+        <span>CRITICAL · <strong>YES</strong></span>
+      </div>
+    </div>
+
+    <div class="branch sub" style="left: 60px; top: 200px;">
+      <div class="branch-header"><span class="branch-letter">A</span><span class="branch-title">Subscribers · Inputs</span><span class="branch-count">7 topics</span></div>
+
+      <div class="leaf"><div class="leaf-header"><span class="leaf-name">/perception/people</span><span class="leaf-type">10 Hz</span></div>
+        <div class="leaf-desc">Detected humans and pets with pose, distance.</div>
+        <div class="leaf-details"><div class="leaf-details-inner">
+          <span class="label">Message</span>platform_msgs/DetectionArray
+          <span class="label">Safety rule</span>Any detection within <code>danger_radius_m</code> → ESTOP
+          <span class="label">Staleness</span>If no message in <code>500ms</code>, treat as worst-case
+        </div></div>
+      </div>
+
+      <div class="leaf"><div class="leaf-header"><span class="leaf-name">/perception/obstacles</span><span class="leaf-type">10 Hz</span></div>
+        <div class="leaf-desc">Non-living detections. Informational for iteration 1.</div>
+        <div class="leaf-details"><div class="leaf-details-inner">
+          <span class="label">Message</span>platform_msgs/DetectionArray
+          <span class="label">Safety rule</span>No direct ESTOP trigger; logged to rosbag for audit.
+        </div></div>
+      </div>
+
+      <div class="leaf"><div class="leaf-header"><span class="leaf-name">/hal/imu/data</span><span class="leaf-type">100 Hz</span></div>
+        <div class="leaf-desc">IMU orientation for tilt detection.</div>
+        <div class="leaf-details"><div class="leaf-details-inner">
+          <span class="label">Message</span>sensor_msgs/Imu
+          <span class="label">Safety rule</span>Tilt &gt; <code>tilt_limit_deg</code> → ESTOP (bypass ramp)
+          <span class="label">Real-time</span>Highest-rate subscription. Reentrant callback group.
+        </div></div>
+      </div>
+
+      <div class="leaf"><div class="leaf-header"><span class="leaf-name">/hal/estop_pressed</span><span class="leaf-type">20 Hz + on-change</span></div>
+        <div class="leaf-desc">Physical e-stop button state (GPIO echo).</div>
+        <div class="leaf-details"><div class="leaf-details-inner">
+          <span class="label">Message</span>std_msgs/Bool
+          <span class="label">Safety rule</span>TRUE → latched ESTOP; requires /safety/reset to clear.
+          <span class="label">Independence</span>Hardware path already cut motor power; topic is observer.
+        </div></div>
+      </div>
+
+      <div class="leaf"><div class="leaf-header"><span class="leaf-name">/geofence/state</span><span class="leaf-type">10 Hz</span></div>
+        <div class="leaf-desc">Rover position vs. active zone.</div>
+        <div class="leaf-details"><div class="leaf-details-inner">
+          <span class="label">Message</span>platform_msgs/GeofenceState
+          <span class="label">Safety rule</span>OUTSIDE → ESTOP. WARNING → state WARNING but motion allowed.
+        </div></div>
+      </div>
+
+      <div class="leaf"><div class="leaf-header"><span class="leaf-name">/hal/battery</span><span class="leaf-type">1 Hz</span></div>
+        <div class="leaf-desc">Pack voltage, current, percentage.</div>
+        <div class="leaf-details"><div class="leaf-details-inner">
+          <span class="label">Message</span>sensor_msgs/BatteryState
+          <span class="label">Safety rule</span>&lt; <code>critical_batt_pct</code> → CRITICAL (allow controlled motion to safe stop)
+          <span class="label">Why not ESTOP</span>Stranding the rover mid-yard is worse than allowing supervised motion to dock.
+        </div></div>
+      </div>
+
+      <div class="leaf"><div class="leaf-header"><span class="leaf-name">/hal/cmd_vel_raw</span><span class="leaf-type">50 Hz</span></div>
+        <div class="leaf-desc">Velocity command from twist_mux (teleop/auto).</div>
+        <div class="leaf-details"><div class="leaf-details-inner">
+          <span class="label">Message</span>geometry_msgs/Twist
+          <span class="label">Role</span>Pre-gating command; republished on /hal/cmd_vel_safe after gating.
+        </div></div>
+      </div>
+    </div>
+
+    <div class="branch internal" style="left: 1630px; top: 200px; width: 400px;">
+      <div class="branch-header"><span class="branch-letter">B</span><span class="branch-title">Internal State &amp; Logic</span><span class="branch-count">core</span></div>
+
+      <div class="leaf"><div class="leaf-header"><span class="leaf-name">State machine</span><span class="leaf-type">4 states</span></div>
+        <div class="leaf-desc">OK · WARNING · ESTOP · CRITICAL with precise transitions.</div>
+        <div class="leaf-details"><div class="leaf-details-inner">
+          <span class="label">States</span><code>OK</code> motion+tool permitted · <code>WARNING</code> motion still on, degraded · <code>ESTOP</code> motion blocked · <code>CRITICAL</code> battery low, limited motion
+          <span class="label">Evaluation</span>Every tick. Any trigger transitions toward worse. Recovery needs ALL clear + dwell.
+          <span class="label">Document</span>See SM-SAF-001.
+        </div></div>
+      </div>
+
+      <div class="leaf"><div class="leaf-header"><span class="leaf-name">Staleness tracker</span><span class="leaf-type">fail-safe</span></div>
+        <div class="leaf-desc">Tracks last-received timestamp per subscribed topic.</div>
+        <div class="leaf-details"><div class="leaf-details-inner">
+          <span class="label">Rule</span>Stale → worst-case. Absence of data is unsafe, not safe.
+          <span class="label">Implementation</span>10 Hz timer walks the table.
+        </div></div>
+      </div>
+
+      <div class="leaf"><div class="leaf-header"><span class="leaf-name">Decel ramp generator</span><span class="leaf-type">smoothing</span></div>
+        <div class="leaf-desc">Controlled velocity ramp when transitioning to stop.</div>
+        <div class="leaf-details"><div class="leaf-details-inner">
+          <span class="label">Formula</span>v(t) = sign(v₀) × max(0, |v₀| − a × Δt), a = <code>decel_rate_mps2</code>
+          <span class="label">Exception</span>Tilt-triggered ESTOP bypasses ramp — rover already unstable.
+        </div></div>
+      </div>
+
+      <div class="leaf"><div class="leaf-header"><span class="leaf-name">Latch manager</span><span class="leaf-type">persistence</span></div>
+        <div class="leaf-desc">Distinguishes auto-clearable vs. latched ESTOPs.</div>
+        <div class="leaf-details"><div class="leaf-details-inner">
+          <span class="label">Auto-clearable</span>person-in-range, tilt, battery warning.
+          <span class="label">Latched</span>e-stop button, lift (iter 2+), explicit remote e-stop, rogue publisher. Require /safety/reset.
+        </div></div>
+      </div>
+
+      <div class="leaf"><div class="leaf-header"><span class="leaf-name">Callback groups</span><span class="leaf-type">threading</span></div>
+        <div class="leaf-desc">Reentrant groups + MultiThreadedExecutor.</div>
+        <div class="leaf-details"><div class="leaf-details-inner">
+          <span class="label">Why</span>Safety-critical callbacks must not block each other. Default group is mutually exclusive — unsafe.
+          <span class="label">Pattern</span>One reentrant group for subscriptions, mutex-protected shared state read in a timer callback.
+        </div></div>
+      </div>
+    </div>
+
+    <div class="branch param" style="left: 3200px; top: 200px;">
+      <div class="branch-header"><span class="branch-letter">C</span><span class="branch-title">Parameters</span><span class="branch-count">config</span></div>
+
+      <div class="leaf"><div class="leaf-header"><span class="leaf-name">danger_radius_m</span><span class="leaf-type">double · 3.0</span></div>
+        <div class="leaf-desc">Distance within which person → ESTOP.</div></div>
+
+      <div class="leaf"><div class="leaf-header"><span class="leaf-name">warning_radius_m</span><span class="leaf-type">double · 5.0</span></div>
+        <div class="leaf-desc">Distance within which person → WARNING.</div></div>
+
+      <div class="leaf"><div class="leaf-header"><span class="leaf-name">tilt_limit_deg</span><span class="leaf-type">double · 25.0</span></div>
+        <div class="leaf-desc">Tilt angle triggering ESTOP.</div></div>
+
+      <div class="leaf"><div class="leaf-header"><span class="leaf-name">critical_batt_pct</span><span class="leaf-type">double · 15.0</span></div>
+        <div class="leaf-desc">Battery percentage triggering CRITICAL.</div></div>
+
+      <div class="leaf"><div class="leaf-header"><span class="leaf-name">decel_rate_mps2</span><span class="leaf-type">double · 2.0</span></div>
+        <div class="leaf-desc">Deceleration rate for controlled halt.</div></div>
+
+      <div class="leaf"><div class="leaf-header"><span class="leaf-name">topic_staleness_ms</span><span class="leaf-type">int · 500</span></div>
+        <div class="leaf-desc">Default staleness window (per-topic overrides).</div></div>
+
+      <div class="leaf"><div class="leaf-header"><span class="leaf-name">estop_dwell_clear_sec</span><span class="leaf-type">double · 3.0</span></div>
+        <div class="leaf-desc">Dwell time before auto-clear conditions un-latch.</div></div>
+    </div>
+
+    <div class="branch srv" style="left: 3200px; top: 1050px;">
+      <div class="branch-header"><span class="branch-letter">D</span><span class="branch-title">Services</span><span class="branch-count">2 services</span></div>
+
+      <div class="leaf"><div class="leaf-header"><span class="leaf-name">/safety/reset</span><span class="leaf-type">server</span></div>
+        <div class="leaf-desc">Clear latched ESTOP conditions.</div>
+        <div class="leaf-details"><div class="leaf-details-inner">
+          <span class="label">Type</span>platform_msgs/ResetSafety
+          <span class="label">Behavior</span>Validates ALL trigger conditions currently clear before transitioning. Never forces clear.
+          <span class="label">Caller</span>mission_api (from mobile app).
+        </div></div>
+      </div>
+
+      <div class="leaf"><div class="leaf-header"><span class="leaf-name">/safety/test</span><span class="leaf-type">server</span></div>
+        <div class="leaf-desc">Trigger built-in self-test.</div>
+        <div class="leaf-details"><div class="leaf-details-inner">
+          <span class="label">Type</span>std_srvs/Trigger
+          <span class="label">Behavior</span>Verifies subscriptions receiving data; params sane; state logic self-consistent.
+        </div></div>
+      </div>
+    </div>
+
+    <div class="branch pub" style="left: 3200px; top: 1650px;">
+      <div class="branch-header"><span class="branch-letter">E</span><span class="branch-title">Publishers · Outputs</span><span class="branch-count">3 topics</span></div>
+
+      <div class="leaf"><div class="leaf-header"><span class="leaf-name">/safety/state</span><span class="leaf-type">10 Hz + on-change</span></div>
+        <div class="leaf-desc">Unified safety state consumed by downstream nodes.</div>
+        <div class="leaf-details"><div class="leaf-details-inner">
+          <span class="label">Message</span>platform_msgs/SafetyState
+          <span class="label">QoS</span>RELIABLE, KEEP_LAST(3), TRANSIENT_LOCAL
+          <span class="label">Consumers</span>mission_api, telemetry_publisher, system_monitor, rosbag
+        </div></div>
+      </div>
+
+      <div class="leaf"><div class="leaf-header"><span class="leaf-name">/hal/cmd_vel_safe</span><span class="leaf-type">50 Hz</span></div>
+        <div class="leaf-desc">Gated velocity command — passthrough or zero.</div>
+        <div class="leaf-details"><div class="leaf-details-inner">
+          <span class="label">Message</span>geometry_msgs/Twist
+          <span class="label">Consumer</span>roboclaw_driver (SOLE).
+          <span class="label">Invariant</span>When state != OK, linear.x and angular.z are zero (within decel ramp).
+        </div></div>
+      </div>
+
+      <div class="leaf"><div class="leaf-header"><span class="leaf-name">/hal/tool_cmd_safe</span><span class="leaf-type">on-change</span></div>
+        <div class="leaf-desc">Gated tool engagement permission.</div>
+        <div class="leaf-details"><div class="leaf-details-inner">
+          <span class="label">Message</span>platform_msgs/ToolCommand
+          <span class="label">Iter 1</span>No tool; topic reserved for iter-2 blade controller.
+        </div></div>
+      </div>
+    </div>
+
+    <div class="branch hw" style="left: 1630px; top: 1750px; width: 400px;">
+      <div class="branch-header"><span class="branch-letter">F</span><span class="branch-title">Hardware Interactions</span><span class="branch-count">future</span></div>
+
+      <div class="leaf"><div class="leaf-header"><span class="leaf-name">GPIO heartbeat to safety MCU</span><span class="leaf-type">100 Hz pulse</span></div>
+        <div class="leaf-desc">Hardware heartbeat line to Layer 0 safety MCU (when added).</div>
+        <div class="leaf-details"><div class="leaf-details-inner">
+          <span class="label">Purpose</span>Independent HW path. safety_monitor crash → heartbeat stops → MCU cuts blade.
+          <span class="label">Iter 1</span>Placeholder only; no blade yet.
+        </div></div>
+      </div>
+
+      <div class="leaf"><div class="leaf-header"><span class="leaf-name">Physical e-stop (read-only)</span><span class="leaf-type">via estop_monitor</span></div>
+        <div class="leaf-desc">Observer of the GPIO echo. Not an actuator of the relay.</div>
+        <div class="leaf-details"><div class="leaf-details-inner">
+          <span class="label">Failure mode</span>Topic stale → treat as pressed → ESTOP. Fail-safe.
+        </div></div>
+      </div>
+    </div>
+
+    <div class="branch safety" style="left: 60px; top: 1450px;">
+      <div class="branch-header"><span class="branch-letter">G</span><span class="branch-title">Lifecycle &amp; Diagnostics</span><span class="branch-count">runtime</span></div>
+
+      <div class="leaf"><div class="leaf-header"><span class="leaf-name">Startup self-test</span><span class="leaf-type">required</span></div>
+        <div class="leaf-desc">Refuses OK until all subscriptions are receiving.</div>
+        <div class="leaf-details"><div class="leaf-details-inner">
+          <span class="label">Behavior</span>Boot state = ESTOP "STARTUP — waiting for topics". Each incoming topic clears its flag.
+        </div></div>
+      </div>
+
+      <div class="leaf"><div class="leaf-header"><span class="leaf-name">Watchdog</span><span class="leaf-type">systemd + ROS</span></div>
+        <div class="leaf-desc">Two-level supervision.</div>
+        <div class="leaf-details"><div class="leaf-details-inner">
+          <span class="label">systemd</span>Crash → restart &lt; 2s. During gap, roboclaw_driver timeout halts motors.
+          <span class="label">ROS diagnostic</span>Publishes health; system_monitor aggregates.
+        </div></div>
+      </div>
+
+      <div class="leaf"><div class="leaf-header"><span class="leaf-name">Invariants (runtime asserts)</span><span class="leaf-type">defensive</span></div>
+        <div class="leaf-desc">Hard checks; violation → ESTOP + log.</div>
+        <div class="leaf-details"><div class="leaf-details-inner">
+          <span class="label">INV-1</span>tool_permitted ⇒ state ∈ {OK, WARNING}
+          <span class="label">INV-2</span>cmd_vel_safe = 0 when state = ESTOP (within ramp tolerance)
+          <span class="label">INV-3</span>/safety/state published ≥ 10 Hz under all conditions
+          <span class="label">INV-7</span>Stale data treated as worst-case.
+        </div></div>
+      </div>
+
+      <div class="leaf"><div class="leaf-header"><span class="leaf-name">Performance budget</span><span class="leaf-type">real-time</span></div>
+        <div class="leaf-desc">Latency and CPU targets for a safety-critical node.</div>
+        <div class="leaf-details"><div class="leaf-details-inner">
+          <span class="label">Latency</span>Person → cmd_vel_safe=0 ≤ 50 ms. E-stop → cmd_vel_safe=0 ≤ 20 ms.
+          <span class="label">CPU</span>&lt; 15% one Pi 5 core. <span class="label">Mem</span>&lt; 100 MB.
+        </div></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div class="legend">
+  <div class="legend-title">CHANNEL TYPES</div>
+  <div class="legend-item"><span class="legend-swatch" style="background:var(--accent-sub)"></span>Subscribers (inputs)</div>
+  <div class="legend-item"><span class="legend-swatch" style="background:var(--accent-pub)"></span>Publishers (outputs)</div>
+  <div class="legend-item"><span class="legend-swatch" style="background:var(--accent-srv)"></span>Services</div>
+  <div class="legend-item"><span class="legend-swatch" style="background:var(--accent-param)"></span>Parameters</div>
+  <div class="legend-item"><span class="legend-swatch" style="background:var(--accent-internal)"></span>Internal logic</div>
+  <div class="legend-item"><span class="legend-swatch" style="background:var(--accent-hw)"></span>Hardware</div>
+  <div class="legend-item"><span class="legend-swatch" style="background:var(--accent-safety)"></span>Lifecycle / health</div>
+</div>
+
+<div class="hint">Click any leaf to expand. Drag to pan, scroll to zoom.</div>
+
+<script src="../shared/shared.js"></script>
+</body>
+</html>

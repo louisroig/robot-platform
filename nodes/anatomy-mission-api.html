@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en" class="anatomy">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ANAT-API · mission_api anatomy</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=IBM+Plex+Sans:wght@300;400;500;600&family=IBM+Plex+Serif:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../shared/shared.css">
+</head>
+<body class="anatomy">
+
+<div class="anatomy-header">
+  <div class="anatomy-header-title">NODE ANATOMY · <strong>mission_api</strong></div>
+  <div class="anatomy-header-subtitle">external REST surface · ROS 2 bridge · auth</div>
+  <div class="anatomy-header-controls">
+    <a href="srs-mission-api.html" class="ctrl-btn">SRS</a>
+    <a href="index.html" class="ctrl-btn">← NODES</a>
+    <span class="zoom-indicator" id="zoomIndicator">100%</span>
+    <button class="ctrl-btn" id="zoomOut">−</button><button class="ctrl-btn" id="zoomIn">+</button>
+    <button class="ctrl-btn" id="resetView">RESET</button>
+    <button class="ctrl-btn" id="expandAll">EXPAND ALL</button><button class="ctrl-btn" id="collapseAll">COLLAPSE</button>
+  </div>
+</div>
+
+<div class="canvas-wrap" id="canvasWrap">
+  <div class="canvas" id="canvas">
+    <svg class="lines" id="lines" viewBox="0 0 3600 2400" preserveAspectRatio="none"></svg>
+
+    <div class="center-node" id="centerNode">
+      <div class="reticle tl"></div><div class="reticle tr"></div><div class="reticle bl"></div><div class="reticle br"></div>
+      <div class="center-label">FASTAPI SERVICE · EXTERNAL SURFACE</div>
+      <div class="center-name">mission_api</div>
+      <div class="center-desc">The rover's public face. HTTPS REST server with bearer-token auth. Forwards operator intent to ROS 2 topics/services/actions, and reads latest ROS state to satisfy GET requests.</div>
+      <div class="center-meta">
+        <span>LANG · <strong>Python</strong></span>
+        <span>FRAMEWORK · <strong>FastAPI</strong></span>
+        <span>PORT · <strong>TCP 8443</strong></span>
+        <span>TLS · <strong>mandatory</strong></span>
+      </div>
+    </div>
+
+    <div class="branch sub" style="left: 60px; top: 200px;">
+      <div class="branch-header"><span class="branch-letter">A</span><span class="branch-title">Endpoint Surface</span><span class="branch-count">12 routes</span></div>
+
+      <div class="leaf"><div class="leaf-header"><span class="leaf-name">POST /missions/map</span><span class="leaf-type">202</span></div>
+        <div class="leaf-desc">Trigger drone mapping mission.</div></div>
+      <div class="leaf"><div class="leaf-header"><span class="leaf-name">GET /missions/{id}/status</span><span class="leaf-type">200</span></div></div>
+      <div class="leaf"><div class="leaf-header"><span class="leaf-name">GET /missions/{id}/result</span><span class="leaf-type">200</span></div></div>
+      <div class="leaf"><div class="leaf-header"><span class="leaf-name">GET /missions/{id}/image</span><span class="leaf-type">bin</span></div></div>
+      <div class="leaf"><div class="leaf-header"><span class="leaf-name">POST /zones</span><span class="leaf-type">201</span></div></div>
+      <div class="leaf"><div class="leaf-header"><span class="leaf-name">GET /zones</span><span class="leaf-type">200</span></div></div>
+      <div class="leaf"><div class="leaf-header"><span class="leaf-name">POST /zones/{n}/activate</span><span class="leaf-type">200</span></div></div>
+      <div class="leaf"><div class="leaf-header"><span class="leaf-name">GET /rover/state</span><span class="leaf-type">200</span></div></div>
+      <div class="leaf"><div class="leaf-header"><span class="leaf-name">POST /rover/teleop</span><span class="leaf-type">204</span></div></div>
+      <div class="leaf"><div class="leaf-header"><span class="leaf-name">POST /rover/estop</span><span class="leaf-type">204</span></div>
+        <div class="leaf-desc">Soft e-stop. Forwarded to safety_monitor.</div></div>
+      <div class="leaf"><div class="leaf-header"><span class="leaf-name">POST /rover/reset_safety</span><span class="leaf-type">200</span></div></div>
+    </div>
+
+    <div class="branch internal" style="left: 1630px; top: 200px; width: 400px;">
+      <div class="branch-header"><span class="branch-letter">B</span><span class="branch-title">Middleware &amp; Validation</span><span class="branch-count">pipeline</span></div>
+
+      <div class="leaf"><div class="leaf-header"><span class="leaf-name">TLS terminator</span><span class="leaf-type">uvicorn</span></div>
+        <div class="leaf-desc">Self-signed cert pinned in the mobile app.</div></div>
+      <div class="leaf"><div class="leaf-header"><span class="leaf-name">Bearer token auth</span><span class="leaf-type">Argon2id</span></div>
+        <div class="leaf-desc">Token hashed; looked up per request; no side effect on 401.</div></div>
+      <div class="leaf"><div class="leaf-header"><span class="leaf-name">Request validation</span><span class="leaf-type">pydantic</span></div>
+        <div class="leaf-desc">Polygon well-formedness, Twist bounds, schema shapes.</div></div>
+      <div class="leaf"><div class="leaf-header"><span class="leaf-name">Safety gate</span><span class="leaf-type">pre-side-effect</span></div>
+        <div class="leaf-desc">Teleop and mission-start reject when /safety/state != OK; return 503.</div></div>
+      <div class="leaf"><div class="leaf-header"><span class="leaf-name">Audit log</span><span class="leaf-type">per-request</span></div>
+        <div class="leaf-desc">Writes to /var/log/platform/api-access.log with timestamp + token ID + endpoint.</div></div>
+    </div>
+
+    <div class="branch srv" style="left: 3200px; top: 200px;">
+      <div class="branch-header"><span class="branch-letter">C</span><span class="branch-title">ROS 2 Bridge</span><span class="branch-count">rclpy</span></div>
+
+      <div class="leaf"><div class="leaf-header"><span class="leaf-name">Subscribers (state)</span><span class="leaf-type">latest-value cache</span></div>
+        <div class="leaf-desc">/safety/state, /localization/pose, /hal/battery kept in an in-memory snapshot for GET /rover/state.</div></div>
+
+      <div class="leaf"><div class="leaf-header"><span class="leaf-name">Publisher (teleop)</span><span class="leaf-type">one-shot</span></div>
+        <div class="leaf-desc">Publishes Twist on /hal/cmd_vel_teleop; twist_mux arbitrates.</div></div>
+
+      <div class="leaf"><div class="leaf-header"><span class="leaf-name">Service clients</span><span class="leaf-type">sync</span></div>
+        <div class="leaf-desc">/safety/reset, /mapping/load_zone, /mapping/list_zones.</div></div>
+
+      <div class="leaf"><div class="leaf-header"><span class="leaf-name">Action client</span><span class="leaf-type">async</span></div>
+        <div class="leaf-desc">/mapping/run_mission; owns mission_id → goal handle map.</div></div>
+    </div>
+
+    <div class="branch param" style="left: 3200px; top: 1150px;">
+      <div class="branch-header"><span class="branch-letter">D</span><span class="branch-title">Configuration</span><span class="branch-count">runtime</span></div>
+      <div class="leaf"><div class="leaf-header"><span class="leaf-name">listen_addr</span><span class="leaf-type">0.0.0.0:8443</span></div></div>
+      <div class="leaf"><div class="leaf-header"><span class="leaf-name">tls_cert_path / tls_key_path</span><span class="leaf-type">paths</span></div></div>
+      <div class="leaf"><div class="leaf-header"><span class="leaf-name">token_store</span><span class="leaf-type">sqlite</span></div></div>
+      <div class="leaf"><div class="leaf-header"><span class="leaf-name">image_dir</span><span class="leaf-type">path</span></div></div>
+    </div>
+
+    <div class="branch safety" style="left: 60px; top: 1500px;">
+      <div class="branch-header"><span class="branch-letter">E</span><span class="branch-title">Failure &amp; Lifecycle</span><span class="branch-count">runtime</span></div>
+
+      <div class="leaf"><div class="leaf-header"><span class="leaf-name">Startup checks</span><span class="leaf-type">hard</span></div>
+        <div class="leaf-desc">Refuse to start without TLS cert or token store.</div></div>
+      <div class="leaf"><div class="leaf-header"><span class="leaf-name">ROS 2 readiness probe</span><span class="leaf-type">503 on fail</span></div>
+        <div class="leaf-desc">Endpoints that require ROS return 503 if the relevant node is unreachable.</div></div>
+      <div class="leaf"><div class="leaf-header"><span class="leaf-name">Structured logging</span><span class="leaf-type">json</span></div>
+        <div class="leaf-desc">All API events → journald.</div></div>
+    </div>
+
+    <div class="branch hw" style="left: 1630px; top: 1800px; width: 400px;">
+      <div class="branch-header"><span class="branch-letter">F</span><span class="branch-title">External Client</span><span class="branch-count">wire</span></div>
+      <div class="leaf"><div class="leaf-header"><span class="leaf-name">Mobile app</span><span class="leaf-type">iOS / Android</span></div>
+        <div class="leaf-desc">Sole external client in iteration 1.</div>
+        <div class="leaf-details"><div class="leaf-details-inner">
+          <span class="label">Transport</span>HTTPS over home Wi-Fi
+          <span class="label">Auth</span>Paired via manual CLI token issuance
+        </div></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div class="legend">
+  <div class="legend-title">CHANNEL TYPES</div>
+  <div class="legend-item"><span class="legend-swatch" style="background:var(--accent-sub)"></span>HTTP endpoints</div>
+  <div class="legend-item"><span class="legend-swatch" style="background:var(--accent-internal)"></span>Middleware</div>
+  <div class="legend-item"><span class="legend-swatch" style="background:var(--accent-srv)"></span>ROS 2 bridge</div>
+  <div class="legend-item"><span class="legend-swatch" style="background:var(--accent-param)"></span>Configuration</div>
+  <div class="legend-item"><span class="legend-swatch" style="background:var(--accent-safety)"></span>Lifecycle</div>
+  <div class="legend-item"><span class="legend-swatch" style="background:var(--accent-hw)"></span>External client</div>
+</div>
+
+<div class="hint">Click any leaf to expand. Drag to pan, scroll to zoom.</div>
+<script src="../shared/shared.js"></script>
+</body></html>

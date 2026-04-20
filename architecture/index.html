@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Architecture · Ground-Air Platform Spec</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=IBM+Plex+Sans:wght@300;400;500;600;700&family=IBM+Plex+Serif:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../shared/shared.css">
+</head>
+<body>
+
+<div class="doc-bar">
+  <a class="doc-bar-crumb" href="../index.html">← HOME</a>
+  <span class="doc-bar-sep">·</span>
+  <span class="doc-bar-id">ARCH-INDEX</span>
+  <span class="doc-bar-sep">·</span>
+  <span class="doc-bar-path">/architecture</span>
+  <span class="doc-bar-sep">·</span>
+  <span style="color: var(--ink-dim)">REV 0.1</span>
+  <div class="doc-bar-status">
+    <span class="status-dot"></span>
+    <span>DRAFT</span>
+  </div>
+  <div class="doc-bar-tools">
+    <button class="tool-btn" onclick="window.print()">PRINT</button>
+    <button class="tool-btn" onclick="copyLink(event)">COPY LINK</button>
+  </div>
+</div>
+
+<div class="container single">
+  <main>
+
+    <div class="doc-header">
+      <div class="doc-type arch">§ 01 · FOUNDATION</div>
+      <h1 class="doc-title">Architecture</h1>
+      <p class="doc-subtitle">The shape of the system. Start here to understand how rover, drone, and operator fit together before diving into individual nodes or interfaces.</p>
+
+      <div class="doc-meta">
+        <div class="meta-item"><div class="meta-label">Section ID</div><div class="meta-value">ARCH</div></div>
+        <div class="meta-item"><div class="meta-label">Documents</div><div class="meta-value">6</div></div>
+        <div class="meta-item"><div class="meta-label">Status</div><div class="meta-value">Draft · Rev 0.1</div></div>
+        <div class="meta-item"><div class="meta-label">Applies To</div><div class="meta-value">Iteration 1+</div></div>
+      </div>
+    </div>
+
+    <section>
+      <div class="section-header">
+        <span class="section-num">1.0</span>
+        <h2 class="section-title">Orientation</h2>
+      </div>
+
+      <p class="prose-serif" style="font-family: var(--font-serif); font-size: 15px;">
+        Architecture documents set the stage for the rest of the corpus. They explain what the system is, where it lives,
+        how the layers stack up, how a single mission flows end-to-end, which code runs where, and — the discipline document
+        — what belongs in the platform versus the application.
+      </p>
+
+      <p class="prose-serif" style="font-family: var(--font-serif); font-size: 15px;">
+        These documents are the contract between the whole-system view (who this is for, what it does) and the component view
+        (individual nodes and interfaces). Readers coming from a requirement or an ICD will often surface back here to find
+        the larger picture. Readers starting from the splash page typically read these first, in order.
+      </p>
+
+      <div class="callout note">
+        <div class="callout-label">Reading order</div>
+        <p>If you're new to the project: read <a href="system-context.html">System Context</a> first, then <a href="layered-architecture.html">Layered Architecture</a>, then <a href="data-flow-mission.html">Mission Data Flow</a>. Read <a href="platform-vs-application.html">Platform vs Application</a> before you contribute code. <a href="deployment.html">Deployment</a> and <a href="iteration-roadmap.html">Iteration Roadmap</a> can be referenced as needed.</p>
+      </div>
+    </section>
+
+    <section>
+      <div class="section-header">
+        <span class="section-num">2.0</span>
+        <h2 class="section-title">Documents in this section</h2>
+      </div>
+
+      <ul class="doc-list">
+        <li data-filterable="ARCH-001 system context boundary actors">
+          <span class="doc-id">ARCH-001</span>
+          <div>
+            <a class="doc-link" href="system-context.html">System Context</a>
+            <div class="doc-oneliner">External actors, system boundary, interactions with environment, operator, and regulatory context.</div>
+          </div>
+          <span class="doc-status">DRAFT</span>
+        </li>
+        <li data-filterable="ARCH-002 layered architecture hal control perception safety">
+          <span class="doc-id">ARCH-002</span>
+          <div>
+            <a class="doc-link" href="layered-architecture.html">Layered Architecture</a>
+            <div class="doc-oneliner">Layers 1–5 plus Layer 0 (safety). What each layer owns and how data moves across them.</div>
+          </div>
+          <span class="doc-status">DRAFT</span>
+        </li>
+        <li data-filterable="ARCH-003 data flow mission phases end-to-end trace">
+          <span class="doc-id">ARCH-003</span>
+          <div>
+            <a class="doc-link" href="data-flow-mission.html">Mission Data Flow</a>
+            <div class="doc-oneliner">End-to-end trace of a mapping-then-teleop mission, phase by phase, through every layer.</div>
+          </div>
+          <span class="doc-status">DRAFT</span>
+        </li>
+        <li data-filterable="ARCH-004 deployment hardware allocation Pi XIAO FC safety MCU">
+          <span class="doc-id">ARCH-004</span>
+          <div>
+            <a class="doc-link" href="deployment.html">Deployment &amp; Hardware Allocation</a>
+            <div class="doc-oneliner">What runs on the Pi, the flight controller, the XIAO bridge, and the (future) safety MCU.</div>
+          </div>
+          <span class="doc-status">DRAFT</span>
+        </li>
+        <li data-filterable="ARCH-005 platform application boundary discipline rules">
+          <span class="doc-id">ARCH-005</span>
+          <div>
+            <a class="doc-link" href="platform-vs-application.html">Platform vs Application</a>
+            <div class="doc-oneliner">The boundary discipline. What goes in <code>platform/</code>, what in <code>applications/mower/</code>, and why.</div>
+          </div>
+          <span class="doc-status">DRAFT</span>
+        </li>
+        <li data-filterable="ARCH-006 iteration roadmap scope progression">
+          <span class="doc-id">ARCH-006</span>
+          <div>
+            <a class="doc-link" href="iteration-roadmap.html">Iteration Roadmap</a>
+            <div class="doc-oneliner">What's in scope for iterations 1, 2, 3, and beyond. Scope discipline over the 18-month arc.</div>
+          </div>
+          <span class="doc-status">DRAFT</span>
+        </li>
+      </ul>
+    </section>
+
+    <div class="footer-nav">
+      <a href="../index.html">← Corpus Home</a>
+      <span>Next: <a href="../nodes/index.html">Nodes →</a></span>
+    </div>
+
+  </main>
+</div>
+
+<script src="../shared/shared.js"></script>
+</body>
+</html>

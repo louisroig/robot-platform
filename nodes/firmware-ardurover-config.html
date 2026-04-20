@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FW-ACP · ArduCopter Configuration</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=IBM+Plex+Sans:wght@300;400;500;600;700&family=IBM+Plex+Serif:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../shared/shared.css">
+</head>
+<body>
+<div class="doc-bar">
+  <a class="doc-bar-crumb" href="../index.html">← HOME</a><span class="doc-bar-sep">·</span>
+  <a class="doc-bar-crumb" href="index.html">NODES</a><span class="doc-bar-sep">·</span>
+  <span class="doc-bar-id">FW-ACP</span><span class="doc-bar-sep">·</span>
+  <span class="doc-bar-path">ArduCopter Configuration</span><span class="doc-bar-sep">·</span>
+  <span style="color: var(--ink-dim)">REV 0.1</span>
+  <div class="doc-bar-status"><span class="status-dot"></span><span>DRAFT</span></div>
+  <div class="doc-bar-tools"><button class="tool-btn" onclick="window.print()">PRINT</button><button class="tool-btn" onclick="copyLink(event)">COPY LINK</button></div>
+</div>
+<div class="container single">
+  <main class="prose-serif">
+    <div class="doc-header">
+      <div class="doc-type">FIRMWARE CONFIGURATION</div>
+      <h1 class="doc-title">ArduCopter Parameter Set</h1>
+      <p class="doc-subtitle">ArduCopter 4.5 parameter set for the iFlight Blitz Whoop F7 AIO flight controller driving the sub-250 g mapping drone.</p>
+      <div class="doc-meta">
+        <div class="meta-item"><div class="meta-label">Document ID</div><div class="meta-value">FW-ACP</div></div>
+        <div class="meta-item"><div class="meta-label">Revision</div><div class="meta-value">0.1 · draft</div></div>
+        <div class="meta-item"><div class="meta-label">Target FC</div><div class="meta-value">iFlight Blitz Whoop F7 AIO</div></div>
+        <div class="meta-item"><div class="meta-label">ArduCopter</div><div class="meta-value">4.5 (quad-X)</div></div>
+      </div>
+    </div>
+
+    <section><div class="section-header"><span class="section-num">1.0</span><h2 class="section-title">Purpose</h2></div>
+      <p>Captures the material parameter choices for the drone's flight controller firmware. The <em>full</em> parameter dump (~1100 parameters) is kept in <code>deploy/firmware/arducopter_params.yaml</code>; this document lists only the parameters we deliberately diverge from default on.</p>
+      <p>Nomenclature: despite the "ArduRover" hint in the filename for historical reasons, the iteration-1 drone is a quad running <strong>ArduCopter</strong>. The parameter set is ArduCopter's.</p>
+    </section>
+
+    <section><div class="section-header"><span class="section-num">2.0</span><h2 class="section-title">Frame Configuration</h2></div>
+      <div class="data-table-wrap"><table class="data-table"><thead><tr><th>Param</th><th>Value</th><th>Notes</th></tr></thead><tbody>
+        <tr><td>FRAME_CLASS</td><td>1</td><td>Quad</td></tr>
+        <tr><td>FRAME_TYPE</td><td>1</td><td>X</td></tr>
+        <tr><td>WVANE_ENABLE</td><td>0</td><td>No weather-vaning</td></tr>
+      </tbody></table></div>
+    </section>
+
+    <section><div class="section-header"><span class="section-num">3.0</span><h2 class="section-title">Battery / Failsafe</h2></div>
+      <div class="data-table-wrap"><table class="data-table"><thead><tr><th>Param</th><th>Value</th><th>Notes</th></tr></thead><tbody>
+        <tr><td>BATT_MONITOR</td><td>4</td><td>Voltage + current</td></tr>
+        <tr><td>BATT_CAPACITY</td><td>550</td><td>mAh</td></tr>
+        <tr><td>BATT_LOW_VOLT</td><td>10.5</td><td>3S pack, conservative</td></tr>
+        <tr><td>BATT_CRT_VOLT</td><td>9.9</td><td>RTL trigger</td></tr>
+        <tr><td>BATT_FS_LOW_ACT</td><td>2</td><td>Land on battery low</td></tr>
+        <tr><td>BATT_FS_CRT_ACT</td><td>3</td><td>Land immediately on critical</td></tr>
+        <tr><td>FS_GCS_ENABLE</td><td>1</td><td>Enable GCS failsafe (Pi's mavros)</td></tr>
+        <tr><td>FS_EKF_ACTION</td><td>1</td><td>Land on EKF failure</td></tr>
+        <tr><td>FS_THR_ENABLE</td><td>1</td><td>Throttle failsafe enabled (ELRS loss)</td></tr>
+      </tbody></table></div>
+    </section>
+
+    <section><div class="section-header"><span class="section-num">4.0</span><h2 class="section-title">Telemetry</h2></div>
+      <div class="data-table-wrap"><table class="data-table"><thead><tr><th>Param</th><th>Value</th></tr></thead><tbody>
+        <tr><td>SERIAL2_PROTOCOL</td><td>2 (MAVLink2)</td></tr>
+        <tr><td>SERIAL2_BAUD</td><td>57 (57600)</td></tr>
+        <tr><td>SR2_EXT_STAT</td><td>2 Hz</td></tr>
+        <tr><td>SR2_POSITION</td><td>5 Hz</td></tr>
+        <tr><td>SR2_RC_CHAN</td><td>1 Hz</td></tr>
+      </tbody></table></div>
+      <p>TELEM2 connects to XIAO ESP32-S3 (see <a href="firmware-xiao-bridge.html">FW-XIAO</a>).</p>
+    </section>
+
+    <section><div class="section-header"><span class="section-num">5.0</span><h2 class="section-title">Flight Modes</h2></div>
+      <p>RC switch slots (FLTMODE1..6): ACRO, STABILIZE, ALT_HOLD, LOITER, AUTO, RTL. Iteration 1 missions use AUTO for scripted capture and RTL for recovery.</p>
+    </section>
+
+    <section><div class="section-header"><span class="section-num">6.0</span><h2 class="section-title">ELRS / RC</h2></div>
+      <div class="data-table-wrap"><table class="data-table"><thead><tr><th>Param</th><th>Value</th></tr></thead><tbody>
+        <tr><td>RSSI_TYPE</td><td>3 (CRSF)</td></tr>
+        <tr><td>SERIAL1_PROTOCOL</td><td>23 (RCIN)</td></tr>
+        <tr><td>ARMING_CHECK</td><td>-1 (all checks)</td></tr>
+      </tbody></table></div>
+    </section>
+
+    <section><div class="section-header"><span class="section-num">7.0</span><h2 class="section-title">Open Issues</h2></div>
+      <ol class="indent-list">
+        <li><strong>OPEN-01</strong> — PID tuning: frame-specific; pending on-bench and in-flight Autotune runs.</li>
+        <li><strong>OPEN-02</strong> — ESC telemetry via BlueJay — currently disabled; enable in iteration 2 for better power monitoring.</li>
+      </ol>
+    </section>
+
+    <section><div class="section-header"><span class="section-num">8.0</span><h2 class="section-title">Revision</h2></div>
+      <table class="revision-table"><thead><tr><th>Rev</th><th>Date</th><th>Author</th><th>Change</th></tr></thead><tbody><tr><td class="rev">0.1</td><td>2026-04-19</td><td>Louis Roig &amp; Claude Opus 4.7</td><td>Initial draft.</td></tr></tbody></table>
+    </section>
+
+    <div class="footer-nav"><a href="index.html">← Nodes Index</a></div>
+  </main>
+</div>
+<script src="../shared/shared.js"></script>
+</body></html>

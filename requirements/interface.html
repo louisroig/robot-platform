@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IR · Interface Requirements</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=IBM+Plex+Sans:wght@300;400;500;600;700&family=IBM+Plex+Serif:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../shared/shared.css">
+</head>
+<body>
+<div class="doc-bar">
+  <a class="doc-bar-crumb" href="../index.html">← HOME</a><span class="doc-bar-sep">·</span>
+  <a class="doc-bar-crumb" href="index.html">REQUIREMENTS</a><span class="doc-bar-sep">·</span>
+  <span class="doc-bar-id">IR</span><span class="doc-bar-sep">·</span>
+  <span class="doc-bar-path">Interface Requirements</span><span class="doc-bar-sep">·</span>
+  <span style="color: var(--ink-dim)">REV 0.1</span>
+  <div class="doc-bar-status"><span class="status-dot"></span><span>DRAFT</span></div>
+  <div class="doc-bar-tools"><button class="tool-btn" onclick="window.print()">PRINT</button><button class="tool-btn" onclick="copyLink(event)">COPY LINK</button></div>
+</div>
+<div class="container single">
+  <main class="prose-serif">
+    <div class="doc-header">
+      <div class="doc-type requirement">REQUIREMENTS · INTERFACE</div>
+      <h1 class="doc-title">Interface Requirements</h1>
+      <p class="doc-subtitle">System-level requirements levied on contracts between components. Complement to the per-ICD <code>REQ-ICD-*</code> requirements.</p>
+      <div class="doc-meta">
+        <div class="meta-item"><div class="meta-label">Document ID</div><div class="meta-value">IR</div></div>
+        <div class="meta-item"><div class="meta-label">Prefix</div><div class="meta-value">IR-</div></div>
+      </div>
+    </div>
+
+    <section><div class="section-header"><span class="section-num">1.0</span><h2 class="section-title">About this document</h2></div>
+      <p>Each ICD in the <a href="../interfaces/index.html">interfaces catalog</a> contains its own local requirements (<code>REQ-ICD-XXX-NN</code>). This document captures only the cross-cutting interface requirements that apply to the system as a whole — architectural constraints on how interfaces are named, versioned, and evolved.</p>
+    </section>
+
+    <section><div class="section-header"><span class="section-num">2.0</span><h2 class="section-title">Requirements</h2></div>
+      <ul class="req-list">
+
+        <li class="req-item"><div class="req-id interface">IR-001</div><div>
+          <div class="req-text">All ROS 2 topics, services, and actions in the platform shall conform to the corresponding ICD in <a href="../interfaces/index.html">/interfaces/</a>, including QoS profile, message type, and semantic rules.</div>
+          <div class="req-trace">verified by: code review + <code>TEST-QOS-*</code> runtime checks</div>
+        </div></li>
+
+        <li class="req-item"><div class="req-id interface">IR-002</div><div>
+          <div class="req-text">All safety-critical topics shall have exactly one authorized publisher; additional publishers shall be detected at runtime.</div>
+          <div class="req-trace">maps to: <a href="safety.html">SR-009</a> · allocated to: <a href="../nodes/srs-system-monitor.html">system_monitor</a> · verified by: <a href="../verification/test-saf-016.html">TEST-SAF-016</a></div>
+        </div></li>
+
+        <li class="req-item"><div class="req-id interface">IR-003</div><div>
+          <div class="req-text">Platform message types (<code>platform_msgs</code>) shall use generic names (tool, terrain, area, zone) and shall not reference application-specific concepts.</div>
+          <div class="req-trace">maps to: <a href="../architecture/platform-vs-application.html">ARCH-005</a> · verified by: documentation lint + code review</div>
+        </div></li>
+
+        <li class="req-item"><div class="req-id interface">IR-004</div><div>
+          <div class="req-text">Every external interface (REST, WebSocket) shall require authentication; no endpoint shall expose rover state or command capability without a valid bearer token.</div>
+          <div class="req-trace">allocated to: <a href="../nodes/srs-mission-api.html">mission_api</a>, <a href="../nodes/srs-telemetry-publisher.html">telemetry_publisher</a> · verified by: <code>TEST-API-001</code>, <code>TEST-API-012</code></div>
+        </div></li>
+
+        <li class="req-item"><div class="req-id interface">IR-005</div><div>
+          <div class="req-text">ICDs shall be versioned. Breaking changes to a published interface require a revision bump and a documented migration path.</div>
+          <div class="req-rationale">Guards against undetected downstream breakage when interface semantics change.</div>
+          <div class="req-trace">verified by: revision history in each ICD; code review</div>
+        </div></li>
+
+        <li class="req-item"><div class="req-id interface">IR-006</div><div>
+          <div class="req-text">All topic timing properties (rate, deadline, lifespan) shall match the published ICD within stated tolerances at runtime.</div>
+          <div class="req-trace">allocated to: individual publishers · verified by: per-ICD rate tests</div>
+        </div></li>
+
+      </ul>
+    </section>
+
+    <div class="footer-nav"><a href="performance.html">← Performance</a><span>Next: <a href="traceability-matrix.html">Traceability Matrix →</a></span></div>
+  </main>
+</div>
+<script src="../shared/shared.js"></script>
+</body></html>

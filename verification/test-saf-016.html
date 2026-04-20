@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TEST-SAF-016 · Rogue publisher detection</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=IBM+Plex+Sans:wght@300;400;500;600;700&family=IBM+Plex+Serif:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../shared/shared.css">
+</head>
+<body>
+<div class="doc-bar">
+  <a class="doc-bar-crumb" href="../index.html">← HOME</a><span class="doc-bar-sep">·</span>
+  <a class="doc-bar-crumb" href="index.html">VERIFICATION</a><span class="doc-bar-sep">·</span>
+  <span class="doc-bar-id">TEST-SAF-016</span><span class="doc-bar-sep">·</span>
+  <span class="doc-bar-path">Rogue publisher detection</span><span class="doc-bar-sep">·</span>
+  <span style="color: var(--ink-dim)">REV 0.1</span>
+  <div class="doc-bar-status"><span class="status-dot"></span><span>DRAFT</span></div>
+  <div class="doc-bar-tools"><button class="tool-btn" onclick="window.print()">PRINT</button><button class="tool-btn" onclick="copyLink(event)">COPY LINK</button></div>
+</div>
+<div class="container single">
+  <main class="prose-serif">
+    <div class="doc-header">
+      <div class="doc-type test">TEST PROTOCOL · SAFETY</div>
+      <h1 class="doc-title">Rogue publisher detection</h1>
+      <p class="doc-subtitle">Integration test: verify that an unauthorized second publisher on <code>/hal/cmd_vel_safe</code> is detected and forces safety to ESTOP.</p>
+      <div class="doc-meta">
+        <div class="meta-item"><div class="meta-label">Test ID</div><div class="meta-value">TEST-SAF-016</div></div>
+        <div class="meta-item"><div class="meta-label">Method</div><div class="meta-value">Integration</div></div>
+        <div class="meta-item"><div class="meta-label">Automation</div><div class="meta-value">CI (launch_testing)</div></div>
+      </div>
+    </div>
+
+    <section><div class="section-header"><span class="section-num">1.0</span><h2 class="section-title">Requirements verified</h2></div>
+      <ul class="indent-list">
+        <li><a href="../requirements/safety.html">SR-009</a> — detect and reject unauthorized publishers on safety-critical topics.</li>
+        <li><a href="../interfaces/icd-hal-cmd-vel-safe.html">REQ-ICD-002-05</a> — only safety_monitor shall publish.</li>
+        <li><a href="../requirements/interface.html">IR-002</a> — exactly one authorized publisher.</li>
+      </ul>
+    </section>
+
+    <section><div class="section-header"><span class="section-num">2.0</span><h2 class="section-title">Method</h2></div>
+      <p>Integration test. Full safety stack launched. A test harness spawns a second, unauthorized publisher on <code>/hal/cmd_vel_safe</code>. The test verifies that system_monitor detects the duplicate publisher within 5 s and transitions /safety/state to ESTOP with reason "rogue_publisher".</p>
+    </section>
+
+    <section><div class="section-header"><span class="section-num">3.0</span><h2 class="section-title">Preconditions</h2></div>
+      <ul class="indent-list">
+        <li>safety_monitor running, publishing /hal/cmd_vel_safe.</li>
+        <li>system_monitor running with default publisher_count_poll_hz = 1 Hz.</li>
+        <li>/safety/state is initially OK.</li>
+      </ul>
+    </section>
+
+    <section><div class="section-header"><span class="section-num">4.0</span><h2 class="section-title">Procedure</h2></div>
+      <ol class="indent-list">
+        <li>Confirm initial state: <code>/safety/state</code> = OK for at least 2 s.</li>
+        <li>Start a second publisher node (<code>rogue_publisher.py</code>) that publishes Twist at 10 Hz on <code>/hal/cmd_vel_safe</code> with non-zero velocity.</li>
+        <li>Record timestamp t_rogue when the rogue publisher registers.</li>
+        <li>Monitor <code>/safety/state</code>; find the first message with <code>state == ESTOP (2)</code> after t_rogue. Record t_estop.</li>
+        <li>Verify <code>reasons[]</code> contains a string starting with <code>"rogue_publisher"</code>.</li>
+        <li>Compute latency = t_estop − t_rogue.</li>
+        <li>Stop the rogue publisher. Wait 10 s. Verify <code>/safety/state</code> does NOT auto-clear (this is a latched condition).</li>
+        <li>Call <code>/safety/reset</code>; verify it returns success=TRUE after the rogue has been gone for enough samples; verify state transitions to OK.</li>
+      </ol>
+    </section>
+
+    <section><div class="section-header"><span class="section-num">5.0</span><h2 class="section-title">Expected results</h2></div>
+      <ul class="indent-list">
+        <li>Latency ≤ 5 s (accounting for 1 Hz poll + 2-sample confirmation window).</li>
+        <li><code>reasons[]</code> contains <code>"rogue_publisher:/hal/cmd_vel_safe"</code>.</li>
+        <li>State stays at ESTOP even after rogue stops publishing.</li>
+        <li>/safety/reset succeeds only when rogue has been absent for at least 2 polling cycles.</li>
+      </ul>
+    </section>
+
+    <section><div class="section-header"><span class="section-num">6.0</span><h2 class="section-title">Pass / fail</h2></div>
+      <p><strong>Pass:</strong> All of: latency ≤ 5 s, correct reason string, latched until reset, reset works once condition cleared.</p>
+      <p><strong>Fail:</strong> Latency &gt; 5 s, wrong reason, state auto-clears without reset, or reset succeeds while rogue still present.</p>
+    </section>
+
+    <section><div class="section-header"><span class="section-num">7.0</span><h2 class="section-title">Fixtures</h2></div>
+      <p><code>test/fixtures/rogue_publisher.py</code> — minimal rclpy node that publishes Twist.</p>
+    </section>
+
+    <section><div class="section-header"><span class="section-num">8.0</span><h2 class="section-title">Automation status</h2></div>
+      <p>Automated. <code>platform_safety/test/test_saf_016_rogue_publisher.py</code>. Runs nightly (excluded from per-PR runs due to ~30 s runtime).</p>
+    </section>
+
+    <section><div class="section-header"><span class="section-num">9.0</span><h2 class="section-title">Revision</h2></div>
+      <table class="revision-table"><thead><tr><th>Rev</th><th>Date</th><th>Author</th><th>Change</th></tr></thead><tbody><tr><td class="rev">0.1</td><td>2026-04-19</td><td>Louis Roig &amp; Claude Opus 4.7</td><td>Initial draft.</td></tr></tbody></table>
+    </section>
+
+    <div class="footer-nav"><a href="index.html">← Verification Index</a><span>Related: <a href="../nodes/srs-system-monitor.html">SRS-HAL-004</a></span></div>
+  </main>
+</div>
+<script src="../shared/shared.js"></script>
+</body></html>

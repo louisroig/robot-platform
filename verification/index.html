@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Verification · Ground-Air Platform Spec</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=IBM+Plex+Sans:wght@300;400;500;600;700&family=IBM+Plex+Serif:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../shared/shared.css">
+</head>
+<body>
+
+<div class="doc-bar">
+  <a class="doc-bar-crumb" href="../index.html">← HOME</a>
+  <span class="doc-bar-sep">·</span>
+  <span class="doc-bar-id">VRF-INDEX</span>
+  <span class="doc-bar-sep">·</span>
+  <span class="doc-bar-path">/verification</span>
+  <span class="doc-bar-sep">·</span>
+  <span style="color: var(--ink-dim)">REV 0.1</span>
+  <div class="doc-bar-status">
+    <span class="status-dot"></span>
+    <span>DRAFT</span>
+  </div>
+  <div class="doc-bar-tools">
+    <button class="tool-btn" onclick="window.print()">PRINT</button>
+    <button class="tool-btn" onclick="copyLink(event)">COPY LINK</button>
+  </div>
+</div>
+
+<div class="container single">
+  <main>
+
+    <div class="doc-header">
+      <div class="doc-type test">§ 06 · EVIDENCE</div>
+      <h1 class="doc-title">Verification</h1>
+      <p class="doc-subtitle">How we prove the system meets its requirements. Test strategy, representative protocols, and the M6 field test.</p>
+
+      <div class="doc-meta">
+        <div class="meta-item"><div class="meta-label">Section ID</div><div class="meta-value">VRF</div></div>
+        <div class="meta-item"><div class="meta-label">Documents</div><div class="meta-value">5</div></div>
+        <div class="meta-item"><div class="meta-label">Status</div><div class="meta-value">Draft · Rev 0.1</div></div>
+      </div>
+    </div>
+
+    <section>
+      <div class="section-header">
+        <span class="section-num">1.0</span>
+        <h2 class="section-title">Verification strategy</h2>
+      </div>
+
+      <p class="prose-serif" style="font-family: var(--font-serif); font-size: 15px;">
+        Verification for iteration 1 is pragmatic: unit tests for pure-function behavior, integration tests for interactions
+        between nodes, and a single field test for end-to-end operator-in-the-loop evidence. Formal analysis, fault injection
+        at scale, and certification-oriented methods come in later iterations.
+      </p>
+
+      <p class="prose-serif" style="font-family: var(--font-serif); font-size: 15px;">
+        The <a href="test-plan.html">test plan</a> is the umbrella document. The three example test protocols show how a
+        requirement is traced into a concrete, automatable test. The <a href="field-test-protocol.html">M6 field test</a> is
+        the pass/fail gate for iteration 1.
+      </p>
+
+      <div class="data-table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr><th>Method</th><th>Scope</th><th>Where it runs</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><span class="field-name">Unit</span></td><td>Single class / function, mocked dependencies</td><td>pytest / gtest in CI</td></tr>
+            <tr><td><span class="field-name">Integration</span></td><td>Multiple nodes via launch_testing, real DDS middleware</td><td>launch_testing in CI</td></tr>
+            <tr><td><span class="field-name">System</span></td><td>Full stack, simulated hardware where possible</td><td>manual pre-release</td></tr>
+            <tr><td><span class="field-name">Field</span></td><td>Full stack, real hardware, real yard</td><td>M6 milestone procedure</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section>
+      <div class="section-header">
+        <span class="section-num">2.0</span>
+        <h2 class="section-title">Documents</h2>
+      </div>
+
+      <ul class="doc-list">
+        <li data-filterable="test plan strategy overall">
+          <span class="doc-id">VRF-PLAN</span>
+          <div>
+            <a class="doc-link" href="test-plan.html">Test Plan</a>
+            <div class="doc-oneliner">Umbrella: methods, tooling, coverage targets, reporting, entry/exit criteria per phase.</div>
+          </div>
+          <span class="doc-status">DRAFT</span>
+        </li>
+        <li data-filterable="TEST-SAF-011 estop latency">
+          <span class="doc-id">TEST-SAF-011</span>
+          <div>
+            <a class="doc-link" href="test-saf-011.html">Safety monitor ESTOP latency</a>
+            <div class="doc-oneliner">Integration test verifying ≤ 50 ms from person detection to zero-velocity on <code>/hal/cmd_vel_safe</code>.</div>
+          </div>
+          <span class="doc-status">DRAFT</span>
+        </li>
+        <li data-filterable="TEST-HAL-009 motor driver timeout">
+          <span class="doc-id">TEST-HAL-009</span>
+          <div>
+            <a class="doc-link" href="test-hal-009.html">Motor driver command timeout</a>
+            <div class="doc-oneliner">Integration test verifying motors halt within 500 ms of loss of <code>/hal/cmd_vel_safe</code>.</div>
+          </div>
+          <span class="doc-status">DRAFT</span>
+        </li>
+        <li data-filterable="TEST-SAF-016 rogue publisher detection">
+          <span class="doc-id">TEST-SAF-016</span>
+          <div>
+            <a class="doc-link" href="test-saf-016.html">Rogue publisher detection</a>
+            <div class="doc-oneliner">Integration test verifying <code>system_monitor</code> detects unauthorized publishers and forces ESTOP.</div>
+          </div>
+          <span class="doc-status">DRAFT</span>
+        </li>
+        <li data-filterable="field test protocol M6 milestone">
+          <span class="doc-id">VRF-FIELD</span>
+          <div>
+            <a class="doc-link" href="field-test-protocol.html">M6 Field Test Protocol</a>
+            <div class="doc-oneliner">Twelve-step end-to-end field procedure. Pass/fail gate for iteration 1.</div>
+          </div>
+          <span class="doc-status">DRAFT</span>
+        </li>
+      </ul>
+    </section>
+
+    <div class="footer-nav">
+      <a href="../requirements/index.html">← Requirements</a>
+      <span><a href="../index.html">Corpus Home →</a></span>
+    </div>
+
+  </main>
+</div>
+
+<script src="../shared/shared.js"></script>
+</body>
+</html>

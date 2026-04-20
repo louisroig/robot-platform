@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ARCH-004 · Deployment &amp; Hardware Allocation</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=IBM+Plex+Sans:wght@300;400;500;600;700&family=IBM+Plex+Serif:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../shared/shared.css">
+</head>
+<body>
+
+<div class="doc-bar">
+  <a class="doc-bar-crumb" href="../index.html">← HOME</a>
+  <span class="doc-bar-sep">·</span>
+  <a class="doc-bar-crumb" href="index.html">ARCHITECTURE</a>
+  <span class="doc-bar-sep">·</span>
+  <span class="doc-bar-id">ARCH-004</span>
+  <span class="doc-bar-sep">·</span>
+  <span class="doc-bar-path">Deployment</span>
+  <span class="doc-bar-sep">·</span>
+  <span style="color: var(--ink-dim)">REV 0.1</span>
+  <div class="doc-bar-status">
+    <span class="status-dot"></span>
+    <span>DRAFT</span>
+  </div>
+  <div class="doc-bar-tools">
+    <button class="tool-btn" onclick="window.print()">PRINT</button>
+    <button class="tool-btn" onclick="copyLink(event)">COPY LINK</button>
+  </div>
+</div>
+
+<div class="container">
+
+  <nav class="toc">
+    <div class="toc-title">CONTENTS</div>
+    <ul class="toc-list">
+      <li class="toc-item"><a class="toc-link" href="#s1"><span class="toc-num">1.0</span>Purpose</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s2"><span class="toc-num">2.0</span>Hardware Inventory</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s3"><span class="toc-num">3.0</span>Ground Unit (Rover)</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s4"><span class="toc-num">4.0</span>Aerial Unit (Drone)</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s5"><span class="toc-num">5.0</span>Mobile Device</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s6"><span class="toc-num">6.0</span>Power &amp; Wiring</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s7"><span class="toc-num">7.0</span>Software Allocation</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s8"><span class="toc-num">8.0</span>Networking</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s9"><span class="toc-num">9.0</span>Open Issues</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s10"><span class="toc-num">10.0</span>Revision History</a></li>
+    </ul>
+  </nav>
+
+  <main>
+
+    <div class="doc-header">
+      <div class="doc-type arch">ARCHITECTURE · DEPLOYMENT</div>
+      <h1 class="doc-title">Deployment &amp; Hardware Allocation</h1>
+      <p class="doc-subtitle">Which software runs on which silicon. The physical layout of the platform across the rover, the drone, the XIAO bridge, and (in iteration 2+) the safety MCU.</p>
+
+      <div class="doc-meta">
+        <div class="meta-item"><div class="meta-label">Document ID</div><div class="meta-value">ARCH-004</div></div>
+        <div class="meta-item"><div class="meta-label">Revision</div><div class="meta-value">0.1 · draft</div></div>
+        <div class="meta-item"><div class="meta-label">Owner</div><div class="meta-value">systems</div></div>
+        <div class="meta-item"><div class="meta-label">Classification</div><div class="meta-value">Internal — Draft</div></div>
+        <div class="meta-item"><div class="meta-label">Last Updated</div><div class="meta-value">2026-04-19</div></div>
+      </div>
+    </div>
+
+    <section id="s1">
+      <div class="section-header">
+        <span class="section-num">1.0</span>
+        <h2 class="section-title">Purpose</h2>
+      </div>
+
+      <p>The <a href="layered-architecture.html">layered architecture</a> document described the platform's functional stack. This document describes its physical realization: which chips run which code, how they talk, and how they are powered.</p>
+
+      <p>Allocation decisions that matter for code authors (callback groups, QoS, latency budgets) are noted inline and cross-referenced to the relevant <a href="../interfaces/index.html">ICDs</a>.</p>
+    </section>
+
+    <section id="s2">
+      <div class="section-header">
+        <span class="section-num">2.0</span>
+        <h2 class="section-title">Hardware Inventory</h2>
+      </div>
+
+      <div class="data-table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr><th>Platform</th><th>Component</th><th>Part</th><th>Role</th></tr>
+          </thead>
+          <tbody>
+            <tr><td rowspan="8">Rover</td><td>SBC</td><td>Raspberry Pi 5 (4/8 GB)</td><td>Runs all ROS 2 nodes</td></tr>
+            <tr><td>Motor controller</td><td>RoboClaw 2x15A</td><td>Tracked motor drive + encoders</td></tr>
+            <tr><td>Motors</td><td>DC geared 12V × 2</td><td>Drive the two aluminum tracks</td></tr>
+            <tr><td>Camera</td><td>OAK-D Lite</td><td>Stereo + onboard YOLO NPU</td></tr>
+            <tr><td>IMU</td><td>ISM330DHCX + MMC5983MA</td><td>Orientation + magnetometer on Qwiic I²C</td></tr>
+            <tr><td>E-stop</td><td>NC bulkhead switch</td><td>Inline with motor power; also read by GPIO</td></tr>
+            <tr><td>Battery</td><td>4S LiFePO4 / LiPo, ~5 Ah</td><td>14.8 V nominal</td></tr>
+            <tr><td>GPS (optional)</td><td>HGLRC M80</td><td>UART to Pi</td></tr>
+
+            <tr><td rowspan="5">Drone</td><td>Frame</td><td>BETAFPV Pavo20 Pro II</td><td>Sub-250 g all-up target</td></tr>
+            <tr><td>FC</td><td>iFlight Blitz Whoop F7 AIO</td><td>STM32F745; ArduCopter firmware</td></tr>
+            <tr><td>GPS</td><td>HGLRC M80</td><td>UART to FC</td></tr>
+            <tr><td>Bridge</td><td>XIAO ESP32-S3 Sense</td><td>Wi-Fi MAVLink bridge + OV2640 capture</td></tr>
+            <tr><td>Battery</td><td>3S 550 mAh LiPo</td><td>TATTU R-Line</td></tr>
+
+            <tr><td>Operator</td><td>Mobile</td><td>iOS / Android</td><td>Hosts the operator app</td></tr>
+            <tr><td>Operator</td><td>RC transmitter</td><td>BETAFPV LiteRadio 2 SE</td><td>Manual drone override via ELRS</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="s3">
+      <div class="section-header">
+        <span class="section-num">3.0</span>
+        <h2 class="section-title">Ground Unit (Rover)</h2>
+      </div>
+
+      <p>The rover's compute is a single Raspberry Pi 5 running Ubuntu Server 24.04 and ROS 2 Humble. Every custom ROS node in the corpus — unless marked "drone side" — runs here.</p>
+
+      <div class="subsection-title">3.1 Pi 5 software stack</div>
+
+      <ul class="indent-list">
+        <li><strong>OS:</strong> Ubuntu Server 24.04 LTS (arm64).</li>
+        <li><strong>ROS 2:</strong> Humble Hawksbill. DDS implementation: default Cyclone DDS.</li>
+        <li><strong>Python:</strong> 3.12 (for the rclpy-based nodes and mission_api).</li>
+        <li><strong>C++:</strong> gcc 13 (used by <a href="../nodes/srs-safety-monitor.html">safety_monitor</a>).</li>
+        <li><strong>Service supervision:</strong> systemd units per node group (hal, perception, safety, mission, telemetry).</li>
+      </ul>
+
+      <div class="subsection-title">3.2 Peripheral attachment</div>
+
+      <div class="data-table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr><th>Peripheral</th><th>Bus</th><th>Pi endpoint</th><th>Rate</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>RoboClaw</td><td>USB serial (FTDI)</td><td><code>/dev/ttyACM_roboclaw</code> (udev rule)</td><td>115200 baud</td></tr>
+            <tr><td>OAK-D Lite</td><td>USB3</td><td>depthai SDK auto-detected</td><td>stereo 30 fps · YOLO on NPU</td></tr>
+            <tr><td>ISM330 + MMC5983</td><td>I²C (Qwiic bus 1)</td><td>/dev/i2c-1</td><td>400 kHz</td></tr>
+            <tr><td>E-stop switch</td><td>GPIO (BCM 17, input pull-up)</td><td>libgpiod</td><td>polled at 50 Hz</td></tr>
+            <tr><td>HGLRC M80 (optional)</td><td>UART</td><td><code>/dev/ttyAMA0</code></td><td>9600 baud, UBX</td></tr>
+            <tr><td>Wi-Fi</td><td>Pi built-in</td><td>wlan0</td><td>home AP</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="callout note">
+        <div class="callout-label">USB device stability</div>
+        <p>The RoboClaw is addressed by a udev-installed symlink (<code>/dev/ttyACM_roboclaw</code>) rather than the auto-assigned <code>ttyACM0</code>. This ensures stable device naming across reboots and when the OAK-D Lite is connected in a different order. Rule lives in <code>deploy/udev/99-robotplatform.rules</code>.</p>
+      </div>
+    </section>
+
+    <section id="s4">
+      <div class="section-header">
+        <span class="section-num">4.0</span>
+        <h2 class="section-title">Aerial Unit (Drone)</h2>
+      </div>
+
+      <p>The drone has two compute nodes: the flight controller (STM32 running ArduCopter) and the XIAO ESP32-S3 bridge.</p>
+
+      <div class="subsection-title">4.1 Flight controller</div>
+
+      <ul class="indent-list">
+        <li>iFlight Blitz Whoop F7 AIO (STM32F745 MCU, ICM42688 gyro, BlueJay ESC firmware).</li>
+        <li>Flashed with <strong>ArduCopter 4.5</strong> (quad-X configuration).</li>
+        <li>Parameters captured as <a href="../nodes/firmware-ardurover-config.html">FW-ACP</a> — dump + rationale.</li>
+        <li>TELEM1 reserved for the ELRS receiver's serial telemetry (not used in iteration 1).</li>
+        <li>TELEM2 connected to XIAO ESP32-S3 at 57600 baud for MAVLink.</li>
+      </ul>
+
+      <div class="subsection-title">4.2 XIAO ESP32-S3 Sense</div>
+
+      <ul class="indent-list">
+        <li>Custom firmware — see <a href="../nodes/firmware-xiao-bridge.html">FW-XIAO</a>.</li>
+        <li>Role 1: <strong>Wi-Fi MAVLink bridge.</strong> Forwards MAVLink between FC UART and ground station TCP. The Pi's mavros node connects to <code>tcp://xiao.local:5760</code>.</li>
+        <li>Role 2: <strong>OV2640 capture.</strong> Receives a capture command via a MAVLink message or a side-channel HTTP endpoint; captures a JPEG still; stores on its micro-SD or transfers via Wi-Fi.</li>
+        <li>Powered from drone's 5V BEC rail (shared with RC receiver).</li>
+      </ul>
+
+      <div class="callout warning">
+        <div class="callout-label">Why not on the FC itself</div>
+        <p>The Blitz F7 AIO does not have enough GPIO or camera bandwidth for onboard capture, and its firmware is already full-utilization for flight control. The XIAO is a low-cost, low-weight add-on that handles the two things the FC cannot: Wi-Fi and camera.</p>
+      </div>
+    </section>
+
+    <section id="s5">
+      <div class="section-header">
+        <span class="section-num">5.0</span>
+        <h2 class="section-title">Mobile Device</h2>
+      </div>
+
+      <ul class="indent-list">
+        <li>Operator's personal iOS or Android phone.</li>
+        <li>Runs the mobile app (framework under evaluation: React Native vs. Flutter — see <a href="iteration-roadmap.html">ARCH-006</a>).</li>
+        <li>Communicates with the Pi via Wi-Fi: REST (<a href="../interfaces/icd-mission-rest-api.html">ICD-API-001</a>) and WebSocket telemetry (<a href="../interfaces/icd-mission-telemetry-ws.html">ICD-API-002</a>).</li>
+        <li>No direct ROS 2 connection. No DDS on the phone.</li>
+      </ul>
+    </section>
+
+    <section id="s6">
+      <div class="section-header">
+        <span class="section-num">6.0</span>
+        <h2 class="section-title">Power &amp; Wiring</h2>
+      </div>
+
+      <div class="subsection-title">6.1 Rover power tree</div>
+
+      <div class="ascii-diagram">4S pack  (14.8V nominal, ~5Ah)
+   │
+   ├──► <span class="em">Main power switch (manual rotary)</span>
+   │        │
+   │        ├──► <span class="safety">E-stop NC relay</span> ──► RoboClaw motor power (14.8V)
+   │        │                                    │
+   │        │                                    ├──► Left motor
+   │        │                                    └──► Right motor
+   │        │
+   │        └──► Buck converter 14.8V → 5V / 4A ──► Pi 5
+   │                                                 │
+   │                                                 ├──► OAK-D Lite (USB3 5V 900 mA)
+   │                                                 └──► IMU (Qwiic 3.3V)
+   │
+   └──► Battery sense tap ──► RoboClaw ADC (voltage reported on <span class="sub">/hal/battery</span>)</div>
+
+      <div class="callout safety">
+        <div class="callout-label">Hard safety path</div>
+        <p>The e-stop NC relay is in series with the motor power rail, <em>not</em> the logic rail. Pressing it removes motor power while leaving the Pi and all sensing alive — so the system can report the e-stop state, enter the ESTOP software state, and resume without a boot cycle when released.</p>
+      </div>
+
+      <div class="subsection-title">6.2 Drone power tree</div>
+
+      <div class="ascii-diagram">3S 550 mAh pack
+   │
+   ├──► FC VBAT ──► 5V BEC on FC ──► XIAO ESP32-S3 Sense
+   │                             └──► ELRS receiver
+   │
+   └──► ESC rail ──► 4 motors</div>
+
+      <p>The drone's safety story differs from the rover's: in iteration 1 the drone is single-failure tolerant by virtue of being sub-250 g, operator-supervised, and airborne for &lt; 5 minutes per mission. The rover operates around living things and for hours; the drone does not.</p>
+    </section>
+
+    <section id="s7">
+      <div class="section-header">
+        <span class="section-num">7.0</span>
+        <h2 class="section-title">Software Allocation</h2>
+      </div>
+
+      <p>Mapping of every iteration-1 software artifact to its host:</p>
+
+      <div class="data-table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr><th>Host</th><th>Artifact</th><th>Kind</th></tr>
+          </thead>
+          <tbody>
+            <tr><td rowspan="15">Raspberry Pi 5</td><td><a href="../nodes/srs-safety-monitor.html">safety_monitor</a></td><td>ROS 2 C++ node</td></tr>
+            <tr><td><a href="../nodes/srs-roboclaw-driver.html">roboclaw_driver</a></td><td>ROS 2 Python node</td></tr>
+            <tr><td><a href="../nodes/srs-imu-driver.html">imu_driver</a></td><td>ROS 2 Python node</td></tr>
+            <tr><td><a href="../nodes/srs-estop-monitor.html">estop_monitor</a></td><td>ROS 2 Python node</td></tr>
+            <tr><td><a href="../nodes/srs-yolo-detector.html">yolo_detector</a></td><td>ROS 2 Python node</td></tr>
+            <tr><td><a href="../nodes/srs-living-thing-filter.html">living_thing_filter</a></td><td>ROS 2 Python node</td></tr>
+            <tr><td><a href="../nodes/srs-geofence-enforcer.html">geofence_enforcer</a></td><td>ROS 2 Python node</td></tr>
+            <tr><td><a href="../nodes/srs-drone-mission-coordinator.html">drone_mission_coordinator</a></td><td>ROS 2 Python node</td></tr>
+            <tr><td><a href="../nodes/srs-image-retriever.html">image_retriever</a></td><td>ROS 2 Python node</td></tr>
+            <tr><td><a href="../nodes/srs-georeferencer.html">georeferencer</a></td><td>ROS 2 Python node</td></tr>
+            <tr><td><a href="../nodes/srs-boundary-ingester.html">boundary_ingester</a></td><td>ROS 2 Python node</td></tr>
+            <tr><td><a href="../nodes/srs-system-monitor.html">system_monitor</a></td><td>ROS 2 Python node</td></tr>
+            <tr><td><a href="../nodes/srs-mission-api.html">mission_api</a></td><td>FastAPI service</td></tr>
+            <tr><td><a href="../nodes/srs-telemetry-publisher.html">telemetry_publisher</a></td><td>WebSocket service</td></tr>
+            <tr><td>twist_mux, robot_state_publisher, ekf_local, ekf_global, rtabmap, mavros, depthai_ros_driver, rosbag2</td><td>off-the-shelf ROS 2 nodes</td></tr>
+
+            <tr><td>Blitz F7 FC</td><td>ArduCopter + parameter set</td><td>Firmware</td></tr>
+            <tr><td>XIAO ESP32-S3</td><td>xiao_bridge firmware</td><td>Firmware (Arduino-core)</td></tr>
+            <tr><td>Operator phone</td><td>Mobile app</td><td>React Native / Flutter — TBD</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="s8">
+      <div class="section-header">
+        <span class="section-num">8.0</span>
+        <h2 class="section-title">Networking</h2>
+      </div>
+
+      <p>All interdevice communication is over 2.4 / 5 GHz Wi-Fi on the operator's home network.</p>
+
+      <div class="data-table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr><th>Flow</th><th>Transport</th><th>Port / Path</th><th>Rate</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>App → mission_api</td><td>HTTPS</td><td>TCP 8443</td><td>request/response</td></tr>
+            <tr><td>mission_api → app</td><td>WebSocket (wss)</td><td>TCP 8443 / <code>/ws/telemetry</code></td><td>5 Hz</td></tr>
+            <tr><td>Pi → XIAO (MAVLink)</td><td>TCP (forwarded by XIAO firmware)</td><td>TCP 5760</td><td>event-driven</td></tr>
+            <tr><td>Pi → XIAO (image pull)</td><td>HTTP</td><td>TCP 80 on XIAO</td><td>on-demand</td></tr>
+            <tr><td>ROS 2 DDS</td><td>UDP multicast/unicast</td><td>default Cyclone ports</td><td>per-topic</td></tr>
+            <tr><td>Operator ELRS RC → drone</td><td>Sub-GHz RF</td><td>separate link</td><td>250 Hz</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p>The Pi is configured to advertise the ROS 2 domain only on localhost (<code>ROS_DOMAIN_ID</code> isolated, <code>ROS_LOCALHOST_ONLY=1</code>) so that DDS traffic does not leak onto the home network. Anything the operator needs goes through the mission_api surface.</p>
+    </section>
+
+    <section id="s9">
+      <div class="section-header">
+        <span class="section-num">9.0</span>
+        <h2 class="section-title">Open Issues</h2>
+      </div>
+
+      <ol class="indent-list">
+        <li><strong>OPEN-01</strong> — Certificate management for HTTPS on the Pi. Self-signed for iteration 1; mkcert-based trust for dev; production strategy TBD.</li>
+        <li><strong>OPEN-02</strong> — XIAO firmware update path. Currently tethered USB; over-the-air updates are an iteration-2 consideration.</li>
+        <li><strong>OPEN-03</strong> — Rover charging workflow is manual. Autonomous docking requires either fiducial-based approach or RTK/dock-sensing hardware — iteration 2+.</li>
+        <li><strong>OPEN-04</strong> — Dual-band Wi-Fi on the Pi: confirm 5 GHz is used for bulk image pull from XIAO to avoid congestion with 2.4 GHz streaming.</li>
+      </ol>
+    </section>
+
+    <section id="s10">
+      <div class="section-header">
+        <span class="section-num">10.0</span>
+        <h2 class="section-title">Revision History</h2>
+      </div>
+
+      <table class="revision-table">
+        <thead>
+          <tr><th style="width: 80px">Rev</th><th style="width: 120px">Date</th><th style="width: 140px">Author</th><th>Change</th></tr>
+        </thead>
+        <tbody>
+          <tr><td class="rev">0.1</td><td>2026-04-19</td><td>Louis Roig &amp; Claude Opus 4.7</td><td>Initial draft. Hardware inventory, power trees, software allocation, networking.</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <div class="footer-nav">
+      <a href="data-flow-mission.html">← Mission Data Flow</a>
+      <span>Next: <a href="platform-vs-application.html">Platform vs Application →</a></span>
+    </div>
+
+  </main>
+</div>
+
+<script src="../shared/shared.js"></script>
+</body>
+</html>

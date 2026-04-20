@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ARCH-003 · Mission Data Flow</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=IBM+Plex+Sans:wght@300;400;500;600;700&family=IBM+Plex+Serif:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../shared/shared.css">
+</head>
+<body>
+
+<div class="doc-bar">
+  <a class="doc-bar-crumb" href="../index.html">← HOME</a>
+  <span class="doc-bar-sep">·</span>
+  <a class="doc-bar-crumb" href="index.html">ARCHITECTURE</a>
+  <span class="doc-bar-sep">·</span>
+  <span class="doc-bar-id">ARCH-003</span>
+  <span class="doc-bar-sep">·</span>
+  <span class="doc-bar-path">Mission Data Flow</span>
+  <span class="doc-bar-sep">·</span>
+  <span style="color: var(--ink-dim)">REV 0.1</span>
+  <div class="doc-bar-status">
+    <span class="status-dot"></span>
+    <span>DRAFT</span>
+  </div>
+  <div class="doc-bar-tools">
+    <button class="tool-btn" onclick="window.print()">PRINT</button>
+    <button class="tool-btn" onclick="copyLink(event)">COPY LINK</button>
+  </div>
+</div>
+
+<div class="container">
+
+  <nav class="toc">
+    <div class="toc-title">CONTENTS</div>
+    <ul class="toc-list">
+      <li class="toc-item"><a class="toc-link" href="#s1"><span class="toc-num">1.0</span>Purpose</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s2"><span class="toc-num">2.0</span>Mission Overview</a></li>
+      <li class="toc-item"><a class="toc-link" href="#sA"><span class="toc-num">A</span>Intent Capture</a></li>
+      <li class="toc-item"><a class="toc-link" href="#sB"><span class="toc-num">B</span>Drone Mapping</a></li>
+      <li class="toc-item"><a class="toc-link" href="#sC"><span class="toc-num">C</span>Boundary Definition</a></li>
+      <li class="toc-item"><a class="toc-link" href="#sD"><span class="toc-num">D</span>Zone Activation</a></li>
+      <li class="toc-item"><a class="toc-link" href="#sE"><span class="toc-num">E</span>Teleop with Safety</a></li>
+      <li class="toc-item"><a class="toc-link" href="#sF"><span class="toc-num">F</span>Shutdown &amp; Audit</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s3"><span class="toc-num">3.0</span>End-to-End Latency</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s4"><span class="toc-num">4.0</span>Open Issues</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s5"><span class="toc-num">5.0</span>Revision History</a></li>
+    </ul>
+  </nav>
+
+  <main>
+
+    <div class="doc-header">
+      <div class="doc-type arch">ARCHITECTURE · DATA FLOW</div>
+      <h1 class="doc-title">Mission Data Flow</h1>
+      <p class="doc-subtitle">Phase-by-phase walkthrough of a complete iteration-1 mission: the operator taps "Map My Yard," the drone flies, the user draws a boundary, and the rover is teleoperated within that boundary — with safety gating throughout.</p>
+
+      <div class="doc-meta">
+        <div class="meta-item"><div class="meta-label">Document ID</div><div class="meta-value">ARCH-003</div></div>
+        <div class="meta-item"><div class="meta-label">Revision</div><div class="meta-value">0.1 · draft</div></div>
+        <div class="meta-item"><div class="meta-label">Owner</div><div class="meta-value">systems</div></div>
+        <div class="meta-item"><div class="meta-label">Classification</div><div class="meta-value">Internal — Draft</div></div>
+        <div class="meta-item"><div class="meta-label">Last Updated</div><div class="meta-value">2026-04-19</div></div>
+      </div>
+    </div>
+
+    <section id="s1">
+      <div class="section-header">
+        <span class="section-num">1.0</span>
+        <h2 class="section-title">Purpose</h2>
+      </div>
+
+      <p>This document traces the complete flow of a mission from the operator's first tap to the final rosbag flush. It is the single best way to see how the layered architecture composes in practice, and it is the reference against which interface specifications are sanity-checked.</p>
+
+      <p>Each phase below names the participating nodes, the interfaces they use (every interface is a link into the ICD catalog), and the phase's pass/fail signal. Where an interface does not yet exist as an ICD — because iteration 1 stubs the behavior — it is called out explicitly.</p>
+    </section>
+
+    <section id="s2">
+      <div class="section-header">
+        <span class="section-num">2.0</span>
+        <h2 class="section-title">Mission Overview</h2>
+      </div>
+
+      <p>The iteration-1 mission has six phases, labeled A through F. They run sequentially with the exception of Layer 0 safety, which is always on.</p>
+
+      <div class="ascii-diagram"><span class="em">A ─ Intent capture</span>      user opens app, taps &quot;Map My Yard&quot;
+                      <span class="sub">mobile app → mission_api (REST) → drone_mission_coordinator</span>
+   <span class="em">▼</span>
+<span class="em">B ─ Drone mapping</span>      arm → takeoff → climb → capture → descent → land
+                      <span class="pub">drone_mission_coordinator → mavros → FC · XIAO captures image</span>
+   <span class="em">▼</span>
+<span class="em">C ─ Boundary draw</span>     aerial image delivered to app; user draws polygon
+                      <span class="sub">image_retriever · georeferencer → mission_api → app</span>
+   <span class="em">▼</span>
+<span class="em">D ─ Zone activation</span>   polygon POSTed; boundary_ingester persists and publishes
+                      <span class="pub">boundary_ingester → /mapping/current_zone → geofence_enforcer</span>
+   <span class="em">▼</span>
+<span class="em">E ─ Teleop with safety</span>  user drives; safety gates every command
+                      <span class="sub">joy_teleop → twist_mux → safety_monitor → roboclaw_driver</span>
+                      <span class="safety">geofence_enforcer · yolo_detector · estop_monitor → safety_monitor</span>
+   <span class="em">▼</span>
+<span class="em">F ─ Shutdown &amp; audit</span>   operator parks rover, closes app; rosbag flushes
+                      <span class="param">rosbag2 → disk · system_monitor final report</span></div>
+
+      <p>The rest of this document walks each phase in detail.</p>
+    </section>
+
+    <section id="sA">
+      <div class="section-header">
+        <span class="section-num">A</span>
+        <h2 class="section-title">Intent Capture</h2>
+      </div>
+
+      <p><strong>Trigger.</strong> The operator opens the mobile app, authenticates if required, and taps the "Map My Yard" button.</p>
+
+      <p><strong>Flow.</strong></p>
+      <ol class="indent-list">
+        <li>App issues <code>POST /missions/map</code> with an empty body plus the bearer token. See <a href="../interfaces/icd-mission-rest-api.html">ICD-API-001</a>.</li>
+        <li>The <a href="../nodes/srs-mission-api.html">mission_api</a> service validates the token and the current system state. Rejects if:
+          <ul>
+            <li>Safety state is not OK (e.g., e-stop pressed, low battery) — see <a href="../interfaces/icd-safety-state.html">/safety/state</a>.</li>
+            <li>A prior mission is still in flight.</li>
+          </ul>
+        </li>
+        <li>mission_api invokes the <a href="../interfaces/icd-mapping-mission-action.html"><code>/mapping/run_mission</code></a> action on <a href="../nodes/srs-drone-mission-coordinator.html">drone_mission_coordinator</a>. Action returns a <code>mission_id</code> immediately.</li>
+        <li>mission_api returns 202 Accepted with <code>{mission_id, status: PENDING}</code> to the app.</li>
+        <li>App transitions to the "mapping in progress" screen and begins polling <code>GET /missions/{id}/status</code> at 1 Hz.</li>
+      </ol>
+
+      <p><strong>Pass signal.</strong> The app receives a <code>mission_id</code>. Failure modes: 401 (unauth), 409 (system busy), 503 (safety not OK).</p>
+    </section>
+
+    <section id="sB">
+      <div class="section-header">
+        <span class="section-num">B</span>
+        <h2 class="section-title">Drone Mapping</h2>
+      </div>
+
+      <p><strong>Span.</strong> Typically ~3 minutes from action accept to drone on the ground with image captured.</p>
+
+      <p><strong>Sequence.</strong></p>
+      <ol class="indent-list">
+        <li><code>drone_mission_coordinator</code> enters <strong>ARMED</strong> state. Sends <code>MAV_CMD_COMPONENT_ARM_DISARM</code> via mavros.</li>
+        <li>Transitions to <strong>TAKEOFF</strong>. Commands <code>MAV_CMD_NAV_TAKEOFF</code> with target altitude 30 m.</li>
+        <li>Transitions to <strong>CLIMBING</strong>. Waits for altitude ≥ target − 1 m or 45 s timeout.</li>
+        <li>Transitions to <strong>CAPTURING</strong>. Commands the XIAO (via <a href="../nodes/firmware-xiao-bridge.html">xiao_bridge firmware</a>) to capture a still image. Waits for confirmation.</li>
+        <li>Transitions to <strong>DESCENDING</strong>. Commands <code>MAV_CMD_NAV_LAND</code>.</li>
+        <li>Transitions to <strong>LANDED</strong>. Publishes action feedback to mission_api.</li>
+        <li><a href="../nodes/srs-image-retriever.html">image_retriever</a> polls the XIAO over Wi-Fi; downloads the image to the Pi.</li>
+        <li><a href="../nodes/srs-georeferencer.html">georeferencer</a> reads the image + capture pose; computes corner lat/lons; publishes <a href="../interfaces/icd-mapping-aerial-image.html"><code>/mapping/latest_aerial_image</code></a>.</li>
+      </ol>
+
+      <div class="callout safety">
+        <div class="callout-label">Safety veto at any point</div>
+        <p>At any step in this sequence, if the operator presses the physical or soft e-stop, <code>drone_mission_coordinator</code> transitions to <strong>ABORTING</strong>, commands immediate land, and reports failure. See state-machine detail in <a href="../state-machines/sm-drone-mission.html">SM-DRN-001</a>.</p>
+      </div>
+
+      <p><strong>Pass signal.</strong> <code>/mapping/latest_aerial_image</code> published with non-empty <code>image_path</code>. Mission state observable as <code>COMPLETE</code> via <code>GET /missions/{id}/status</code>.</p>
+    </section>
+
+    <section id="sC">
+      <div class="section-header">
+        <span class="section-num">C</span>
+        <h2 class="section-title">Boundary Definition</h2>
+      </div>
+
+      <p><strong>Flow.</strong></p>
+      <ol class="indent-list">
+        <li>App receives <code>COMPLETE</code>; issues <code>GET /missions/{id}/result</code>.</li>
+        <li>mission_api responds with the <a href="../interfaces/icd-mapping-aerial-image.html">AerialImageMeta</a> payload + a binary handle to the image (file download endpoint).</li>
+        <li>App displays the georeferenced image with map controls.</li>
+        <li>Operator draws the outer boundary polygon by tapping vertices. Optionally adds exclusion polygons (tree wells, flower beds).</li>
+        <li>Operator taps "Save Zone"; app issues <code>POST /zones</code> with the <a href="../interfaces/icd-mapping-current-zone.html">ZoneBoundary</a> payload and a zone name.</li>
+      </ol>
+
+      <p><strong>Pass signal.</strong> 201 Created with saved zone metadata.</p>
+
+      <p><strong>Note on validation.</strong> The app enforces basic topological checks (self-intersection, minimum area) client-side. The server revalidates server-side because we don't trust clients; see <a href="../nodes/srs-boundary-ingester.html">boundary_ingester</a> for the server-side validation ruleset.</p>
+    </section>
+
+    <section id="sD">
+      <div class="section-header">
+        <span class="section-num">D</span>
+        <h2 class="section-title">Zone Activation</h2>
+      </div>
+
+      <p><strong>Flow.</strong></p>
+      <ol class="indent-list">
+        <li>Operator selects the newly saved zone (or any previously saved zone) in the app and taps "Activate for mowing."</li>
+        <li>App issues <code>POST /zones/{name}/activate</code> (or equivalent; see <a href="../interfaces/icd-mission-rest-api.html">ICD-API-001</a>).</li>
+        <li><code>mission_api</code> calls the <a href="../interfaces/icd-safety-reset-srv.html">/mapping/load_zone</a> service on <a href="../nodes/srs-boundary-ingester.html">boundary_ingester</a>.</li>
+        <li><code>boundary_ingester</code> publishes the activated <a href="../interfaces/icd-mapping-current-zone.html"><code>/mapping/current_zone</code></a> as a latched topic.</li>
+        <li><a href="../nodes/srs-geofence-enforcer.html">geofence_enforcer</a> receives the zone; begins comparing fused pose to the polygon at 10 Hz; publishes <a href="../interfaces/icd-geofence-state.html">/geofence/state</a>.</li>
+        <li><a href="../nodes/srs-safety-monitor.html">safety_monitor</a> consumes <code>/geofence/state</code>; begins treating OUTSIDE as an ESTOP trigger.</li>
+      </ol>
+
+      <p><strong>Pass signal.</strong> <code>/mapping/current_zone</code> carries the requested polygon; <code>/geofence/state</code> transitions from INSIDE with <code>distance_to_boundary_m</code> matching the rover's actual position.</p>
+    </section>
+
+    <section id="sE">
+      <div class="section-header">
+        <span class="section-num">E</span>
+        <h2 class="section-title">Teleop with Safety</h2>
+      </div>
+
+      <p>The steady-state operational mode for iteration 1. Operator drives the rover manually within the activated zone; all safety subsystems are engaged.</p>
+
+      <p><strong>Command path (one command cycle, ~20 ms):</strong></p>
+
+      <div class="ascii-diagram">t=0    user touch input on virtual joystick
+t+5ms  app serializes <span class="pub">Twist</span> to JSON
+t+8ms  REST <span class="sub">POST /rover/teleop</span> or equivalent real-time channel (WS or UDP — open)
+t+12ms mission_api rclpy-publishes to <span class="pub">/hal/cmd_vel_teleop</span>
+t+13ms twist_mux republishes (if this is the highest-priority source) on <span class="pub">/hal/cmd_vel_raw</span>
+t+14ms safety_monitor evaluates safety state:
+         OK     → passthrough to <span class="pub">/hal/cmd_vel_safe</span>
+         not OK → publishes zero (with decel ramp) to <span class="pub">/hal/cmd_vel_safe</span>
+t+16ms roboclaw_driver converts to per-track velocities; issues serial command
+t+20ms motors reflect commanded velocity</div>
+
+      <p><strong>Parallel safety evaluation (continuous):</strong></p>
+
+      <div class="ascii-diagram"><span class="sub">/perception/people</span>       10 Hz  ─┐
+<span class="sub">/perception/obstacles</span>    10 Hz  ─┤
+<span class="sub">/hal/imu/data</span>           100 Hz  ─┤
+<span class="sub">/hal/estop_pressed</span>      20 Hz  ─┼─►  <span class="em">safety_monitor</span>  ─►  <span class="pub">/safety/state</span>  ─►  app, rosbag
+<span class="sub">/geofence/state</span>          10 Hz  ─┤                              ─►  <span class="pub">/hal/cmd_vel_safe</span> (gate)
+<span class="sub">/hal/battery</span>             1 Hz  ─┘</div>
+
+      <p><strong>Pass signal.</strong> The rover moves in response to operator inputs; stops immediately on any safety trigger; telemetry reflects all of this to the operator in &lt; 1 s.</p>
+    </section>
+
+    <section id="sF">
+      <div class="section-header">
+        <span class="section-num">F</span>
+        <h2 class="section-title">Shutdown &amp; Audit</h2>
+      </div>
+
+      <ol class="indent-list">
+        <li>Operator parks rover in a safe spot; releases the virtual joystick.</li>
+        <li>Operator presses the physical e-stop or issues <code>POST /rover/estop</code>.</li>
+        <li>safety_monitor enters ESTOP; motors fully stopped.</li>
+        <li>Operator closes the app; WebSocket telemetry disconnects cleanly.</li>
+        <li>rosbag2, which has been recording since system startup, is flushed on graceful shutdown or at 500 MB rollover.</li>
+        <li><a href="../nodes/srs-system-monitor.html">system_monitor</a> emits a final summary on <code>/diagnostics</code>: total runtime, peak CPU/memory, transitions logged, any unresolved warnings.</li>
+      </ol>
+
+      <p><strong>Pass signal.</strong> Rover at rest with motors inert; rosbag file closed; no unexpected error-level diagnostics in the final report.</p>
+    </section>
+
+    <section id="s3">
+      <div class="section-header">
+        <span class="section-num">3.0</span>
+        <h2 class="section-title">End-to-End Latency</h2>
+      </div>
+
+      <p>Key latencies through the mission. These are the budget values; verification tests in <a href="../verification/index.html">§06</a> measure actuals.</p>
+
+      <div class="data-table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr><th>Path</th><th>Budget</th><th>Dominant component</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Phase A: tap → mission_id returned</td><td>&lt; 500 ms</td><td>Action server accept round-trip</td></tr>
+            <tr><td>Phase B: action start → image on disk</td><td>~ 180 s</td><td>Physics of flight</td></tr>
+            <tr><td>Phase C: operator save-polygon</td><td>n/a (human)</td><td>—</td></tr>
+            <tr><td>Phase E: teleop input → wheel response</td><td>≤ 50 ms</td><td>REST + ROS 2 hops + serial</td></tr>
+            <tr><td>Phase E: person detected → motors stopped</td><td>≤ 500 ms</td><td>YOLO frame interval + <a href="../interfaces/icd-hal-cmd-vel-safe.html">safety gate</a></td></tr>
+            <tr><td>Phase E: e-stop pressed → motors off</td><td>≤ 100 ms (hw path); ≤ 200 ms (software echo)</td><td>Relay actuation</td></tr>
+            <tr><td>Phase F: shutdown → rosbag closed</td><td>&lt; 2 s</td><td>rosbag2 flush</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="s4">
+      <div class="section-header">
+        <span class="section-num">4.0</span>
+        <h2 class="section-title">Open Issues</h2>
+      </div>
+
+      <ol class="indent-list">
+        <li><strong>OPEN-01</strong> — Teleop transport: REST per-command is inefficient for continuous joystick input. Evaluate UDP or a dedicated WebSocket stream (contract in <a href="../interfaces/icd-mission-telemetry-ws.html">ICD-API-002</a> reserved for telemetry only at present).</li>
+        <li><strong>OPEN-02</strong> — Autonomous return-to-dock (Phase F.5) is planned for iteration 2. Iteration 1 requires operator to manually park.</li>
+        <li><strong>OPEN-03</strong> — Multiple zones per home: activation is one-at-a-time in iteration 1. Iteration 2 may introduce automatic scheduling across zones.</li>
+      </ol>
+    </section>
+
+    <section id="s5">
+      <div class="section-header">
+        <span class="section-num">5.0</span>
+        <h2 class="section-title">Revision History</h2>
+      </div>
+
+      <table class="revision-table">
+        <thead>
+          <tr><th style="width: 80px">Rev</th><th style="width: 120px">Date</th><th style="width: 140px">Author</th><th>Change</th></tr>
+        </thead>
+        <tbody>
+          <tr><td class="rev">0.1</td><td>2026-04-19</td><td>Louis Roig &amp; Claude Opus 4.7</td><td>Initial draft. Phases A-F walkthrough, latency budget.</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <div class="footer-nav">
+      <a href="layered-architecture.html">← Layered Architecture</a>
+      <span>Next: <a href="deployment.html">Deployment →</a></span>
+    </div>
+
+  </main>
+</div>
+
+<script src="../shared/shared.js"></script>
+</body>
+</html>

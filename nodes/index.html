@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nodes · Ground-Air Platform Spec</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=IBM+Plex+Sans:wght@300;400;500;600;700&family=IBM+Plex+Serif:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../shared/shared.css">
+</head>
+<body>
+
+<div class="doc-bar">
+  <a class="doc-bar-crumb" href="../index.html">← HOME</a>
+  <span class="doc-bar-sep">·</span>
+  <span class="doc-bar-id">NODE-INDEX</span>
+  <span class="doc-bar-sep">·</span>
+  <span class="doc-bar-path">/nodes</span>
+  <span class="doc-bar-sep">·</span>
+  <span style="color: var(--ink-dim)">REV 0.1</span>
+  <div class="doc-bar-status">
+    <span class="status-dot"></span>
+    <span>DRAFT</span>
+  </div>
+  <div class="doc-bar-tools">
+    <button class="tool-btn" onclick="window.print()">PRINT</button>
+    <button class="tool-btn" onclick="copyLink(event)">COPY LINK</button>
+  </div>
+</div>
+
+<div class="container single">
+  <main>
+
+    <div class="doc-header">
+      <div class="doc-type" style="color: var(--accent-pub);">§ 02 · COMPONENTS</div>
+      <h1 class="doc-title">Nodes</h1>
+      <p class="doc-subtitle">Software Requirements Specifications for every custom component, plus anatomy diagrams for the architecturally significant nodes.</p>
+
+      <div class="doc-meta">
+        <div class="meta-item"><div class="meta-label">Section ID</div><div class="meta-value">NODES</div></div>
+        <div class="meta-item"><div class="meta-label">Custom SRSes</div><div class="meta-value">14</div></div>
+        <div class="meta-item"><div class="meta-label">Integration notes</div><div class="meta-value">2</div></div>
+        <div class="meta-item"><div class="meta-label">Firmware specs</div><div class="meta-value">2</div></div>
+        <div class="meta-item"><div class="meta-label">Anatomy diagrams</div><div class="meta-value">5</div></div>
+        <div class="meta-item"><div class="meta-label">Status</div><div class="meta-value">Draft · Rev 0.1</div></div>
+      </div>
+    </div>
+
+    <section>
+      <div class="section-header">
+        <span class="section-num">1.0</span>
+        <h2 class="section-title">About this section</h2>
+      </div>
+
+      <p class="prose-serif" style="font-family: var(--font-serif); font-size: 15px;">
+        Every custom ROS 2 node has a Software Requirements Specification here. Each SRS covers purpose, interfaces
+        (with cross-links to the corresponding <a href="../interfaces/index.html">ICDs</a>), functional and performance
+        requirements, dependencies, configuration parameters, failure modes, and verification. Integration notes for
+        off-the-shelf nodes are brief — the configuration parameters and rationale are captured; the full ROS 2 API is
+        not re-documented.
+      </p>
+
+      <p class="prose-serif" style="font-family: var(--font-serif); font-size: 15px;">
+        Anatomy diagrams use a mind-map-style visualization for nodes whose internal structure is non-obvious from prose
+        alone. They are complementary to the SRS, not a replacement for it.
+      </p>
+    </section>
+
+    <section>
+      <div class="section-header">
+        <span class="section-num">2.0</span>
+        <h2 class="section-title">Custom node SRSes</h2>
+      </div>
+
+      <div class="doc-group-header">Platform · Safety</div>
+      <ul class="doc-list">
+        <li data-filterable="SRS-SAF-001 safety monitor critical">
+          <span class="doc-id">SRS-SAF-001</span>
+          <div>
+            <a class="doc-link" href="srs-safety-monitor.html">safety_monitor</a>
+            <div class="doc-oneliner">Single authority for motion gating. Aggregates safety-relevant signals and emits unified <code>/safety/state</code>.</div>
+          </div>
+          <span class="doc-status">DRAFT</span>
+        </li>
+        <li data-filterable="SRS-SAF-002 geofence enforcer">
+          <span class="doc-id">SRS-SAF-002</span>
+          <div>
+            <a class="doc-link" href="srs-geofence-enforcer.html">geofence_enforcer</a>
+            <div class="doc-oneliner">Computes rover position relative to drawn boundary polygons. Publishes <code>/geofence/state</code>.</div>
+          </div>
+          <span class="doc-status">DRAFT</span>
+        </li>
+      </ul>
+
+      <div class="doc-group-header">Platform · HAL</div>
+      <ul class="doc-list">
+        <li data-filterable="SRS-HAL-001 roboclaw motor driver">
+          <span class="doc-id">SRS-HAL-001</span>
+          <div>
+            <a class="doc-link" href="srs-roboclaw-driver.html">roboclaw_driver</a>
+            <div class="doc-oneliner">Motor controller interface. Converts Twist to per-track velocities; publishes odometry and battery.</div>
+          </div>
+          <span class="doc-status">DRAFT</span>
+        </li>
+        <li data-filterable="SRS-HAL-002 imu driver ism330 mmc5983">
+          <span class="doc-id">SRS-HAL-002</span>
+          <div>
+            <a class="doc-link" href="srs-imu-driver.html">imu_driver</a>
+            <div class="doc-oneliner">ISM330DHCX + MMC5983MA driver. Publishes IMU data at 100 Hz and magnetic field at 50 Hz.</div>
+          </div>
+          <span class="doc-status">DRAFT</span>
+        </li>
+        <li data-filterable="SRS-HAL-003 estop monitor gpio">
+          <span class="doc-id">SRS-HAL-003</span>
+          <div>
+            <a class="doc-link" href="srs-estop-monitor.html">estop_monitor</a>
+            <div class="doc-oneliner">GPIO-level monitor for the physical e-stop. Publishes <code>/hal/estop_pressed</code>.</div>
+          </div>
+          <span class="doc-status">DRAFT</span>
+        </li>
+        <li data-filterable="SRS-HAL-004 system monitor diagnostics">
+          <span class="doc-id">SRS-HAL-004</span>
+          <div>
+            <a class="doc-link" href="srs-system-monitor.html">system_monitor</a>
+            <div class="doc-oneliner">Aggregates diagnostics from all nodes. Detects rogue publishers on safety-critical topics.</div>
+          </div>
+          <span class="doc-status">DRAFT</span>
+        </li>
+      </ul>
+
+      <div class="doc-group-header">Platform · Perception</div>
+      <ul class="doc-list">
+        <li data-filterable="SRS-PER-001 yolo detector oak-d npu">
+          <span class="doc-id">SRS-PER-001</span>
+          <div>
+            <a class="doc-link" href="srs-yolo-detector.html">yolo_detector</a>
+            <div class="doc-oneliner">YOLO object detection on OAK-D Lite onboard NPU. Publishes detections at 10 Hz.</div>
+          </div>
+          <span class="doc-status">DRAFT</span>
+        </li>
+        <li data-filterable="SRS-PER-002 living thing filter">
+          <span class="doc-id">SRS-PER-002</span>
+          <div>
+            <a class="doc-link" href="srs-living-thing-filter.html">living_thing_filter</a>
+            <div class="doc-oneliner">Splits raw detections into people/pets vs. generic obstacles. Preserves spatial metadata.</div>
+          </div>
+          <span class="doc-status">DRAFT</span>
+        </li>
+      </ul>
+
+      <div class="doc-group-header">Platform · Mapping &amp; Drone</div>
+      <ul class="doc-list">
+        <li data-filterable="SRS-MAP-001 drone mission coordinator">
+          <span class="doc-id">SRS-MAP-001</span>
+          <div>
+            <a class="doc-link" href="srs-drone-mission-coordinator.html">drone_mission_coordinator</a>
+            <div class="doc-oneliner">Orchestrates drone arming, takeoff, image capture, and landing via MAVROS.</div>
+          </div>
+          <span class="doc-status">DRAFT</span>
+        </li>
+        <li data-filterable="SRS-MAP-002 image retriever xiao">
+          <span class="doc-id">SRS-MAP-002</span>
+          <div>
+            <a class="doc-link" href="srs-image-retriever.html">image_retriever</a>
+            <div class="doc-oneliner">Retrieves captured images from the XIAO ESP32-S3 over Wi-Fi and persists to rover disk.</div>
+          </div>
+          <span class="doc-status">DRAFT</span>
+        </li>
+        <li data-filterable="SRS-MAP-003 georeferencer aerial image">
+          <span class="doc-id">SRS-MAP-003</span>
+          <div>
+            <a class="doc-link" href="srs-georeferencer.html">georeferencer</a>
+            <div class="doc-oneliner">Computes geographic corners from capture pose and camera model. Emits AerialImageMeta.</div>
+          </div>
+          <span class="doc-status">DRAFT</span>
+        </li>
+        <li data-filterable="SRS-MAP-004 boundary ingester zone">
+          <span class="doc-id">SRS-MAP-004</span>
+          <div>
+            <a class="doc-link" href="srs-boundary-ingester.html">boundary_ingester</a>
+            <div class="doc-oneliner">Persists user-drawn polygons, serves them via <code>/mapping/load_zone</code>, publishes active zone.</div>
+          </div>
+          <span class="doc-status">DRAFT</span>
+        </li>
+      </ul>
+
+      <div class="doc-group-header">Platform · API</div>
+      <ul class="doc-list">
+        <li data-filterable="SRS-API-001 mission api fastapi rest">
+          <span class="doc-id">SRS-API-001</span>
+          <div>
+            <a class="doc-link" href="srs-mission-api.html">mission_api</a>
+            <div class="doc-oneliner">FastAPI service bridging the mobile app to ROS 2. REST endpoints for missions, zones, teleop.</div>
+          </div>
+          <span class="doc-status">DRAFT</span>
+        </li>
+        <li data-filterable="SRS-API-002 telemetry publisher websocket">
+          <span class="doc-id">SRS-API-002</span>
+          <div>
+            <a class="doc-link" href="srs-telemetry-publisher.html">telemetry_publisher</a>
+            <div class="doc-oneliner">Aggregates pose, safety state, battery into WebSocket stream at 5 Hz.</div>
+          </div>
+          <span class="doc-status">DRAFT</span>
+        </li>
+      </ul>
+    </section>
+
+    <section>
+      <div class="section-header">
+        <span class="section-num">3.0</span>
+        <h2 class="section-title">Off-the-shelf integration notes</h2>
+      </div>
+
+      <p>Configuration-only documentation for third-party nodes. The upstream project documents the node's API; we capture
+      our deployment profile and any platform-specific tuning.</p>
+
+      <ul class="doc-list">
+        <li data-filterable="integration nav2 navigation stack">
+          <span class="doc-id">INT-NAV2</span>
+          <div>
+            <a class="doc-link" href="integration-nav2.html">Nav2 stack configuration</a>
+            <div class="doc-oneliner">Planner, controller, costmap, and behavior-tree configuration for iteration 2+ waypoint navigation.</div>
+          </div>
+          <span class="doc-status">DRAFT</span>
+        </li>
+        <li data-filterable="integration rtabmap slam">
+          <span class="doc-id">INT-RTAB</span>
+          <div>
+            <a class="doc-link" href="integration-rtabmap.html">RTAB-Map configuration</a>
+            <div class="doc-oneliner">Visual SLAM configuration for the OAK-D stereo pair.</div>
+          </div>
+          <span class="doc-status">DRAFT</span>
+        </li>
+      </ul>
+    </section>
+
+    <section>
+      <div class="section-header">
+        <span class="section-num">4.0</span>
+        <h2 class="section-title">Firmware</h2>
+      </div>
+
+      <ul class="doc-list">
+        <li data-filterable="firmware xiao esp32 bridge">
+          <span class="doc-id">FW-XIAO</span>
+          <div>
+            <a class="doc-link" href="firmware-xiao-bridge.html">xiao_bridge firmware</a>
+            <div class="doc-oneliner">XIAO ESP32-S3 Sense: Wi-Fi MAVLink bridge + OV2640 camera capture firmware spec.</div>
+          </div>
+          <span class="doc-status">DRAFT</span>
+        </li>
+        <li data-filterable="firmware arducopter blitz f7">
+          <span class="doc-id">FW-ACP</span>
+          <div>
+            <a class="doc-link" href="firmware-ardurover-config.html">ArduCopter configuration</a>
+            <div class="doc-oneliner">Parameter set for the Blitz Whoop F7 AIO flight controller.</div>
+          </div>
+          <span class="doc-status">DRAFT</span>
+        </li>
+      </ul>
+    </section>
+
+    <section>
+      <div class="section-header">
+        <span class="section-num">5.0</span>
+        <h2 class="section-title">Node anatomy diagrams</h2>
+      </div>
+
+      <p>Mind-map visualizations for nodes whose internal structure merits a graphical reference. Pan, zoom, and click any leaf to expand.</p>
+
+      <ul class="doc-list">
+        <li data-filterable="anatomy safety monitor">
+          <span class="doc-id">ANAT-SAF</span>
+          <div>
+            <a class="doc-link" href="anatomy-safety-monitor.html">safety_monitor · anatomy</a>
+            <div class="doc-oneliner">Inputs, state machine, parameters, services, publishers, hardware interactions, lifecycle.</div>
+          </div>
+          <span class="doc-status">DRAFT</span>
+        </li>
+        <li data-filterable="anatomy roboclaw motor driver">
+          <span class="doc-id">ANAT-HAL</span>
+          <div>
+            <a class="doc-link" href="anatomy-roboclaw-driver.html">roboclaw_driver · anatomy</a>
+            <div class="doc-oneliner">Serial interface, kinematics, odometry computation, fault handling.</div>
+          </div>
+          <span class="doc-status">DRAFT</span>
+        </li>
+        <li data-filterable="anatomy yolo detector perception">
+          <span class="doc-id">ANAT-YOL</span>
+          <div>
+            <a class="doc-link" href="anatomy-yolo-detector.html">yolo_detector · anatomy</a>
+            <div class="doc-oneliner">Model loading, OAK-D pipeline, class filtering, frame stamping, latency budget.</div>
+          </div>
+          <span class="doc-status">DRAFT</span>
+        </li>
+        <li data-filterable="anatomy mission api fastapi">
+          <span class="doc-id">ANAT-API</span>
+          <div>
+            <a class="doc-link" href="anatomy-mission-api.html">mission_api · anatomy</a>
+            <div class="doc-oneliner">Endpoint surface, auth, ROS 2 bridge layer, error contract, rate limits.</div>
+          </div>
+          <span class="doc-status">DRAFT</span>
+        </li>
+        <li data-filterable="anatomy drone mission coordinator">
+          <span class="doc-id">ANAT-DMC</span>
+          <div>
+            <a class="doc-link" href="anatomy-drone-mission-coordinator.html">drone_mission_coordinator · anatomy</a>
+            <div class="doc-oneliner">Action server surface, MAVLink sequence, capture trigger, safety veto.</div>
+          </div>
+          <span class="doc-status">DRAFT</span>
+        </li>
+      </ul>
+    </section>
+
+    <div class="footer-nav">
+      <a href="../architecture/index.html">← Architecture</a>
+      <span>Next: <a href="../interfaces/index.html">Interfaces →</a></span>
+    </div>
+
+  </main>
+</div>
+
+<script src="../shared/shared.js"></script>
+</body>
+</html>

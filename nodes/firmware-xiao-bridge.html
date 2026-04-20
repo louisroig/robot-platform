@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FW-XIAO · xiao_bridge Firmware Specification</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=IBM+Plex+Sans:wght@300;400;500;600;700&family=IBM+Plex+Serif:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../shared/shared.css">
+</head>
+<body>
+<div class="doc-bar">
+  <a class="doc-bar-crumb" href="../index.html">← HOME</a><span class="doc-bar-sep">·</span>
+  <a class="doc-bar-crumb" href="index.html">NODES</a><span class="doc-bar-sep">·</span>
+  <span class="doc-bar-id">FW-XIAO</span><span class="doc-bar-sep">·</span>
+  <span class="doc-bar-path">xiao_bridge firmware</span><span class="doc-bar-sep">·</span>
+  <span style="color: var(--ink-dim)">REV 0.1</span>
+  <div class="doc-bar-status"><span class="status-dot"></span><span>DRAFT</span></div>
+  <div class="doc-bar-tools"><button class="tool-btn" onclick="window.print()">PRINT</button><button class="tool-btn" onclick="copyLink(event)">COPY LINK</button></div>
+</div>
+<div class="container single">
+  <main class="prose-serif">
+    <div class="doc-header">
+      <div class="doc-type">FIRMWARE SPECIFICATION</div>
+      <h1 class="doc-title">xiao_bridge</h1>
+      <p class="doc-subtitle">Firmware for the XIAO ESP32-S3 Sense — Wi-Fi MAVLink bridge and OV2640 camera capture for the drone.</p>
+      <div class="doc-meta">
+        <div class="meta-item"><div class="meta-label">Document ID</div><div class="meta-value">FW-XIAO</div></div>
+        <div class="meta-item"><div class="meta-label">Revision</div><div class="meta-value">0.1 · draft</div></div>
+        <div class="meta-item"><div class="meta-label">Target</div><div class="meta-value">XIAO ESP32-S3 Sense</div></div>
+        <div class="meta-item"><div class="meta-label">Framework</div><div class="meta-value">Arduino-ESP32</div></div>
+      </div>
+    </div>
+
+    <section><div class="section-header"><span class="section-num">1.0</span><h2 class="section-title">Purpose</h2></div>
+      <p>The XIAO ESP32-S3 Sense sits onboard the drone. It has two jobs: (1) transparently bridge MAVLink between the FC's TELEM2 UART and the Pi's mavros TCP client over Wi-Fi; (2) capture a still image on command via the onboard OV2640 camera and make it available over HTTP.</p>
+    </section>
+
+    <section><div class="section-header"><span class="section-num">2.0</span><h2 class="section-title">Hardware</h2></div>
+      <ul class="indent-list">
+        <li>XIAO ESP32-S3 Sense (ESP32-S3R8, 8 MB flash, 8 MB PSRAM, OV2640 camera module).</li>
+        <li>UART0 connected to FC TELEM2 at 57600 baud, 8N1.</li>
+        <li>Micro-SD slot used as optional image cache.</li>
+      </ul>
+    </section>
+
+    <section><div class="section-header"><span class="section-num">3.0</span><h2 class="section-title">Role 1 — MAVLink Bridge</h2></div>
+      <ul class="indent-list">
+        <li>On boot, XIAO connects to the configured Wi-Fi (station mode).</li>
+        <li>Opens TCP listener on port 5760.</li>
+        <li>When a client connects, bidirectionally forwards bytes between UART and TCP with minimal buffering (≤ 5 ms one-way latency).</li>
+        <li>Supports exactly one client at a time (mavros on Pi).</li>
+      </ul>
+    </section>
+
+    <section><div class="section-header"><span class="section-num">4.0</span><h2 class="section-title">Role 2 — Image Capture</h2></div>
+      <ul class="indent-list">
+        <li>HTTP server on port 80.</li>
+        <li><code>GET /capture</code> — triggers a capture; stores to a rolling buffer; responds with the JPEG.</li>
+        <li><code>GET /latest.jpg</code> — returns the most recent captured frame without re-triggering.</li>
+        <li>Capture parameters: 1600x1200, JPEG quality 12 (OV2640 native), auto-exposure default.</li>
+        <li>Trigger latency (GET → image in buffer) ≤ 500 ms.</li>
+      </ul>
+    </section>
+
+    <section><div class="section-header"><span class="section-num">5.0</span><h2 class="section-title">Configuration</h2></div>
+      <p>Wi-Fi credentials and static config in a compile-time header <code>include/config.h</code>. Runtime re-config not supported in iteration 1.</p>
+    </section>
+
+    <section><div class="section-header"><span class="section-num">6.0</span><h2 class="section-title">Failure Modes</h2></div>
+      <ul class="indent-list">
+        <li>Wi-Fi disassociation: auto-reconnect with backoff.</li>
+        <li>Camera timeout: return 503 on /capture; keep bridge alive.</li>
+        <li>Watchdog timeout on main loop: device reset (ESP-IDF watchdog).</li>
+      </ul>
+    </section>
+
+    <section><div class="section-header"><span class="section-num">7.0</span><h2 class="section-title">Open Issues</h2></div>
+      <ol class="indent-list">
+        <li><strong>OPEN-01</strong> — OTA firmware update. Iteration 2.</li>
+        <li><strong>OPEN-02</strong> — 2.4 GHz Wi-Fi throughput may cap image transfer; 5 GHz not available on XIAO ESP32-S3 — investigate pipe characteristics on yard-scale range.</li>
+      </ol>
+    </section>
+
+    <section><div class="section-header"><span class="section-num">8.0</span><h2 class="section-title">Revision</h2></div>
+      <table class="revision-table"><thead><tr><th>Rev</th><th>Date</th><th>Author</th><th>Change</th></tr></thead><tbody><tr><td class="rev">0.1</td><td>2026-04-19</td><td>Louis Roig &amp; Claude Opus 4.7</td><td>Initial draft.</td></tr></tbody></table>
+    </section>
+
+    <div class="footer-nav"><a href="index.html">← Nodes Index</a></div>
+  </main>
+</div>
+<script src="../shared/shared.js"></script>
+</body></html>

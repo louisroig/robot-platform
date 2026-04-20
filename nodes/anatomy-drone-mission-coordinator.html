@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en" class="anatomy">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ANAT-DMC · drone_mission_coordinator anatomy</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=IBM+Plex+Sans:wght@300;400;500;600&family=IBM+Plex+Serif:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../shared/shared.css">
+</head>
+<body class="anatomy">
+
+<div class="anatomy-header">
+  <div class="anatomy-header-title">NODE ANATOMY · <strong>drone_mission_coordinator</strong></div>
+  <div class="anatomy-header-subtitle">drone mission orchestration · MAVLink / action server</div>
+  <div class="anatomy-header-controls">
+    <a href="srs-drone-mission-coordinator.html" class="ctrl-btn">SRS</a>
+    <a href="../state-machines/sm-drone-mission.html" class="ctrl-btn">STATE MACHINE</a>
+    <a href="index.html" class="ctrl-btn">← NODES</a>
+    <span class="zoom-indicator" id="zoomIndicator">100%</span>
+    <button class="ctrl-btn" id="zoomOut">−</button><button class="ctrl-btn" id="zoomIn">+</button>
+    <button class="ctrl-btn" id="resetView">RESET</button>
+    <button class="ctrl-btn" id="expandAll">EXPAND ALL</button><button class="ctrl-btn" id="collapseAll">COLLAPSE</button>
+  </div>
+</div>
+
+<div class="canvas-wrap" id="canvasWrap">
+  <div class="canvas" id="canvas">
+    <svg class="lines" id="lines" viewBox="0 0 3600 2400" preserveAspectRatio="none"></svg>
+
+    <div class="center-node" id="centerNode">
+      <div class="reticle tl"></div><div class="reticle tr"></div><div class="reticle bl"></div><div class="reticle br"></div>
+      <div class="center-label">ROS 2 NODE · AUTONOMY</div>
+      <div class="center-name">drone_mission_coordinator</div>
+      <div class="center-desc">Owns the drone's autonomous mapping mission. Exposes the /mapping/run_mission action. Sequences arm → takeoff → capture → land via MAVROS and triggers image retrieval + georeferencing on success.</div>
+      <div class="center-meta">
+        <span>LANG · <strong>Python</strong></span>
+        <span>PKG · <strong>platform_mapping</strong></span>
+        <span>ACTION · <strong>RunMappingMission</strong></span>
+        <span>TYPICAL · <strong>~180 s</strong></span>
+      </div>
+    </div>
+
+    <div class="branch srv" style="left: 60px; top: 200px;">
+      <div class="branch-header"><span class="branch-letter">A</span><span class="branch-title">Action Server</span><span class="branch-count">ros 2</span></div>
+
+      <div class="leaf"><div class="leaf-header"><span class="leaf-name">/mapping/run_mission (goal)</span><span class="leaf-type">accept ≤ 100 ms</span></div>
+        <div class="leaf-desc">RunMappingMission goal: altitude_m, output_name.</div>
+        <div class="leaf-details"><div class="leaf-details-inner">
+          <span class="label">Gate</span>Accepted only if /safety/state = OK and no prior mission in flight.
+          <span class="label">Client</span>mission_api.
+        </div></div>
+      </div>
+
+      <div class="leaf"><div class="leaf-header"><span class="leaf-name">Feedback</span><span class="leaf-type">2 Hz</span></div>
+        <div class="leaf-desc">phase, progress, altitude, battery.</div></div>
+
+      <div class="leaf"><div class="leaf-header"><span class="leaf-name">Result</span><span class="leaf-type">terminal</span></div>
+        <div class="leaf-desc">success + image_path or failure_reason.</div></div>
+
+      <div class="leaf"><div class="leaf-header"><span class="leaf-name">Cancel</span><span class="leaf-type">graceful</span></div>
+        <div class="leaf-desc">Transitions to ABORTING; land immediately.</div></div>
+    </div>
+
+    <div class="branch internal" style="left: 1630px; top: 200px; width: 400px;">
+      <div class="branch-header"><span class="branch-letter">B</span><span class="branch-title">State Machine</span><span class="branch-count">9 states</span></div>
+
+      <div class="leaf"><div class="leaf-header"><span class="leaf-name">DISARMED → ARMED</span><span class="leaf-type">transition</span></div>
+        <div class="leaf-desc">MAV_CMD_COMPONENT_ARM_DISARM; wait for arm ack.</div></div>
+      <div class="leaf"><div class="leaf-header"><span class="leaf-name">ARMED → TAKEOFF → CLIMBING</span><span class="leaf-type">transition</span></div>
+        <div class="leaf-desc">MAV_CMD_NAV_TAKEOFF; wait for altitude within 1 m of target.</div></div>
+      <div class="leaf"><div class="leaf-header"><span class="leaf-name">CLIMBING → CAPTURING</span><span class="leaf-type">transition</span></div>
+        <div class="leaf-desc">Hover <code>capture_hover_s</code>; command XIAO capture; await JPEG.</div></div>
+      <div class="leaf"><div class="leaf-header"><span class="leaf-name">CAPTURING → DESCENDING</span><span class="leaf-type">transition</span></div>
+        <div class="leaf-desc">MAV_CMD_NAV_LAND.</div></div>
+      <div class="leaf"><div class="leaf-header"><span class="leaf-name">DESCENDING → LANDED</span><span class="leaf-type">transition</span></div>
+        <div class="leaf-desc">Wait for landed_state = ON_GROUND.</div></div>
+      <div class="leaf"><div class="leaf-header"><span class="leaf-name">Any → ABORTING</span><span class="leaf-type">terminal</span></div>
+        <div class="leaf-desc">On cancel, safety veto, low battery, GPS loss.</div></div>
+      <div class="leaf"><div class="leaf-header"><span class="leaf-name">ABORTING → LANDED</span><span class="leaf-type">recovery</span></div>
+        <div class="leaf-desc">MAV_CMD_NAV_LAND; action result = failure.</div></div>
+    </div>
+
+    <div class="branch sub" style="left: 3200px; top: 200px;">
+      <div class="branch-header"><span class="branch-letter">C</span><span class="branch-title">MAVROS Interface</span><span class="branch-count">mavlink</span></div>
+
+      <div class="leaf"><div class="leaf-header"><span class="leaf-name">/mavros/state</span><span class="leaf-type">sub</span></div>
+        <div class="leaf-desc">arm state, mode, flight mode, landed_state.</div></div>
+      <div class="leaf"><div class="leaf-header"><span class="leaf-name">/mavros/global_position/global</span><span class="leaf-type">sub</span></div>
+        <div class="leaf-desc">GPS lat/lon/alt.</div></div>
+      <div class="leaf"><div class="leaf-header"><span class="leaf-name">/mavros/cmd/arming</span><span class="leaf-type">srv</span></div></div>
+      <div class="leaf"><div class="leaf-header"><span class="leaf-name">/mavros/cmd/takeoff</span><span class="leaf-type">srv</span></div></div>
+      <div class="leaf"><div class="leaf-header"><span class="leaf-name">/mavros/cmd/land</span><span class="leaf-type">srv</span></div></div>
+      <div class="leaf"><div class="leaf-header"><span class="leaf-name">/mavros/setpoint_position</span><span class="leaf-type">pub</span></div>
+        <div class="leaf-desc">For altitude hold during capture.</div></div>
+    </div>
+
+    <div class="branch hw" style="left: 3200px; top: 1200px;">
+      <div class="branch-header"><span class="branch-letter">D</span><span class="branch-title">XIAO Capture</span><span class="branch-count">http</span></div>
+      <div class="leaf"><div class="leaf-header"><span class="leaf-name">Trigger capture</span><span class="leaf-type">sync</span></div>
+        <div class="leaf-desc">HTTP GET to XIAO /capture; wait for JPEG.</div></div>
+      <div class="leaf"><div class="leaf-header"><span class="leaf-name">Hand off to image_retriever</span><span class="leaf-type">post-land</span></div>
+        <div class="leaf-desc">After landing, calls /mapping/retrieve_latest_image.</div></div>
+    </div>
+
+    <div class="branch param" style="left: 60px; top: 1500px;">
+      <div class="branch-header"><span class="branch-letter">E</span><span class="branch-title">Parameters</span><span class="branch-count">config</span></div>
+      <div class="leaf"><div class="leaf-header"><span class="leaf-name">default_altitude_m</span><span class="leaf-type">30.0</span></div></div>
+      <div class="leaf"><div class="leaf-header"><span class="leaf-name">climb_timeout_s</span><span class="leaf-type">45</span></div></div>
+      <div class="leaf"><div class="leaf-header"><span class="leaf-name">capture_hover_s</span><span class="leaf-type">3</span></div></div>
+      <div class="leaf"><div class="leaf-header"><span class="leaf-name">abort_on_low_battery_pct</span><span class="leaf-type">20.0</span></div></div>
+    </div>
+
+    <div class="branch safety" style="left: 1630px; top: 1800px; width: 400px;">
+      <div class="branch-header"><span class="branch-letter">F</span><span class="branch-title">Safety Hooks</span><span class="branch-count">veto</span></div>
+      <div class="leaf"><div class="leaf-header"><span class="leaf-name">Pre-arm check</span><span class="leaf-type">blocking</span></div>
+        <div class="leaf-desc">/safety/state ≠ OK → refuse goal (action result = failure).</div></div>
+      <div class="leaf"><div class="leaf-header"><span class="leaf-name">Mid-mission abort</span><span class="leaf-type">reactive</span></div>
+        <div class="leaf-desc">Operator soft e-stop or /safety/state change to ESTOP during flight → ABORTING → land.</div></div>
+      <div class="leaf"><div class="leaf-header"><span class="leaf-name">MAVROS heartbeat timeout</span><span class="leaf-type">2 s</span></div>
+        <div class="leaf-desc">No /mavros/state for 2 s → abort.</div></div>
+    </div>
+
+  </div>
+</div>
+
+<div class="legend">
+  <div class="legend-title">CHANNEL TYPES</div>
+  <div class="legend-item"><span class="legend-swatch" style="background:var(--accent-srv)"></span>Action / Service</div>
+  <div class="legend-item"><span class="legend-swatch" style="background:var(--accent-internal)"></span>State machine</div>
+  <div class="legend-item"><span class="legend-swatch" style="background:var(--accent-sub)"></span>MAVROS I/O</div>
+  <div class="legend-item"><span class="legend-swatch" style="background:var(--accent-hw)"></span>XIAO capture</div>
+  <div class="legend-item"><span class="legend-swatch" style="background:var(--accent-param)"></span>Parameters</div>
+  <div class="legend-item"><span class="legend-swatch" style="background:var(--accent-safety)"></span>Safety hooks</div>
+</div>
+
+<div class="hint">Click any leaf to expand. Drag to pan, scroll to zoom.</div>
+<script src="../shared/shared.js"></script>
+</body></html>

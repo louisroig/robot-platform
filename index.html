@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ground-Air Autonomous Platform · Iteration 1 Specification</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=IBM+Plex+Sans:wght@300;400;500;600;700&family=IBM+Plex+Serif:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="shared/shared.css">
+</head>
+<body>
+
+<div class="doc-bar">
+  <span class="doc-bar-id">SPEC-CORPUS</span>
+  <span class="doc-bar-sep">·</span>
+  <span class="doc-bar-path">/</span>
+  <span class="doc-bar-sep">·</span>
+  <span style="color: var(--ink-dim)">REV 0.1</span>
+  <div class="doc-bar-status">
+    <span class="status-dot"></span>
+    <span>DRAFT</span>
+  </div>
+  <div class="doc-bar-tools">
+    <button class="tool-btn" onclick="window.print()">PRINT</button>
+    <button class="tool-btn" onclick="copyLink(event)">COPY LINK</button>
+  </div>
+</div>
+
+<div class="container single">
+  <main>
+
+    <div class="splash-hero">
+      <div class="splash-eyebrow">SPECIFICATION CORPUS · ITERATION 1</div>
+      <h1 class="splash-title">Ground-Air Autonomous<br>Platform</h1>
+      <p class="splash-subtitle">A coordinated rover and drone system for supervised outdoor autonomy. First application: residential yard automation.</p>
+      <div class="splash-author-line">
+        PREPARED BY <span>LOUIS ROIG &amp; CLAUDE OPUS 4.7</span> &nbsp;·&nbsp; REV 0.1 · DRAFT &nbsp;·&nbsp; APRIL 2026
+      </div>
+    </div>
+
+    <p class="splash-opening">
+      This specification corpus defines the first iteration of a ground-air autonomous platform — a coordinated rover and
+      drone system designed as a generalizable foundation for remote-operated outdoor robotics applications. The initial
+      instantiation targets residential yard automation, specifically a drone-assisted boundary-mapping workflow feeding
+      a tracked ground unit operated under human supervision. The platform architecture, interfaces, and safety framework
+      defined herein are explicitly generic; mower-specific behaviors are isolated in the application layer. Subsequent
+      iterations will introduce autonomous coverage, a mower tool payload, and commercial-grade safety architecture.
+    </p>
+
+    <!-- System block diagram -->
+    <div class="hero-diagram">
+      <svg viewBox="0 0 900 300" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="System block diagram showing rover, drone, and operator">
+        <defs>
+          <marker id="arrowhead" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="#7a8a99"/>
+          </marker>
+        </defs>
+
+        <!-- Yard polygon background -->
+        <path d="M 80 240 L 820 240 L 820 270 L 80 270 Z"
+              fill="#121920" stroke="#1f2a35" stroke-dasharray="4 4"/>
+        <text x="100" y="262" fill="#4a5866" font-family="JetBrains Mono, monospace" font-size="9" letter-spacing="0.1em">YARD · USER-DRAWN BOUNDARY</text>
+
+        <!-- Rover -->
+        <g>
+          <rect x="130" y="140" width="140" height="80" rx="4" fill="#121920" stroke="#4fc3a1" stroke-width="1.5"/>
+          <text x="200" y="165" text-anchor="middle" fill="#f2e8d5" font-family="JetBrains Mono, monospace" font-size="12" font-weight="500">ROVER</text>
+          <text x="200" y="183" text-anchor="middle" fill="#7a8a99" font-family="JetBrains Mono, monospace" font-size="9">Pi 5 · ROS 2 Humble</text>
+          <text x="200" y="197" text-anchor="middle" fill="#7a8a99" font-family="JetBrains Mono, monospace" font-size="9">HAL · perception · safety</text>
+          <text x="200" y="211" text-anchor="middle" fill="#4a5866" font-family="JetBrains Mono, monospace" font-size="9">tracked · skid-steer</text>
+        </g>
+
+        <!-- Drone -->
+        <g>
+          <rect x="380" y="50" width="140" height="80" rx="4" fill="#121920" stroke="#ffb347" stroke-width="1.5"/>
+          <text x="450" y="75" text-anchor="middle" fill="#f2e8d5" font-family="JetBrains Mono, monospace" font-size="12" font-weight="500">DRONE</text>
+          <text x="450" y="93" text-anchor="middle" fill="#7a8a99" font-family="JetBrains Mono, monospace" font-size="9">Blitz F7 · ArduCopter</text>
+          <text x="450" y="107" text-anchor="middle" fill="#7a8a99" font-family="JetBrains Mono, monospace" font-size="9">XIAO · MAVLink bridge</text>
+          <text x="450" y="121" text-anchor="middle" fill="#4a5866" font-family="JetBrains Mono, monospace" font-size="9">sub-250g · aerial imagery</text>
+        </g>
+
+        <!-- Operator -->
+        <g>
+          <rect x="630" y="140" width="140" height="80" rx="4" fill="#121920" stroke="#6ba6ff" stroke-width="1.5"/>
+          <text x="700" y="165" text-anchor="middle" fill="#f2e8d5" font-family="JetBrains Mono, monospace" font-size="12" font-weight="500">OPERATOR</text>
+          <text x="700" y="183" text-anchor="middle" fill="#7a8a99" font-family="JetBrains Mono, monospace" font-size="9">Mobile app · phone</text>
+          <text x="700" y="197" text-anchor="middle" fill="#7a8a99" font-family="JetBrains Mono, monospace" font-size="9">Boundary · teleop · telemetry</text>
+          <text x="700" y="211" text-anchor="middle" fill="#4a5866" font-family="JetBrains Mono, monospace" font-size="9">REST + WebSocket</text>
+        </g>
+
+        <!-- Connections -->
+        <path d="M 270 160 Q 450 160 630 160" stroke="#6ba6ff" stroke-width="1.2" fill="none" opacity="0.6" marker-end="url(#arrowhead)"/>
+        <text x="450" y="152" text-anchor="middle" fill="#6ba6ff" font-family="JetBrains Mono, monospace" font-size="9" letter-spacing="0.05em">Wi-Fi · REST/WS</text>
+
+        <path d="M 450 130 Q 450 150 380 170" stroke="#ffb347" stroke-width="1.2" fill="none" opacity="0.6" marker-end="url(#arrowhead)"/>
+        <text x="345" y="155" text-anchor="middle" fill="#ffb347" font-family="JetBrains Mono, monospace" font-size="9">MAVLink</text>
+
+        <path d="M 630 200 Q 500 240 380 200" stroke="#e0a458" stroke-width="1.2" fill="none" opacity="0.6" stroke-dasharray="4 4" marker-end="url(#arrowhead)"/>
+        <text x="505" y="232" text-anchor="middle" fill="#e0a458" font-family="JetBrains Mono, monospace" font-size="9">Tap to map</text>
+      </svg>
+    </div>
+
+    <!-- Section navigation cards -->
+    <section id="sections" style="margin-top: 64px;">
+      <div class="section-header">
+        <span class="section-num">§</span>
+        <h2 class="section-title">Corpus Contents</h2>
+      </div>
+
+      <p style="font-family: var(--font-serif); font-size: 16px; color: var(--ink-body); margin-bottom: 24px;">
+        The corpus is organized into six sections. Each is independently browsable; cross-links bind them into a single graph.
+        Start with <a href="architecture/index.html">Architecture</a> if you want the big picture, or dive directly into a
+        <a href="nodes/index.html">node</a> or <a href="interfaces/index.html">interface</a> of interest.
+      </p>
+
+      <div class="card-grid">
+
+        <a class="nav-card arch" href="architecture/index.html">
+          <div class="card-label">§ 01 · FOUNDATION</div>
+          <div class="card-title">Architecture</div>
+          <p class="card-desc">System context, layered architecture, end-to-end data flow, hardware allocation, and the platform-vs-application boundary discipline.</p>
+          <div class="card-footer"><span class="count">6 documents</span><span>ENTER &nbsp;→</span></div>
+        </a>
+
+        <a class="nav-card nodes" href="nodes/index.html">
+          <div class="card-label">§ 02 · COMPONENTS</div>
+          <div class="card-title">Nodes</div>
+          <p class="card-desc">Software Requirements Specifications for every custom ROS 2 node plus anatomy diagrams for the architecturally significant ones.</p>
+          <div class="card-footer"><span class="count">18 SRSes · 5 anatomy</span><span>ENTER &nbsp;→</span></div>
+        </a>
+
+        <a class="nav-card iface" href="interfaces/index.html">
+          <div class="card-label">§ 03 · CONTRACTS</div>
+          <div class="card-title">Interfaces</div>
+          <p class="card-desc">Interface Control Documents for every topic, service, and action — message definitions, timing, QoS profiles, and fault behavior.</p>
+          <div class="card-footer"><span class="count">21 ICDs</span><span>ENTER &nbsp;→</span></div>
+        </a>
+
+        <a class="nav-card state" href="state-machines/index.html">
+          <div class="card-label">§ 04 · BEHAVIOR</div>
+          <div class="card-title">State Machines</div>
+          <p class="card-desc">Detailed state diagrams with transition tables, invariants, and timing properties for nodes with non-trivial state.</p>
+          <div class="card-footer"><span class="count">4 state machines</span><span>ENTER &nbsp;→</span></div>
+        </a>
+
+        <a class="nav-card req" href="requirements/index.html">
+          <div class="card-label">§ 05 · OBLIGATIONS</div>
+          <div class="card-title">Requirements</div>
+          <p class="card-desc">Functional, safety, performance, and interface requirements with a traceability matrix mapping requirement → node → test.</p>
+          <div class="card-footer"><span class="count">5 documents</span><span>ENTER &nbsp;→</span></div>
+        </a>
+
+        <a class="nav-card verif" href="verification/index.html">
+          <div class="card-label">§ 06 · EVIDENCE</div>
+          <div class="card-title">Verification</div>
+          <p class="card-desc">Overall test strategy, representative test protocols for safety-critical behavior, and the M6 field test procedure.</p>
+          <div class="card-footer"><span class="count">5 documents</span><span>ENTER &nbsp;→</span></div>
+        </a>
+
+      </div>
+    </section>
+
+    <!-- Status bar -->
+    <div class="splash-status-bar">
+      <div>
+        <div class="status-label">Iteration</div>
+        <div class="status-value">1 of 4 planned</div>
+      </div>
+      <div>
+        <div class="status-label">Status</div>
+        <div class="status-value" style="color: var(--status-draft);">Draft · spec phase</div>
+      </div>
+      <div>
+        <div class="status-label">Documents</div>
+        <div class="status-value">68 artifacts</div>
+      </div>
+      <div>
+        <div class="status-label">Last Updated</div>
+        <div class="status-value">2026-04-19</div>
+      </div>
+      <div>
+        <div class="status-label">Utilities</div>
+        <div class="status-value">
+          <a href="glossary.html">Glossary</a> &nbsp;·&nbsp;
+          <a href="README.md">README</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Guiding principles strip -->
+    <section style="margin-top: 56px;">
+      <div class="section-header">
+        <span class="section-num">※</span>
+        <h2 class="section-title">Guiding Principles</h2>
+      </div>
+
+      <div class="card-grid" style="grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));">
+        <div class="nav-card arch" style="min-height: auto;">
+          <div class="card-label">Principle 01</div>
+          <div class="card-title" style="font-size: 17px;">Platform first, application second</div>
+          <p class="card-desc">All generic code lives in <code>/platform/</code>. Mower-specific logic is confined to <code>/applications/mower/</code>. The first application exists to prove the platform.</p>
+        </div>
+
+        <div class="nav-card verif" style="min-height: auto;">
+          <div class="card-label">Principle 02</div>
+          <div class="card-title" style="font-size: 17px;">Safety by layering</div>
+          <p class="card-desc">Hardware e-stop, safety MCU (iteration&nbsp;2+), and the ROS-level safety monitor are three independent layers. No single failure defeats safety.</p>
+        </div>
+
+        <div class="nav-card iface" style="min-height: auto;">
+          <div class="card-label">Principle 03</div>
+          <div class="card-title" style="font-size: 17px;">HAL is the vendor boundary</div>
+          <p class="card-desc">Above the HAL = vendor-neutral. Below the HAL = vendor-specific. Swapping the motor controller or flight controller affects only the HAL.</p>
+        </div>
+
+        <div class="nav-card nodes" style="min-height: auto;">
+          <div class="card-label">Principle 04</div>
+          <div class="card-title" style="font-size: 17px;">Spec before code</div>
+          <p class="card-desc">Every node begins with an SRS. Every interface begins with an ICD. This corpus is the artifact that embodies the practice.</p>
+        </div>
+      </div>
+    </section>
+
+    <div class="footer-nav">
+      <span>Ground-Air Autonomous Platform · Iteration 1 · Rev 0.1 Draft</span>
+      <span><a href="glossary.html">glossary</a> · <a href="README.md">README</a></span>
+    </div>
+
+  </main>
+</div>
+
+<script src="shared/shared.js"></script>
+</body>
+</html>

@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SRS-SAF-001 · safety_monitor</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=IBM+Plex+Sans:wght@300;400;500;600;700&family=IBM+Plex+Serif:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../shared/shared.css">
+</head>
+<body>
+
+<div class="doc-bar">
+  <a class="doc-bar-crumb" href="../index.html">← HOME</a>
+  <span class="doc-bar-sep">·</span>
+  <a class="doc-bar-crumb" href="index.html">NODES</a>
+  <span class="doc-bar-sep">·</span>
+  <span class="doc-bar-id">SRS-SAF-001</span>
+  <span class="doc-bar-sep">·</span>
+  <span class="doc-bar-path">safety_monitor</span>
+  <span class="doc-bar-sep">·</span>
+  <span style="color: var(--ink-dim)">REV 0.1</span>
+  <div class="doc-bar-status"><span class="status-dot"></span><span>DRAFT</span></div>
+  <div class="doc-bar-tools">
+    <button class="tool-btn" onclick="window.print()">PRINT</button>
+    <button class="tool-btn" onclick="copyLink(event)">COPY LINK</button>
+  </div>
+</div>
+
+<div class="container">
+  <nav class="toc">
+    <div class="toc-title">CONTENTS</div>
+    <ul class="toc-list">
+      <li class="toc-item"><a class="toc-link" href="#s1"><span class="toc-num">1.0</span>Purpose</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s2"><span class="toc-num">2.0</span>Scope</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s3"><span class="toc-num">3.0</span>Interfaces</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s4"><span class="toc-num">4.0</span>Functional Requirements</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s5"><span class="toc-num">5.0</span>Performance Requirements</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s6"><span class="toc-num">6.0</span>Safety Requirements</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s7"><span class="toc-num">7.0</span>State Machine</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s8"><span class="toc-num">8.0</span>Dependencies</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s9"><span class="toc-num">9.0</span>Configuration</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s10"><span class="toc-num">10.0</span>Failure Modes</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s11"><span class="toc-num">11.0</span>Verification</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s12"><span class="toc-num">12.0</span>Open Issues</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s13"><span class="toc-num">13.0</span>Revision</a></li>
+    </ul>
+  </nav>
+
+  <main class="prose-serif">
+
+    <div class="doc-header">
+      <div class="doc-type safety">SOFTWARE REQUIREMENTS SPECIFICATION · SAFETY-CRITICAL</div>
+      <h1 class="doc-title">safety_monitor</h1>
+      <p class="doc-subtitle">Single authority for motion and tool engagement. Aggregates safety-relevant signals into a unified state. The most important software node in the platform.</p>
+      <div class="doc-meta">
+        <div class="meta-item"><div class="meta-label">Document ID</div><div class="meta-value">SRS-SAF-001</div></div>
+        <div class="meta-item"><div class="meta-label">Revision</div><div class="meta-value">0.1 · draft</div></div>
+        <div class="meta-item"><div class="meta-label">Owner</div><div class="meta-value">platform_safety</div></div>
+        <div class="meta-item"><div class="meta-label">Language</div><div class="meta-value">C++ (ROS 2 Humble)</div></div>
+        <div class="meta-item"><div class="meta-label">Classification</div><div class="meta-value">Safety-critical</div></div>
+        <div class="meta-item"><div class="meta-label">Last Updated</div><div class="meta-value">2026-04-19</div></div>
+      </div>
+    </div>
+
+    <section id="s1"><div class="section-header"><span class="section-num">1.0</span><h2 class="section-title">Purpose</h2></div>
+      <p>The <code>safety_monitor</code> node is the single software authority over whether the rover may move and whether the tool (iteration 2+) may engage. It subscribes to every safety-relevant input the system produces — perception, IMU, e-stop, geofence, battery, upstream velocity commands — aggregates them, maintains a state machine, and publishes both the computed state and the gated motion command.</p>
+      <p>Its role is not to be clever. It is to be right. It fails safe at every opportunity, it treats absence of information as worst-case, and it never invents a way to allow motion that the architecture did not explicitly permit.</p>
+
+      <div class="callout safety">
+        <div class="callout-label">Safety architecture context</div>
+        <p>safety_monitor is one of three independent safety layers (see <a href="../architecture/layered-architecture.html">ARCH-002 §3</a>). Its failure degrades safety but does not defeat it: the physical e-stop and (iteration 2+) safety MCU provide redundancy.</p>
+      </div>
+    </section>
+
+    <section id="s2"><div class="section-header"><span class="section-num">2.0</span><h2 class="section-title">Scope</h2></div>
+      <p><strong>In scope.</strong> Real-time aggregation of safety inputs, gating of motion commands, publication of unified state, the <a href="../interfaces/icd-safety-reset-srv.html">/safety/reset</a> service, startup self-test, and diagnostics.</p>
+      <p><strong>Not in scope.</strong> Direct control of hardware (the node does not cut motor power — that is the e-stop relay's job). Waypoint planning. Mission orchestration. Anything iteration 2+ (blade interlock logic, safety MCU heartbeat) beyond placeholder code.</p>
+
+      <p>The node is <em>one</em> of the three safety layers and is the software-layer gate only. It runs as a lifecycle node under systemd with process restart enabled.</p>
+    </section>
+
+    <section id="s3"><div class="section-header"><span class="section-num">3.0</span><h2 class="section-title">Interfaces</h2></div>
+
+      <div class="subsection-title">3.1 Subscribers</div>
+      <div class="data-table-wrap"><table class="data-table"><thead><tr><th>Topic</th><th>Type</th><th>Rate</th><th>Role</th></tr></thead><tbody>
+        <tr><td><a href="../interfaces/icd-perception-people.html" class="topic">/perception/people</a></td><td>DetectionArray</td><td>10 Hz</td><td>Person/pet proximity → ESTOP if within danger radius.</td></tr>
+        <tr><td><a href="../interfaces/icd-perception-obstacles.html" class="topic">/perception/obstacles</a></td><td>DetectionArray</td><td>10 Hz</td><td>Informational in iter 1.</td></tr>
+        <tr><td><a href="../interfaces/icd-hal-imu-data.html" class="topic">/hal/imu/data</a></td><td>sensor_msgs/Imu</td><td>100 Hz</td><td>Tilt detection.</td></tr>
+        <tr><td><a href="../interfaces/icd-hal-estop-pressed.html" class="topic">/hal/estop_pressed</a></td><td>std_msgs/Bool</td><td>20 Hz</td><td>Latched ESTOP trigger.</td></tr>
+        <tr><td><a href="../interfaces/icd-geofence-state.html" class="topic">/geofence/state</a></td><td>GeofenceState</td><td>10 Hz</td><td>OUTSIDE → ESTOP.</td></tr>
+        <tr><td><a href="../interfaces/icd-hal-battery.html" class="topic">/hal/battery</a></td><td>BatteryState</td><td>1 Hz</td><td>Percentage &lt; critical → CRITICAL.</td></tr>
+        <tr><td><a href="../interfaces/icd-hal-cmd-vel-raw.html" class="topic">/hal/cmd_vel_raw</a></td><td>Twist</td><td>50 Hz</td><td>Upstream command to gate.</td></tr>
+      </tbody></table></div>
+
+      <div class="subsection-title">3.2 Publishers</div>
+      <div class="data-table-wrap"><table class="data-table"><thead><tr><th>Topic</th><th>Type</th><th>Rate</th><th>Role</th></tr></thead><tbody>
+        <tr><td><a href="../interfaces/icd-safety-state.html" class="topic">/safety/state</a></td><td>SafetyState</td><td>10 Hz + on-change</td><td>Unified safety state.</td></tr>
+        <tr><td><a href="../interfaces/icd-hal-cmd-vel-safe.html" class="topic">/hal/cmd_vel_safe</a></td><td>Twist</td><td>50 Hz</td><td>Gated motion command.</td></tr>
+        <tr><td><span class="topic">/hal/tool_cmd_safe</span></td><td>ToolCommand</td><td>on-change (iter 2+)</td><td>Gated tool engagement (placeholder).</td></tr>
+        <tr><td><span class="topic">/diagnostics</span></td><td>DiagnosticArray</td><td>1 Hz</td><td>Health reporting.</td></tr>
+      </tbody></table></div>
+
+      <div class="subsection-title">3.3 Services</div>
+      <div class="data-table-wrap"><table class="data-table"><thead><tr><th>Service</th><th>Type</th><th>Role</th></tr></thead><tbody>
+        <tr><td><a href="../interfaces/icd-safety-reset-srv.html" class="topic">/safety/reset</a></td><td>ResetSafety</td><td>Clear latched conditions (validated).</td></tr>
+        <tr><td><span class="topic">/safety/test</span></td><td>std_srvs/Trigger</td><td>Run built-in self-test; report health.</td></tr>
+      </tbody></table></div>
+    </section>
+
+    <section id="s4"><div class="section-header"><span class="section-num">4.0</span><h2 class="section-title">Functional Requirements</h2></div>
+      <ul class="req-list">
+        <li class="req-item"><div class="req-id">SRS-SAF-001-F01</div><div><div class="req-text">Aggregate every subscribed input into a single safety state at ≥ 10 Hz.</div><div class="req-trace">verified by: <a href="../verification/test-saf-011.html">TEST-SAF-010</a></div></div></li>
+        <li class="req-item"><div class="req-id">SRS-SAF-001-F02</div><div><div class="req-text">Publish <code>/hal/cmd_vel_safe</code> passing through <code>/hal/cmd_vel_raw</code> only when state = OK or WARNING.</div><div class="req-trace">verified by: <a href="../verification/test-saf-011.html">TEST-SAF-011</a></div></div></li>
+        <li class="req-item"><div class="req-id">SRS-SAF-001-F03</div><div><div class="req-text">Apply a controlled deceleration ramp (default 2.0 m/s²) when transitioning to ESTOP from non-zero velocity, except when triggered by tilt.</div><div class="req-trace">verified by: <code>TEST-SAF-018</code></div></div></li>
+        <li class="req-item"><div class="req-id">SRS-SAF-001-F04</div><div><div class="req-text">Provide the <code>/safety/reset</code> service to clear latched conditions. The service shall verify the underlying condition is clear before transitioning.</div><div class="req-trace">verified by: <a href="../interfaces/icd-safety-reset-srv.html">ICD-SAF-002</a></div></div></li>
+        <li class="req-item"><div class="req-id">SRS-SAF-001-F05</div><div><div class="req-text">Refuse to publish state=OK until a startup self-test confirms all subscribed topics have been seen at least once and are within their rate windows.</div><div class="req-trace">verified by: <code>TEST-SAF-020</code></div></div></li>
+        <li class="req-item"><div class="req-id">SRS-SAF-001-F06</div><div><div class="req-text">Include in <code>/safety/state.reasons</code> the list of currently-active triggers, human-readable.</div><div class="req-trace">verified by: <code>TEST-SAF-021</code></div></div></li>
+      </ul>
+    </section>
+
+    <section id="s5"><div class="section-header"><span class="section-num">5.0</span><h2 class="section-title">Performance Requirements</h2></div>
+      <ul class="req-list">
+        <li class="req-item"><div class="req-id">SRS-SAF-001-P01</div><div><div class="req-text">End-to-end latency from <code>/perception/people</code> detection to <code>/hal/cmd_vel_safe</code> zero shall be ≤ 50 ms (95th percentile).</div><div class="req-trace">verified by: <a href="../verification/test-saf-011.html">TEST-SAF-011</a></div></div></li>
+        <li class="req-item"><div class="req-id">SRS-SAF-001-P02</div><div><div class="req-text">Latency from <code>/hal/estop_pressed</code> transition to <code>/hal/cmd_vel_safe</code> zero shall be ≤ 20 ms.</div><div class="req-trace">verified by: <code>TEST-SAF-012</code></div></div></li>
+        <li class="req-item"><div class="req-id">SRS-SAF-001-P03</div><div><div class="req-text">CPU usage on Pi 5 shall be &lt; 15% of one core under nominal load.</div><div class="req-trace">verified by: <code>TEST-SAF-025</code></div></div></li>
+        <li class="req-item"><div class="req-id">SRS-SAF-001-P04</div><div><div class="req-text">Resident memory shall be &lt; 100 MB.</div><div class="req-trace">verified by: <code>TEST-SAF-026</code></div></div></li>
+      </ul>
+    </section>
+
+    <section id="s6"><div class="section-header"><span class="section-num">6.0</span><h2 class="section-title">Safety Requirements</h2></div>
+      <ul class="req-list">
+        <li class="req-item"><div class="req-id">SRS-SAF-001-S01</div><div><div class="req-text">If any subscribed safety input is stale beyond its configured staleness window, the node shall treat that input as worst-case (e.g., stale /perception/people implies a person is present).</div><div class="req-trace">maps to: <a href="../requirements/safety.html">SR-006</a></div></div></li>
+        <li class="req-item"><div class="req-id">SRS-SAF-001-S02</div><div><div class="req-text">Latched ESTOP conditions shall require explicit service call to clear, even if the underlying trigger condition is no longer active.</div><div class="req-trace">maps to: <a href="../requirements/safety.html">SR-007</a></div></div></li>
+        <li class="req-item"><div class="req-id">SRS-SAF-001-S03</div><div><div class="req-text">Non-finite values (NaN, Inf) in any Twist field received on <code>/hal/cmd_vel_raw</code> shall result in published zero Twist and diagnostic warning.</div><div class="req-trace">maps to: <a href="../requirements/safety.html">SR-010</a></div></div></li>
+        <li class="req-item"><div class="req-id">SRS-SAF-001-S04</div><div><div class="req-text">Safety-critical callbacks (perception, IMU, e-stop) shall run in a reentrant callback group under a MultiThreadedExecutor, preventing blocking by non-critical work.</div><div class="req-trace">maps to: <a href="../requirements/safety.html">SR-005</a></div></div></li>
+      </ul>
+    </section>
+
+    <section id="s7"><div class="section-header"><span class="section-num">7.0</span><h2 class="section-title">State Machine</h2></div>
+      <p>Four-state machine: <code>OK · WARNING · ESTOP · CRITICAL</code>. Formal transition table, invariants, and timing in <a href="../state-machines/sm-safety-monitor.html">SM-SAF-001</a>.</p>
+      <p>Summary of invariants (full list in the state-machine document):</p>
+      <ul class="indent-list">
+        <li><strong>INV-1.</strong> <code>tool_permitted</code> ⇒ <code>state ∈ {OK, WARNING}</code>.</li>
+        <li><strong>INV-2.</strong> <code>/hal/cmd_vel_safe = 0</code> when <code>state = ESTOP</code> (within decel ramp tolerance).</li>
+        <li><strong>INV-3.</strong> <code>/safety/state</code> is published at ≥ 10 Hz under all conditions.</li>
+        <li><strong>INV-4.</strong> Hardware heartbeat (iter 2+) pulses at 100 Hz with &lt; 5 ms jitter.</li>
+        <li><strong>INV-5.</strong> Latched ESTOPs require <code>/safety/reset</code>.</li>
+        <li><strong>INV-6.</strong> <code>/safety/reset</code> succeeds only if underlying conditions are clear.</li>
+        <li><strong>INV-7.</strong> Stale topic data is treated as worst-case.</li>
+      </ul>
+    </section>
+
+    <section id="s8"><div class="section-header"><span class="section-num">8.0</span><h2 class="section-title">Dependencies</h2></div>
+      <ul class="indent-list">
+        <li>ROS 2 Humble (rclcpp).</li>
+        <li><code>platform_msgs</code> for custom types.</li>
+        <li><code>geometry_msgs</code>, <code>sensor_msgs</code>, <code>std_msgs</code>, <code>std_srvs</code>, <code>diagnostic_msgs</code>.</li>
+        <li>Eigen3 for quaternion math (tilt from orientation).</li>
+        <li>systemd service file for supervised launch.</li>
+      </ul>
+    </section>
+
+    <section id="s9"><div class="section-header"><span class="section-num">9.0</span><h2 class="section-title">Configuration</h2></div>
+      <div class="data-table-wrap"><table class="data-table"><thead><tr><th>Parameter</th><th>Type</th><th>Default</th><th>Notes</th></tr></thead>
+        <tbody>
+          <tr><td><span class="field-name">danger_radius_m</span></td><td>double</td><td>3.0</td><td>People-in-range ESTOP threshold</td></tr>
+          <tr><td><span class="field-name">warning_radius_m</span></td><td>double</td><td>5.0</td><td>People-in-range WARNING threshold</td></tr>
+          <tr><td><span class="field-name">tilt_limit_deg</span></td><td>double</td><td>25.0</td><td>Tilt ESTOP threshold</td></tr>
+          <tr><td><span class="field-name">tilt_warning_deg</span></td><td>double</td><td>18.0</td><td>Tilt WARNING threshold</td></tr>
+          <tr><td><span class="field-name">critical_batt_pct</span></td><td>double</td><td>15.0</td><td>CRITICAL-state trigger</td></tr>
+          <tr><td><span class="field-name">decel_rate_mps2</span></td><td>double</td><td>2.0</td><td>Ramp for ESTOP transitions</td></tr>
+          <tr><td><span class="field-name">topic_staleness_ms</span></td><td>map&lt;string,int&gt;</td><td>see code</td><td>Per-topic staleness windows</td></tr>
+          <tr><td><span class="field-name">estop_dwell_clear_sec</span></td><td>double</td><td>3.0</td><td>Dwell time for auto-clearable conditions</td></tr>
+          <tr><td><span class="field-name">max_linear_vel</span></td><td>double</td><td>0.7</td><td>Upstream clip</td></tr>
+          <tr><td><span class="field-name">max_angular_vel</span></td><td>double</td><td>1.5</td><td>Upstream clip</td></tr>
+        </tbody></table></div>
+      <p>Mower-specific tuning overrides are applied via <code>applications/mower/config/safety_monitor.yaml</code>.</p>
+    </section>
+
+    <section id="s10"><div class="section-header"><span class="section-num">10.0</span><h2 class="section-title">Failure Modes</h2></div>
+      <div class="data-table-wrap"><table class="data-table"><thead><tr><th>Failure</th><th>Detection</th><th>Response</th></tr></thead>
+        <tbody>
+          <tr><td>Own crash</td><td>systemd</td><td>Restart &lt; 2 s; on restart, state begins at ESTOP pending self-test.</td></tr>
+          <tr><td>Subscribed topic silent</td><td>per-topic staleness timer</td><td>State reflects worst-case; reason string identifies topic.</td></tr>
+          <tr><td>Publication rate drops</td><td>self-diagnostic</td><td>Emit diagnostic; investigate CPU/thermal.</td></tr>
+          <tr><td>Memory exhaustion</td><td>systemd OOM</td><td>Restart path same as crash; incident investigated post-run.</td></tr>
+          <tr><td>Rogue publisher on /hal/cmd_vel_safe</td><td><a href="../nodes/srs-system-monitor.html">system_monitor</a></td><td>Transitions to ESTOP; reason = "rogue_publisher"; latched.</td></tr>
+        </tbody></table></div>
+    </section>
+
+    <section id="s11"><div class="section-header"><span class="section-num">11.0</span><h2 class="section-title">Verification</h2></div>
+      <p>Primary tests: <a href="../verification/test-saf-011.html">TEST-SAF-011</a> (ESTOP latency), <a href="../verification/test-saf-016.html">TEST-SAF-016</a> (rogue publisher). Full catalog in <a href="../verification/index.html">verification section</a> and individual <a href="../interfaces/icd-hal-cmd-vel-safe.html">ICDs</a>.</p>
+    </section>
+
+    <section id="s12"><div class="section-header"><span class="section-num">12.0</span><h2 class="section-title">Open Issues</h2></div>
+      <ol class="indent-list">
+        <li><strong>OPEN-01</strong> — Iteration 2: integrate hardware heartbeat line to safety MCU. Scaffolding present; output not wired.</li>
+        <li><strong>OPEN-02</strong> — Reason-code enumeration (vs. strings) for machine-reliable app handling. See <a href="../interfaces/icd-safety-state.html">ICD-SAF-001</a> OPEN-01.</li>
+        <li><strong>OPEN-03</strong> — Formal verification of the state machine. Candidate: generate TLA+ model from spec. Deferred.</li>
+      </ol>
+    </section>
+
+    <section id="s13"><div class="section-header"><span class="section-num">13.0</span><h2 class="section-title">Revision</h2></div>
+      <table class="revision-table"><thead><tr><th>Rev</th><th>Date</th><th>Author</th><th>Change</th></tr></thead>
+        <tbody><tr><td class="rev">0.1</td><td>2026-04-19</td><td>Louis Roig &amp; Claude Opus 4.7</td><td>Initial draft.</td></tr></tbody></table>
+    </section>
+
+    <div class="footer-nav">
+      <a href="index.html">← Nodes Index</a>
+      <span>Related: <a href="../state-machines/sm-safety-monitor.html">SM-SAF-001</a> · <a href="anatomy-safety-monitor.html">Anatomy</a></span>
+    </div>
+
+  </main>
+</div>
+<script src="../shared/shared.js"></script>
+</body>
+</html>

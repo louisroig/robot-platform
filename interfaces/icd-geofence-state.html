@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ICD-SAF-003 · /geofence/state</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=IBM+Plex+Sans:wght@300;400;500;600;700&family=IBM+Plex+Serif:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../shared/shared.css">
+</head>
+<body>
+<div class="doc-bar">
+  <a class="doc-bar-crumb" href="../index.html">← HOME</a><span class="doc-bar-sep">·</span>
+  <a class="doc-bar-crumb" href="index.html">INTERFACES</a><span class="doc-bar-sep">·</span>
+  <span class="doc-bar-id">ICD-SAF-003</span><span class="doc-bar-sep">·</span>
+  <span class="doc-bar-path">/geofence/state</span><span class="doc-bar-sep">·</span>
+  <span style="color: var(--ink-dim)">REV 0.1</span>
+  <div class="doc-bar-status"><span class="status-dot"></span><span>DRAFT</span></div>
+  <div class="doc-bar-tools">
+    <button class="tool-btn" onclick="window.print()">PRINT</button>
+    <button class="tool-btn" onclick="copyLink(event)">COPY LINK</button>
+  </div>
+</div>
+
+<div class="container">
+  <nav class="toc">
+    <div class="toc-title">CONTENTS</div>
+    <ul class="toc-list">
+      <li class="toc-item"><a class="toc-link" href="#s1"><span class="toc-num">1.0</span>Purpose</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s2"><span class="toc-num">2.0</span>Participants</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s3"><span class="toc-num">3.0</span>Message</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s4"><span class="toc-num">4.0</span>Semantics</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s5"><span class="toc-num">5.0</span>Timing</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s6"><span class="toc-num">6.0</span>QoS</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s7"><span class="toc-num">7.0</span>Fault</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s8"><span class="toc-num">8.0</span>Requirements</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s9"><span class="toc-num">9.0</span>Verification</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s10"><span class="toc-num">10.0</span>Open Issues</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s11"><span class="toc-num">11.0</span>Revision</a></li>
+    </ul>
+  </nav>
+
+  <main class="prose-serif">
+    <div class="doc-header">
+      <div class="doc-type safety">INTERFACE CONTROL DOCUMENT · SAFETY INPUT</div>
+      <h1 class="doc-title"><code>/geofence/state</code></h1>
+      <p class="doc-subtitle">Rover position relative to the active zone polygon. Three states (INSIDE / WARNING / OUTSIDE) plus a continuous distance-to-edge measure.</p>
+      <div class="doc-meta">
+        <div class="meta-item"><div class="meta-label">Document ID</div><div class="meta-value">ICD-SAF-003</div></div>
+        <div class="meta-item"><div class="meta-label">Revision</div><div class="meta-value">0.1 · draft</div></div>
+        <div class="meta-item"><div class="meta-label">Owner</div><div class="meta-value">platform_safety</div></div>
+        <div class="meta-item"><div class="meta-label">Classification</div><div class="meta-value">Safety-relevant</div></div>
+        <div class="meta-item"><div class="meta-label">Last Updated</div><div class="meta-value">2026-04-19</div></div>
+      </div>
+    </div>
+
+    <section id="s1"><div class="section-header"><span class="section-num">1.0</span><h2 class="section-title">Purpose</h2></div>
+      <p>Published by <a href="../nodes/srs-geofence-enforcer.html">geofence_enforcer</a> at 10 Hz. Describes whether the rover's fused pose is inside, near the edge of, or outside the active zone polygon drawn by the operator. Consumed by <a href="../nodes/srs-safety-monitor.html">safety_monitor</a> for ESTOP decisions and by telemetry for app display.</p>
+    </section>
+
+    <section id="s2"><div class="section-header"><span class="section-num">2.0</span><h2 class="section-title">Participants</h2></div>
+      <div class="participants">
+        <div class="participant-card pub"><div class="participant-role">Publisher</div><div class="participant-name">geofence_enforcer</div>
+          <div class="participant-detail"><strong>SRS</strong><a href="../nodes/srs-geofence-enforcer.html">SRS-SAF-002</a><strong>State machine</strong><a href="../state-machines/sm-geofence-enforcer.html">SM-GEO-001</a></div></div>
+        <div class="participant-card sub"><div class="participant-role">Subscribers</div><div class="participant-name">safety_monitor · telemetry_publisher</div>
+          <div class="participant-detail"><strong>safety_monitor</strong>OUTSIDE → ESTOP with reason "geofence_violated."<strong>telemetry_publisher</strong>Forwards distance_to_boundary to mobile app for visual indicator.</div></div>
+      </div>
+    </section>
+
+    <section id="s3"><div class="section-header"><span class="section-num">3.0</span><h2 class="section-title">Message</h2></div>
+      <p>Type: <code>platform_msgs/msg/GeofenceState</code>.</p>
+      <div class="code-block" data-lang="IDL">std_msgs/Header header
+uint8 state                      <span class="comment"># 0=INSIDE, 1=WARNING (near edge), 2=OUTSIDE</span>
+float32 distance_to_boundary_m   <span class="comment"># signed: positive = inside, negative = outside</span></div>
+    </section>
+
+    <section id="s4"><div class="section-header"><span class="section-num">4.0</span><h2 class="section-title">Semantics</h2></div>
+      <p>Distance is signed point-in-polygon distance using the active zone's outer polygon minus exclusion polygons.</p>
+      <ul class="indent-list">
+        <li><strong>INSIDE (0):</strong> <code>distance_to_boundary_m ≥ warning_threshold_m</code> (default 1.0 m).</li>
+        <li><strong>WARNING (1):</strong> <code>0 &lt; distance_to_boundary_m &lt; warning_threshold_m</code>. Rover is still inside but near the edge.</li>
+        <li><strong>OUTSIDE (2):</strong> <code>distance_to_boundary_m ≤ 0</code>. Rover is outside the outer polygon or inside an exclusion polygon.</li>
+      </ul>
+      <p>Transitions use 0.25 m hysteresis to avoid chatter at the edge.</p>
+      <p>When no zone is active (boundary_ingester has published nothing), the node publishes state=INSIDE and distance=+∞; safety_monitor treats this as "geofencing not enforced" rather than a fault.</p>
+    </section>
+
+    <section id="s5"><div class="section-header"><span class="section-num">5.0</span><h2 class="section-title">Timing</h2></div>
+      <p>10 Hz ± 1 Hz, driven by the pose-update cadence from <a href="icd-localization-pose.html">/localization/pose</a>.</p>
+    </section>
+
+    <section id="s6"><div class="section-header"><span class="section-num">6.0</span><h2 class="section-title">QoS</h2></div>
+      <p>RELIABLE, KEEP_LAST depth 2, VOLATILE.</p>
+    </section>
+
+    <section id="s7"><div class="section-header"><span class="section-num">7.0</span><h2 class="section-title">Fault</h2></div>
+      <div class="data-table-wrap"><table class="data-table"><thead><tr><th>Fault</th><th>Response</th></tr></thead>
+        <tbody>
+          <tr><td>Pose stale</td><td>Node ceases publication; safety_monitor staleness triggers ESTOP.</td></tr>
+          <tr><td>Degenerate polygon (self-intersecting)</td><td>Rejected at boundary_ingester; never reaches this node.</td></tr>
+          <tr><td>Pose diverged (SLAM jump)</td><td>Node publishes OUTSIDE with distance reflecting the jump; safety_monitor ESTOPs. Operator must reset after re-localization.</td></tr>
+        </tbody></table></div>
+    </section>
+
+    <section id="s8"><div class="section-header"><span class="section-num">8.0</span><h2 class="section-title">Requirements</h2></div>
+      <ul class="req-list">
+        <li class="req-item"><div class="req-id">REQ-ICD-SAF-003-01</div><div><div class="req-text">Publication rate shall be 10 Hz ± 1 Hz when pose input is healthy and a zone is loaded.</div><div class="req-trace">verified by: <code>TEST-SAF-030</code></div></div></li>
+        <li class="req-item"><div class="req-id">REQ-ICD-SAF-003-02</div><div><div class="req-text">State transitions shall include 0.25 m hysteresis.</div><div class="req-trace">verified by: <code>TEST-SAF-031</code></div></div></li>
+        <li class="req-item"><div class="req-id">REQ-ICD-SAF-003-03</div><div><div class="req-text">Exclusion polygons (no-go zones within the outer boundary) shall be treated as OUTSIDE.</div><div class="req-trace">verified by: <code>TEST-SAF-032</code></div></div></li>
+      </ul>
+    </section>
+
+    <section id="s9"><div class="section-header"><span class="section-num">9.0</span><h2 class="section-title">Verification</h2></div>
+      <div class="data-table-wrap"><table class="data-table"><thead><tr><th>Test</th><th>Method</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td><span class="field-name">TEST-SAF-030</span></td><td>Integration</td><td>Load synthetic zone; publish synthetic pose updates at 30 Hz; verify rate.</td></tr>
+          <tr><td><span class="field-name">TEST-SAF-031</span></td><td>Unit</td><td>Simulate pose oscillating across a boundary edge; verify no chatter.</td></tr>
+          <tr><td><span class="field-name">TEST-SAF-032</span></td><td>Unit</td><td>Zone with one exclusion polygon; pose inside exclusion; verify OUTSIDE.</td></tr>
+        </tbody></table></div>
+    </section>
+
+    <section id="s10"><div class="section-header"><span class="section-num">10.0</span><h2 class="section-title">Open Issues</h2></div>
+      <ol class="indent-list">
+        <li><strong>OPEN-01</strong> — Warning threshold (1.0 m) is a guess. Field testing in iteration 1 will confirm.</li>
+        <li><strong>OPEN-02</strong> — Performance: polygon-distance computation at 10 Hz for a 200-vertex polygon ≈ 20 µs. Scale test not yet run for complex multi-exclusion zones.</li>
+      </ol>
+    </section>
+
+    <section id="s11"><div class="section-header"><span class="section-num">11.0</span><h2 class="section-title">Revision</h2></div>
+      <table class="revision-table"><thead><tr><th>Rev</th><th>Date</th><th>Author</th><th>Change</th></tr></thead>
+        <tbody><tr><td class="rev">0.1</td><td>2026-04-19</td><td>Louis Roig &amp; Claude Opus 4.7</td><td>Initial draft.</td></tr></tbody></table>
+    </section>
+
+    <div class="footer-nav"><a href="index.html">← Interfaces Index</a><span>Related: <a href="icd-mapping-current-zone.html">/mapping/current_zone</a></span></div>
+  </main>
+</div>
+<script src="../shared/shared.js"></script>
+</body></html>

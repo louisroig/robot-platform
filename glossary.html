@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Glossary · Ground-Air Platform Spec</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=IBM+Plex+Sans:wght@300;400;500;600;700&family=IBM+Plex+Serif:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="shared/shared.css">
+</head>
+<body>
+
+<div class="doc-bar">
+  <a class="doc-bar-crumb" href="index.html">← HOME</a>
+  <span class="doc-bar-sep">·</span>
+  <span class="doc-bar-id">GLOSSARY</span>
+  <span class="doc-bar-sep">·</span>
+  <span class="doc-bar-path">/glossary</span>
+  <span class="doc-bar-sep">·</span>
+  <span style="color: var(--ink-dim)">REV 0.1</span>
+  <div class="doc-bar-status">
+    <span class="status-dot"></span>
+    <span>DRAFT</span>
+  </div>
+  <div class="doc-bar-tools">
+    <button class="tool-btn" onclick="window.print()">PRINT</button>
+    <button class="tool-btn" onclick="copyLink(event)">COPY LINK</button>
+  </div>
+</div>
+
+<div class="container single">
+  <main>
+
+    <div class="doc-header">
+      <div class="doc-type">REFERENCE</div>
+      <h1 class="doc-title">Glossary</h1>
+      <p class="doc-subtitle">Alphabetical index of acronyms and terms used across the corpus.</p>
+
+      <div class="doc-meta">
+        <div class="meta-item"><div class="meta-label">Document ID</div><div class="meta-value">GLOSSARY</div></div>
+        <div class="meta-item"><div class="meta-label">Revision</div><div class="meta-value">0.1 · draft</div></div>
+        <div class="meta-item"><div class="meta-label">Last Updated</div><div class="meta-value">2026-04-19</div></div>
+      </div>
+    </div>
+
+    <div class="glossary-letter">A</div>
+    <ul class="glossary-list">
+      <li><span class="term">AIO</span><span class="gloss">All-In-One — flight controller with an integrated ESC. The drone uses an iFlight Blitz Whoop F7 AIO.</span></li>
+      <li><span class="term">ArduCopter</span><span class="gloss">Open-source autopilot firmware for multirotors. Running on the Blitz F7 FC in iteration 1.</span></li>
+    </ul>
+
+    <div class="glossary-letter">B</div>
+    <ul class="glossary-list">
+      <li><span class="term">BDD</span><span class="gloss">Block Definition Diagram — a SysML structural diagram.</span></li>
+      <li><span class="term">BEC</span><span class="gloss">Battery Eliminator Circuit — voltage regulator that steps down the main battery to a logic-level rail.</span></li>
+    </ul>
+
+    <div class="glossary-letter">C</div>
+    <ul class="glossary-list">
+      <li><span class="term">CSEP</span><span class="gloss">Certified Systems Engineering Professional — INCOSE credential.</span></li>
+    </ul>
+
+    <div class="glossary-letter">D</div>
+    <ul class="glossary-list">
+      <li><span class="term">DDS</span><span class="gloss">Data Distribution Service — the pub/sub middleware that underlies ROS 2 transport.</span></li>
+    </ul>
+
+    <div class="glossary-letter">E</div>
+    <ul class="glossary-list">
+      <li><span class="term">EKF</span><span class="gloss">Extended Kalman Filter — the nonlinear state estimator used by <code>robot_localization</code>.</span></li>
+      <li><span class="term">ELRS</span><span class="gloss">ExpressLRS — open-source long-range RC link. Used for drone manual-override control.</span></li>
+      <li><span class="term">ESC</span><span class="gloss">Electronic Speed Controller — drives the drone's motors.</span></li>
+      <li><span class="term">ESTOP</span><span class="gloss">Emergency stop. A safety state that latches motion off until cleared.</span></li>
+    </ul>
+
+    <div class="glossary-letter">F</div>
+    <ul class="glossary-list">
+      <li><span class="term">FC</span><span class="gloss">Flight Controller — runs the autopilot firmware on the drone.</span></li>
+      <li><span class="term">FSO</span><span class="gloss">Facility Security Officer — cleared-industry role. Mentioned for context; not a project role.</span></li>
+    </ul>
+
+    <div class="glossary-letter">G</div>
+    <ul class="glossary-list">
+      <li><span class="term">GCS</span><span class="gloss">Ground Control Station — desktop/tablet software for commanding and monitoring the drone (e.g., QGroundControl).</span></li>
+      <li><span class="term">Geofence</span><span class="gloss">A virtual boundary. In this system, the user-drawn polygon outside of which the rover must not travel.</span></li>
+    </ul>
+
+    <div class="glossary-letter">H</div>
+    <ul class="glossary-list">
+      <li><span class="term">HAL</span><span class="gloss">Hardware Abstraction Layer — the vendor-boundary layer between vendor-specific drivers and vendor-neutral platform code.</span></li>
+    </ul>
+
+    <div class="glossary-letter">I</div>
+    <ul class="glossary-list">
+      <li><span class="term">ICD</span><span class="gloss">Interface Control Document — the authoritative specification for one topic, service, action, or external API.</span></li>
+      <li><span class="term">IMU</span><span class="gloss">Inertial Measurement Unit — accelerometer + gyroscope, typically also a magnetometer.</span></li>
+      <li><span class="term">INCOSE</span><span class="gloss">International Council on Systems Engineering.</span></li>
+      <li><span class="term">IRAD</span><span class="gloss">Internal Research And Development — company-funded R&amp;D (used only in background context).</span></li>
+    </ul>
+
+    <div class="glossary-letter">L</div>
+    <ul class="glossary-list">
+      <li><span class="term">LAANC</span><span class="gloss">Low Altitude Authorization and Notification Capability — FAA airspace-authorization system for UAS.</span></li>
+      <li><span class="term">LiFePO4</span><span class="gloss">Lithium Iron Phosphate — a safer, lower-energy-density battery chemistry used on the rover.</span></li>
+    </ul>
+
+    <div class="glossary-letter">M</div>
+    <ul class="glossary-list">
+      <li><span class="term">MBSE</span><span class="gloss">Model-Based Systems Engineering — the discipline this corpus takes its language from, intentionally applied in HTML rather than in a tool like Cameo.</span></li>
+      <li><span class="term">MCU</span><span class="gloss">Microcontroller Unit — a small embedded processor. Used for the future independent safety board.</span></li>
+    </ul>
+
+    <div class="glossary-letter">N</div>
+    <ul class="glossary-list">
+      <li><span class="term">NC</span><span class="gloss">Normally Closed — switch convention. The physical e-stop is NC so that a broken wire fails safe.</span></li>
+      <li><span class="term">NPU</span><span class="gloss">Neural Processing Unit — the dedicated YOLO inference accelerator onboard the OAK-D Lite.</span></li>
+    </ul>
+
+    <div class="glossary-letter">O</div>
+    <ul class="glossary-list">
+      <li><span class="term">OCSMP</span><span class="gloss">OMG Certified Systems Modeling Professional — the SysML credential.</span></li>
+    </ul>
+
+    <div class="glossary-letter">Q</div>
+    <ul class="glossary-list">
+      <li><span class="term">QGC</span><span class="gloss">QGroundControl — the ArduPilot/PX4 ground station application.</span></li>
+      <li><span class="term">QoS</span><span class="gloss">Quality of Service — DDS transport parameters: reliability, durability, history, depth, deadline, lifespan.</span></li>
+    </ul>
+
+    <div class="glossary-letter">R</div>
+    <ul class="glossary-list">
+      <li><span class="term">ROS 2</span><span class="gloss">Robot Operating System v2 — the middleware and tooling the platform is built on. Target distribution: Humble.</span></li>
+      <li><span class="term">RT</span><span class="gloss">Remote Terminal — MIL-STD-1553 term, used here as an analogy for the single-authority bus-master pattern of <code>safety_monitor</code>.</span></li>
+      <li><span class="term">RTK</span><span class="gloss">Real-Time Kinematic — centimeter-level GPS correction. Future iteration; optional in iteration 1.</span></li>
+    </ul>
+
+    <div class="glossary-letter">S</div>
+    <ul class="glossary-list">
+      <li><span class="term">SiK</span><span class="gloss">Firmware name for the common 3DR-style telemetry radios. Not used in iteration 1.</span></li>
+      <li><span class="term">SLAM</span><span class="gloss">Simultaneous Localization And Mapping — building a map while localizing against it.</span></li>
+      <li><span class="term">SRS</span><span class="gloss">Software Requirements Specification — per-component document listing what the component shall do.</span></li>
+      <li><span class="term">SysML</span><span class="gloss">Systems Modeling Language — the OMG standard typically rendered in tools like Cameo.</span></li>
+    </ul>
+
+    <div class="glossary-letter">T</div>
+    <ul class="glossary-list">
+      <li><span class="term">TF</span><span class="gloss">Transform — the ROS coordinate-frame tree. Maintained by <code>robot_state_publisher</code> and the EKF nodes.</span></li>
+    </ul>
+
+    <div class="glossary-letter">U</div>
+    <ul class="glossary-list">
+      <li><span class="term">UL</span><span class="gloss">Underwriters Laboratories — the safety certification body relevant for commercial outdoor robotics.</span></li>
+      <li><span class="term">URDF</span><span class="gloss">Unified Robot Description Format — XML description of robot geometry and kinematics.</span></li>
+    </ul>
+
+    <div class="glossary-letter">V</div>
+    <ul class="glossary-list">
+      <li><span class="term">VTX</span><span class="gloss">Video Transmitter — analog/digital FPV video link. Not used on the mapping drone in iteration 1.</span></li>
+    </ul>
+
+    <div class="footer-nav">
+      <a href="index.html">← Corpus Home</a>
+      <span><a href="README.md">README →</a></span>
+    </div>
+
+  </main>
+</div>
+
+<script src="shared/shared.js"></script>
+</body>
+</html>

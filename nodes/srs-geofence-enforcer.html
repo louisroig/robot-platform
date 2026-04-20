@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SRS-SAF-002 · geofence_enforcer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=IBM+Plex+Sans:wght@300;400;500;600;700&family=IBM+Plex+Serif:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../shared/shared.css">
+</head>
+<body>
+<div class="doc-bar">
+  <a class="doc-bar-crumb" href="../index.html">← HOME</a><span class="doc-bar-sep">·</span>
+  <a class="doc-bar-crumb" href="index.html">NODES</a><span class="doc-bar-sep">·</span>
+  <span class="doc-bar-id">SRS-SAF-002</span><span class="doc-bar-sep">·</span>
+  <span class="doc-bar-path">geofence_enforcer</span><span class="doc-bar-sep">·</span>
+  <span style="color: var(--ink-dim)">REV 0.1</span>
+  <div class="doc-bar-status"><span class="status-dot"></span><span>DRAFT</span></div>
+  <div class="doc-bar-tools"><button class="tool-btn" onclick="window.print()">PRINT</button><button class="tool-btn" onclick="copyLink(event)">COPY LINK</button></div>
+</div>
+<div class="container">
+  <nav class="toc">
+    <div class="toc-title">CONTENTS</div>
+    <ul class="toc-list">
+      <li class="toc-item"><a class="toc-link" href="#s1"><span class="toc-num">1.0</span>Purpose</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s2"><span class="toc-num">2.0</span>Scope</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s3"><span class="toc-num">3.0</span>Interfaces</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s4"><span class="toc-num">4.0</span>Functional</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s5"><span class="toc-num">5.0</span>Performance</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s6"><span class="toc-num">6.0</span>Safety</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s7"><span class="toc-num">7.0</span>State Machine</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s8"><span class="toc-num">8.0</span>Dependencies</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s9"><span class="toc-num">9.0</span>Config</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s10"><span class="toc-num">10.0</span>Failure</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s11"><span class="toc-num">11.0</span>Verification</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s12"><span class="toc-num">12.0</span>Open Issues</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s13"><span class="toc-num">13.0</span>Revision</a></li>
+    </ul>
+  </nav>
+  <main class="prose-serif">
+    <div class="doc-header">
+      <div class="doc-type safety">SOFTWARE REQUIREMENTS SPECIFICATION · SAFETY</div>
+      <h1 class="doc-title">geofence_enforcer</h1>
+      <p class="doc-subtitle">Computes rover position relative to the active zone polygon and classifies it as INSIDE, WARNING, or OUTSIDE.</p>
+      <div class="doc-meta">
+        <div class="meta-item"><div class="meta-label">Document ID</div><div class="meta-value">SRS-SAF-002</div></div>
+        <div class="meta-item"><div class="meta-label">Revision</div><div class="meta-value">0.1 · draft</div></div>
+        <div class="meta-item"><div class="meta-label">Owner</div><div class="meta-value">platform_safety</div></div>
+        <div class="meta-item"><div class="meta-label">Language</div><div class="meta-value">Python (rclpy)</div></div>
+        <div class="meta-item"><div class="meta-label">Classification</div><div class="meta-value">Safety-relevant</div></div>
+        <div class="meta-item"><div class="meta-label">Last Updated</div><div class="meta-value">2026-04-19</div></div>
+      </div>
+    </div>
+
+    <section id="s1"><div class="section-header"><span class="section-num">1.0</span><h2 class="section-title">Purpose</h2></div>
+      <p>Subscribes to <a href="../interfaces/icd-mapping-current-zone.html">/mapping/current_zone</a> and <a href="../interfaces/icd-localization-pose.html">/localization/pose</a>. Computes signed point-in-polygon distance. Publishes <a href="../interfaces/icd-geofence-state.html">/geofence/state</a> with classification and distance. Applies hysteresis to avoid state chatter at the boundary.</p>
+    </section>
+
+    <section id="s2"><div class="section-header"><span class="section-num">2.0</span><h2 class="section-title">Scope</h2></div>
+      <p>In: signed distance via ray-casting or Shapely; hysteresis-managed state transitions. Out: zone activation (belongs to <a href="srs-boundary-ingester.html">boundary_ingester</a>); coordinate conversion (done upstream).</p>
+    </section>
+
+    <section id="s3"><div class="section-header"><span class="section-num">3.0</span><h2 class="section-title">Interfaces</h2></div>
+      <p>Subscribers: <a href="../interfaces/icd-mapping-current-zone.html">/mapping/current_zone</a>, <a href="../interfaces/icd-localization-pose.html">/localization/pose</a>. Publishers: <a href="../interfaces/icd-geofence-state.html">/geofence/state</a>, <code>/diagnostics</code>.</p>
+    </section>
+
+    <section id="s4"><div class="section-header"><span class="section-num">4.0</span><h2 class="section-title">Functional</h2></div>
+      <ul class="req-list">
+        <li class="req-item"><div class="req-id">SRS-SAF-002-F01</div><div><div class="req-text">For each pose update, compute signed distance to the nearest edge of the outer polygon (negative if outside) minus the signed distance to the nearest exclusion polygon edge.</div><div class="req-trace">verified by: <code>TEST-SAF-032</code></div></div></li>
+        <li class="req-item"><div class="req-id">SRS-SAF-002-F02</div><div><div class="req-text">Classify INSIDE (distance ≥ warning_threshold), WARNING (0 &lt; distance &lt; threshold), OUTSIDE (distance ≤ 0).</div><div class="req-trace">verified by: <code>TEST-SAF-030</code></div></div></li>
+        <li class="req-item"><div class="req-id">SRS-SAF-002-F03</div><div><div class="req-text">Apply 0.25 m hysteresis on threshold crossings.</div><div class="req-trace">verified by: <code>TEST-SAF-031</code></div></div></li>
+      </ul>
+    </section>
+
+    <section id="s5"><div class="section-header"><span class="section-num">5.0</span><h2 class="section-title">Performance</h2></div>
+      <p>Publication rate 10 Hz ± 1 Hz. Polygon-distance compute time ≤ 5 ms per cycle for polygons up to 200 vertices.</p>
+    </section>
+
+    <section id="s6"><div class="section-header"><span class="section-num">6.0</span><h2 class="section-title">Safety</h2></div>
+      <ul class="req-list">
+        <li class="req-item"><div class="req-id">SRS-SAF-002-S01</div><div><div class="req-text">Stale pose input shall cause the node to halt publication rather than publish last-known; downstream safety_monitor handles via staleness logic.</div><div class="req-trace">maps to: <a href="../requirements/safety.html">SR-006</a></div></div></li>
+      </ul>
+    </section>
+
+    <section id="s7"><div class="section-header"><span class="section-num">7.0</span><h2 class="section-title">State Machine</h2></div>
+      <p>Three states with hysteresis. See <a href="../state-machines/sm-geofence-enforcer.html">SM-GEO-001</a>.</p>
+    </section>
+
+    <section id="s8"><div class="section-header"><span class="section-num">8.0</span><h2 class="section-title">Dependencies</h2></div>
+      <p>rclpy, Shapely, platform_msgs.</p>
+    </section>
+
+    <section id="s9"><div class="section-header"><span class="section-num">9.0</span><h2 class="section-title">Configuration</h2></div>
+      <div class="data-table-wrap"><table class="data-table"><thead><tr><th>Parameter</th><th>Default</th></tr></thead><tbody>
+        <tr><td><span class="field-name">warning_threshold_m</span></td><td>1.0</td></tr>
+        <tr><td><span class="field-name">hysteresis_m</span></td><td>0.25</td></tr>
+        <tr><td><span class="field-name">publication_rate_hz</span></td><td>10</td></tr>
+      </tbody></table></div>
+    </section>
+
+    <section id="s10"><div class="section-header"><span class="section-num">10.0</span><h2 class="section-title">Failure Modes</h2></div>
+      <p>Stale pose: halt publication. No zone loaded: emit INSIDE + infinite distance (geofencing inactive). Degenerate polygon: should not occur (rejected upstream); if somehow encountered, log and halt.</p>
+    </section>
+
+    <section id="s11"><div class="section-header"><span class="section-num">11.0</span><h2 class="section-title">Verification</h2></div>
+      <p>TEST-SAF-030/031/032 cross-referenced from <a href="../interfaces/icd-geofence-state.html">ICD-SAF-003</a>.</p>
+    </section>
+
+    <section id="s12"><div class="section-header"><span class="section-num">12.0</span><h2 class="section-title">Open Issues</h2></div>
+      <ol class="indent-list">
+        <li><strong>OPEN-01</strong> — Performance on very complex polygons (many exclusions) not yet profiled.</li>
+      </ol>
+    </section>
+
+    <section id="s13"><div class="section-header"><span class="section-num">13.0</span><h2 class="section-title">Revision</h2></div>
+      <table class="revision-table"><thead><tr><th>Rev</th><th>Date</th><th>Author</th><th>Change</th></tr></thead><tbody><tr><td class="rev">0.1</td><td>2026-04-19</td><td>Louis Roig &amp; Claude Opus 4.7</td><td>Initial draft.</td></tr></tbody></table>
+    </section>
+
+    <div class="footer-nav"><a href="index.html">← Nodes Index</a><span>Related: <a href="../state-machines/sm-geofence-enforcer.html">SM-GEO-001</a></span></div>
+  </main>
+</div>
+<script src="../shared/shared.js"></script>
+</body></html>

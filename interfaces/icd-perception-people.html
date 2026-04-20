@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ICD-PER-002 · /perception/people</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=IBM+Plex+Sans:wght@300;400;500;600;700&family=IBM+Plex+Serif:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../shared/shared.css">
+</head>
+<body>
+<div class="doc-bar">
+  <a class="doc-bar-crumb" href="../index.html">← HOME</a><span class="doc-bar-sep">·</span>
+  <a class="doc-bar-crumb" href="index.html">INTERFACES</a><span class="doc-bar-sep">·</span>
+  <span class="doc-bar-id">ICD-PER-002</span><span class="doc-bar-sep">·</span>
+  <span class="doc-bar-path">/perception/people</span><span class="doc-bar-sep">·</span>
+  <span style="color: var(--ink-dim)">REV 0.1</span>
+  <div class="doc-bar-status"><span class="status-dot"></span><span>DRAFT</span></div>
+  <div class="doc-bar-tools">
+    <button class="tool-btn" onclick="window.print()">PRINT</button>
+    <button class="tool-btn" onclick="copyLink(event)">COPY LINK</button>
+  </div>
+</div>
+
+<div class="container">
+  <nav class="toc">
+    <div class="toc-title">CONTENTS</div>
+    <ul class="toc-list">
+      <li class="toc-item"><a class="toc-link" href="#s1"><span class="toc-num">1.0</span>Purpose</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s2"><span class="toc-num">2.0</span>Participants</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s3"><span class="toc-num">3.0</span>Message</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s4"><span class="toc-num">4.0</span>Semantics</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s5"><span class="toc-num">5.0</span>Timing</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s6"><span class="toc-num">6.0</span>QoS</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s7"><span class="toc-num">7.0</span>Fault</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s8"><span class="toc-num">8.0</span>Requirements</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s9"><span class="toc-num">9.0</span>Verification</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s10"><span class="toc-num">10.0</span>Open Issues</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s11"><span class="toc-num">11.0</span>Revision</a></li>
+    </ul>
+  </nav>
+
+  <main class="prose-serif">
+    <div class="doc-header">
+      <div class="doc-type safety">INTERFACE CONTROL DOCUMENT · SAFETY INPUT</div>
+      <h1 class="doc-title"><code>/perception/people</code></h1>
+      <p class="doc-subtitle">Detections filtered to living things. The primary perceptual safety input — any person or pet within the danger radius triggers ESTOP.</p>
+      <div class="doc-meta">
+        <div class="meta-item"><div class="meta-label">Document ID</div><div class="meta-value">ICD-PER-002</div></div>
+        <div class="meta-item"><div class="meta-label">Revision</div><div class="meta-value">0.1 · draft</div></div>
+        <div class="meta-item"><div class="meta-label">Owner</div><div class="meta-value">platform_perception</div></div>
+        <div class="meta-item"><div class="meta-label">Classification</div><div class="meta-value">Safety-critical</div></div>
+        <div class="meta-item"><div class="meta-label">Last Updated</div><div class="meta-value">2026-04-19</div></div>
+      </div>
+    </div>
+
+    <section id="s1"><div class="section-header"><span class="section-num">1.0</span><h2 class="section-title">Purpose</h2></div>
+      <p>The <code>/perception/people</code> topic carries the subset of <a href="icd-perception-detections.html">/perception/detections</a> corresponding to living things — humans, dogs, cats, birds on the ground, wildlife. It is the primary safety input of its kind: the <a href="../nodes/srs-safety-monitor.html">safety_monitor</a> reacts to entries here with ESTOP or WARNING depending on distance.</p>
+      <div class="callout safety">
+        <div class="callout-label">Safety-critical interface</div>
+        <p>Correctness of filtering matters. A false negative (a person classified as an obstacle) defeats the perceptual safety layer. The living-thing filter is explicit and liberal — any COCO class that could plausibly be a living thing falls on this topic. See §4.</p>
+      </div>
+    </section>
+
+    <section id="s2"><div class="section-header"><span class="section-num">2.0</span><h2 class="section-title">Participants</h2></div>
+      <div class="participants">
+        <div class="participant-card pub"><div class="participant-role">Publisher</div><div class="participant-name">living_thing_filter</div>
+          <div class="participant-detail"><strong>SRS</strong><a href="../nodes/srs-living-thing-filter.html">SRS-PER-002</a></div></div>
+        <div class="participant-card sub"><div class="participant-role">Subscriber</div><div class="participant-name">safety_monitor</div>
+          <div class="participant-detail"><strong>Rule</strong>Any detection with <code>distance_m &lt; danger_radius_m</code> → ESTOP. <code>distance_m &lt; warning_radius_m</code> → WARNING.</div></div>
+      </div>
+    </section>
+
+    <section id="s3"><div class="section-header"><span class="section-num">3.0</span><h2 class="section-title">Message</h2></div>
+      <p>Type: <code>platform_msgs/msg/DetectionArray</code>. Field schema identical to <a href="icd-perception-detections.html">ICD-PER-001</a>. Only detections whose <code>class</code> appears in the living-thing whitelist are included.</p>
+      <p>Whitelist (iteration 1): <code>person, dog, cat, bird, horse, sheep, cow, bear</code>. Deliberately liberal — a misclassification yielding "bear" when the truth is a large dog is harmless; the safety response is the same.</p>
+    </section>
+
+    <section id="s4"><div class="section-header"><span class="section-num">4.0</span><h2 class="section-title">Semantics</h2></div>
+      <p>An empty array means "no living things detected this cycle" — <em>not</em> "perception is silent." Silence is staleness, which the safety monitor treats as worst-case.</p>
+      <p>The filter preserves the original confidence and position. No additional filtering or smoothing is applied here; the safety monitor handles temporal smoothing (a person that disappears for one frame is still "present" until the clear-dwell elapses).</p>
+    </section>
+
+    <section id="s5"><div class="section-header"><span class="section-num">5.0</span><h2 class="section-title">Timing</h2></div>
+      <p>Same rate as upstream, target 10 Hz. Filter adds ≤ 2 ms latency.</p>
+    </section>
+
+    <section id="s6"><div class="section-header"><span class="section-num">6.0</span><h2 class="section-title">QoS</h2></div>
+      <p>RELIABLE, KEEP_LAST depth 2, VOLATILE. Deadline 150 ms.</p>
+    </section>
+
+    <section id="s7"><div class="section-header"><span class="section-num">7.0</span><h2 class="section-title">Fault</h2></div>
+      <div class="data-table-wrap"><table class="data-table"><thead><tr><th>Fault</th><th>Response</th></tr></thead>
+        <tbody>
+          <tr><td>living_thing_filter crashes</td><td>systemd restart. During gap, topic silent; safety_monitor staleness triggers ESTOP within 500 ms.</td></tr>
+          <tr><td>Upstream detections silent</td><td>Filter passes silence through. Fail-safe handled at safety_monitor.</td></tr>
+          <tr><td>Novel class not in whitelist</td><td>Dropped from people stream; appears only on /perception/obstacles. Known gap: a person classified as "couch" would be missed. Mitigated by liberal whitelist + confidence threshold tuning.</td></tr>
+        </tbody></table></div>
+    </section>
+
+    <section id="s8"><div class="section-header"><span class="section-num">8.0</span><h2 class="section-title">Requirements</h2></div>
+      <ul class="req-list">
+        <li class="req-item"><div class="req-id">REQ-ICD-PER-002-01</div><div><div class="req-text">A detection with <code>class = "person"</code> on the upstream topic shall appear on this topic within one publication cycle (≤ 150 ms).</div><div class="req-trace">verified by: <code>TEST-PER-010</code></div></div></li>
+        <li class="req-item"><div class="req-id">REQ-ICD-PER-002-02</div><div><div class="req-text">The whitelist shall be configurable via parameter; changes shall take effect at node restart.</div><div class="req-trace">verified by: <code>TEST-PER-011</code></div></div></li>
+        <li class="req-item"><div class="req-id">REQ-ICD-PER-002-03</div><div><div class="req-text">Deadline violations shall be reported on <code>/diagnostics</code> for subscriber-side tracking.</div><div class="req-trace">verified by: <code>TEST-PER-012</code></div></div></li>
+      </ul>
+    </section>
+
+    <section id="s9"><div class="section-header"><span class="section-num">9.0</span><h2 class="section-title">Verification</h2></div>
+      <div class="data-table-wrap"><table class="data-table"><thead><tr><th>Test</th><th>Method</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td><span class="field-name">TEST-PER-010</span></td><td>Integration</td><td>Feed a test detection with class=person on upstream; verify it appears on this topic.</td></tr>
+          <tr><td><span class="field-name">TEST-PER-011</span></td><td>Unit</td><td>Override whitelist param; verify filter obeys.</td></tr>
+          <tr><td><span class="field-name">TEST-PER-012</span></td><td>Integration</td><td>Pause upstream; verify deadline miss appears in diagnostics.</td></tr>
+        </tbody></table></div>
+    </section>
+
+    <section id="s10"><div class="section-header"><span class="section-num">10.0</span><h2 class="section-title">Open Issues</h2></div>
+      <ol class="indent-list">
+        <li><strong>OPEN-01</strong> — Small children sometimes misclassified as "backpack" or "couch" by YOLOv8n. Mitigation via minimum-size filter + confidence tuning. A specialized model for small-human is an iteration-2 consideration.</li>
+        <li><strong>OPEN-02</strong> — Pets of unusual appearance (hairless breeds, reptiles) may not be in the whitelist. Current policy: any detection within 1 m triggers caution regardless of class (future).</li>
+      </ol>
+    </section>
+
+    <section id="s11"><div class="section-header"><span class="section-num">11.0</span><h2 class="section-title">Revision</h2></div>
+      <table class="revision-table"><thead><tr><th>Rev</th><th>Date</th><th>Author</th><th>Change</th></tr></thead>
+        <tbody><tr><td class="rev">0.1</td><td>2026-04-19</td><td>Louis Roig &amp; Claude Opus 4.7</td><td>Initial draft.</td></tr></tbody></table>
+    </section>
+
+    <div class="footer-nav"><a href="index.html">← Interfaces Index</a><span>Next: <a href="icd-perception-obstacles.html">/perception/obstacles →</a></span></div>
+  </main>
+</div>
+<script src="../shared/shared.js"></script>
+</body></html>

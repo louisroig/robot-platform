@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ICD-MAP-001 · /mapping/current_zone</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=IBM+Plex+Sans:wght@300;400;500;600;700&family=IBM+Plex+Serif:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../shared/shared.css">
+</head>
+<body>
+<div class="doc-bar">
+  <a class="doc-bar-crumb" href="../index.html">← HOME</a><span class="doc-bar-sep">·</span>
+  <a class="doc-bar-crumb" href="index.html">INTERFACES</a><span class="doc-bar-sep">·</span>
+  <span class="doc-bar-id">ICD-MAP-001</span><span class="doc-bar-sep">·</span>
+  <span class="doc-bar-path">/mapping/current_zone</span><span class="doc-bar-sep">·</span>
+  <span style="color: var(--ink-dim)">REV 0.1</span>
+  <div class="doc-bar-status"><span class="status-dot"></span><span>DRAFT</span></div>
+  <div class="doc-bar-tools">
+    <button class="tool-btn" onclick="window.print()">PRINT</button>
+    <button class="tool-btn" onclick="copyLink(event)">COPY LINK</button>
+  </div>
+</div>
+
+<div class="container">
+  <nav class="toc">
+    <div class="toc-title">CONTENTS</div>
+    <ul class="toc-list">
+      <li class="toc-item"><a class="toc-link" href="#s1"><span class="toc-num">1.0</span>Purpose</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s2"><span class="toc-num">2.0</span>Participants</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s3"><span class="toc-num">3.0</span>Message</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s4"><span class="toc-num">4.0</span>Semantics</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s5"><span class="toc-num">5.0</span>Timing</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s6"><span class="toc-num">6.0</span>QoS</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s7"><span class="toc-num">7.0</span>Fault</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s8"><span class="toc-num">8.0</span>Requirements</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s9"><span class="toc-num">9.0</span>Verification</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s10"><span class="toc-num">10.0</span>Open Issues</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s11"><span class="toc-num">11.0</span>Revision</a></li>
+    </ul>
+  </nav>
+
+  <main class="prose-serif">
+    <div class="doc-header">
+      <div class="doc-type interface">INTERFACE CONTROL DOCUMENT</div>
+      <h1 class="doc-title"><code>/mapping/current_zone</code></h1>
+      <p class="doc-subtitle">Active zone polygon (outer boundary + exclusions). Latched topic; published whenever the active zone changes.</p>
+      <div class="doc-meta">
+        <div class="meta-item"><div class="meta-label">Document ID</div><div class="meta-value">ICD-MAP-001</div></div>
+        <div class="meta-item"><div class="meta-label">Revision</div><div class="meta-value">0.1 · draft</div></div>
+        <div class="meta-item"><div class="meta-label">Owner</div><div class="meta-value">platform_mapping</div></div>
+        <div class="meta-item"><div class="meta-label">Classification</div><div class="meta-value">Mission-configuration</div></div>
+        <div class="meta-item"><div class="meta-label">Last Updated</div><div class="meta-value">2026-04-19</div></div>
+      </div>
+    </div>
+
+    <section id="s1"><div class="section-header"><span class="section-num">1.0</span><h2 class="section-title">Purpose</h2></div>
+      <p>Carries the currently-active operational zone — the outer boundary polygon the rover may occupy plus any exclusion polygons marking no-go areas within it. Consumed by the geofence enforcer to compute <a href="icd-geofence-state.html">/geofence/state</a>.</p>
+    </section>
+
+    <section id="s2"><div class="section-header"><span class="section-num">2.0</span><h2 class="section-title">Participants</h2></div>
+      <div class="participants">
+        <div class="participant-card pub"><div class="participant-role">Publisher</div><div class="participant-name">boundary_ingester</div>
+          <div class="participant-detail"><strong>SRS</strong><a href="../nodes/srs-boundary-ingester.html">SRS-MAP-004</a><strong>Source</strong>Persisted zone on disk; published on load and on active-zone change.</div></div>
+        <div class="participant-card sub"><div class="participant-role">Subscribers</div><div class="participant-name">geofence_enforcer · telemetry_publisher</div>
+          <div class="participant-detail"><strong>geofence_enforcer</strong>Uses polygon for point-in-polygon tests.<strong>telemetry_publisher</strong>Forwards polygon metadata to app for display.</div></div>
+      </div>
+    </section>
+
+    <section id="s3"><div class="section-header"><span class="section-num">3.0</span><h2 class="section-title">Message</h2></div>
+      <p>Type: <code>platform_msgs/msg/ZoneBoundary</code>.</p>
+      <div class="code-block" data-lang="IDL">std_msgs/Header header
+string name
+geometry_msgs/Polygon outer
+geometry_msgs/Polygon[] exclusions   <span class="comment"># no-go polygons inside outer</span></div>
+      <p>Each polygon's points are in the <code>map</code> frame (meters). Converted from lat/lon by the server at zone-load time using the active <a href="icd-mapping-aerial-image.html">aerial image meta</a>.</p>
+    </section>
+
+    <section id="s4"><div class="section-header"><span class="section-num">4.0</span><h2 class="section-title">Semantics</h2></div>
+      <p>A single active zone is in effect at any time. Changing zones is accomplished by publishing a new message on this topic; subscribers immediately switch to the new polygon.</p>
+      <p>Outer polygon must be simple (non-self-intersecting), counter-clockwise-oriented, with at least 3 vertices. Exclusions must be fully contained within outer, simple, and non-overlapping. These constraints are enforced by <code>boundary_ingester</code>; a message on this topic always satisfies them.</p>
+    </section>
+
+    <section id="s5"><div class="section-header"><span class="section-num">5.0</span><h2 class="section-title">Timing</h2></div>
+      <p>Published on-change only. Typical cadence: a few times per day at most (operator selects zones). No regular keepalive.</p>
+    </section>
+
+    <section id="s6"><div class="section-header"><span class="section-num">6.0</span><h2 class="section-title">QoS</h2></div>
+      <p>RELIABLE, KEEP_LAST depth 1, TRANSIENT_LOCAL — the currently-active zone persists for late subscribers.</p>
+    </section>
+
+    <section id="s7"><div class="section-header"><span class="section-num">7.0</span><h2 class="section-title">Fault</h2></div>
+      <div class="data-table-wrap"><table class="data-table"><thead><tr><th>Fault</th><th>Response</th></tr></thead>
+        <tbody>
+          <tr><td>No zone loaded</td><td>Topic has never published. geofence_enforcer operates in "no geofence" mode (INSIDE, infinite distance). safety_monitor does not treat this as a fault — the operator may be teleoperating without a zone.</td></tr>
+          <tr><td>Malformed polygon</td><td>Caught at boundary_ingester; never reaches this topic.</td></tr>
+          <tr><td>Late subscription</td><td>Subscriber immediately receives the last-published zone via TRANSIENT_LOCAL durability.</td></tr>
+        </tbody></table></div>
+    </section>
+
+    <section id="s8"><div class="section-header"><span class="section-num">8.0</span><h2 class="section-title">Requirements</h2></div>
+      <ul class="req-list">
+        <li class="req-item"><div class="req-id">REQ-ICD-MAP-001-01</div><div><div class="req-text">The publisher shall emit a message on every zone-activation event and retain the latest under TRANSIENT_LOCAL durability.</div><div class="req-trace">verified by: <code>TEST-MAP-001</code></div></div></li>
+        <li class="req-item"><div class="req-id">REQ-ICD-MAP-001-02</div><div><div class="req-text">Polygon vertices shall be expressed in the <code>map</code> frame (meters).</div><div class="req-trace">verified by: <code>TEST-MAP-002</code></div></div></li>
+        <li class="req-item"><div class="req-id">REQ-ICD-MAP-001-03</div><div><div class="req-text">Polygons reaching this topic shall be well-formed (simple, correctly-oriented, contained exclusions).</div><div class="req-trace">verified by: <code>TEST-MAP-003</code></div></div></li>
+      </ul>
+    </section>
+
+    <section id="s9"><div class="section-header"><span class="section-num">9.0</span><h2 class="section-title">Verification</h2></div>
+      <div class="data-table-wrap"><table class="data-table"><thead><tr><th>Test</th><th>Method</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td><span class="field-name">TEST-MAP-001</span></td><td>Integration</td><td>Load zone; subscribe late; verify TRANSIENT_LOCAL delivers current zone to the new subscriber.</td></tr>
+          <tr><td><span class="field-name">TEST-MAP-002</span></td><td>Integration</td><td>Inspect frame_id and numerical sanity of vertices after lat/lon → map conversion.</td></tr>
+          <tr><td><span class="field-name">TEST-MAP-003</span></td><td>Unit</td><td>Feed malformed polygon to boundary_ingester; verify rejection before publication.</td></tr>
+        </tbody></table></div>
+    </section>
+
+    <section id="s10"><div class="section-header"><span class="section-num">10.0</span><h2 class="section-title">Open Issues</h2></div>
+      <ol class="indent-list">
+        <li><strong>OPEN-01</strong> — Multiple zones simultaneously active (e.g., front yard + back yard): out of scope for iteration 1.</li>
+        <li><strong>OPEN-02</strong> — Zone updates while rover is operating. Currently require operator stop; iteration 2 may allow mid-mission updates.</li>
+      </ol>
+    </section>
+
+    <section id="s11"><div class="section-header"><span class="section-num">11.0</span><h2 class="section-title">Revision</h2></div>
+      <table class="revision-table"><thead><tr><th>Rev</th><th>Date</th><th>Author</th><th>Change</th></tr></thead>
+        <tbody><tr><td class="rev">0.1</td><td>2026-04-19</td><td>Louis Roig &amp; Claude Opus 4.7</td><td>Initial draft.</td></tr></tbody></table>
+    </section>
+
+    <div class="footer-nav"><a href="index.html">← Interfaces Index</a><span>Related: <a href="icd-geofence-state.html">/geofence/state</a></span></div>
+  </main>
+</div>
+<script src="../shared/shared.js"></script>
+</body></html>

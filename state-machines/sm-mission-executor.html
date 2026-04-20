@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SM-MIS-001 · mission_executor state machine</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=IBM+Plex+Sans:wght@300;400;500;600;700&family=IBM+Plex+Serif:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../shared/shared.css">
+</head>
+<body>
+<div class="doc-bar">
+  <a class="doc-bar-crumb" href="../index.html">← HOME</a><span class="doc-bar-sep">·</span>
+  <a class="doc-bar-crumb" href="index.html">STATE MACHINES</a><span class="doc-bar-sep">·</span>
+  <span class="doc-bar-id">SM-MIS-001</span><span class="doc-bar-sep">·</span>
+  <span class="doc-bar-path">mission_executor</span><span class="doc-bar-sep">·</span>
+  <span style="color: var(--ink-dim)">REV 0.1</span>
+  <div class="doc-bar-status"><span class="status-dot"></span><span>DRAFT</span></div>
+  <div class="doc-bar-tools"><button class="tool-btn" onclick="window.print()">PRINT</button><button class="tool-btn" onclick="copyLink(event)">COPY LINK</button></div>
+</div>
+
+<div class="container">
+  <nav class="toc">
+    <div class="toc-title">CONTENTS</div>
+    <ul class="toc-list">
+      <li class="toc-item"><a class="toc-link" href="#s1"><span class="toc-num">1.0</span>Purpose</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s2"><span class="toc-num">2.0</span>Diagram</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s3"><span class="toc-num">3.0</span>States</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s4"><span class="toc-num">4.0</span>Transitions</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s5"><span class="toc-num">5.0</span>Iteration 1 Simplification</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s6"><span class="toc-num">6.0</span>Open Issues</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s7"><span class="toc-num">7.0</span>Revision</a></li>
+    </ul>
+  </nav>
+
+  <main class="prose-serif">
+    <div class="doc-header">
+      <div class="doc-type state">STATE MACHINE · MISSION ORCHESTRATION</div>
+      <h1 class="doc-title">mission_executor state machine</h1>
+      <p class="doc-subtitle">Top-level behavioral state: what the rover is doing right now. Iteration 1 uses only a subset (IDLE · MAPPING · TELEOP); MOWING / PAUSED / RETURNING are iteration-2 placeholders.</p>
+      <div class="doc-meta">
+        <div class="meta-item"><div class="meta-label">Document ID</div><div class="meta-value">SM-MIS-001</div></div>
+        <div class="meta-item"><div class="meta-label">Revision</div><div class="meta-value">0.1 · draft</div></div>
+        <div class="meta-item"><div class="meta-label">Applies To</div><div class="meta-value">Iter 1 partial, Iter 2 full</div></div>
+      </div>
+    </div>
+
+    <section id="s1"><div class="section-header"><span class="section-num">1.0</span><h2 class="section-title">Purpose</h2></div>
+      <p>Captures the rover's <em>activity</em> state as observed by the operator. This is distinct from the safety-monitor state machine (which covers whether motion is <em>permitted</em>). The two run in parallel; the safety state constrains what this machine can do.</p>
+      <p>In iteration 1 there is no single "mission_executor" node — mission state is derived by <a href="../nodes/srs-mission-api.html">mission_api</a> and the drone coordinator. Iteration 2 introduces a formal behavior tree owning this state.</p>
+    </section>
+
+    <section id="s2"><div class="section-header"><span class="section-num">2.0</span><h2 class="section-title">Diagram</h2></div>
+
+      <div class="state-diagram">
+        <svg viewBox="0 0 960 420" xmlns="http://www.w3.org/2000/svg">
+          <defs><marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#7a8a99"/></marker></defs>
+
+          <rect class="state-node neutral" x="60" y="170" width="140" height="70" rx="6"/>
+          <text class="state-label" x="130" y="202">IDLE</text>
+          <text class="state-label sub" x="130" y="220">rover at rest</text>
+
+          <rect class="state-node warn" x="280" y="70" width="160" height="70" rx="6"/>
+          <text class="state-label" x="360" y="100">MAPPING</text>
+          <text class="state-label sub" x="360" y="118">drone in flight</text>
+
+          <rect class="state-node ok" x="280" y="270" width="160" height="70" rx="6"/>
+          <text class="state-label" x="360" y="300">TELEOP</text>
+          <text class="state-label sub" x="360" y="318">operator joystick</text>
+
+          <rect class="state-node warn" x="510" y="70" width="160" height="70" rx="6"/>
+          <text class="state-label" x="590" y="100">MOWING</text>
+          <text class="state-label sub" x="590" y="118">iter 2+</text>
+
+          <rect class="state-node estop" x="510" y="170" width="160" height="70" rx="6"/>
+          <text class="state-label" x="590" y="200">PAUSED</text>
+          <text class="state-label sub" x="590" y="218">iter 2+</text>
+
+          <rect class="state-node warn" x="510" y="270" width="160" height="70" rx="6"/>
+          <text class="state-label" x="590" y="300">RETURNING</text>
+          <text class="state-label sub" x="590" y="318">iter 2+</text>
+
+          <path class="transition-line" d="M 200 190 Q 240 120 280 105" marker-end="url(#arr)"/>
+          <text class="transition-label" x="220" y="140">POST /missions/map</text>
+
+          <path class="transition-line" d="M 280 135 Q 240 200 200 215" marker-end="url(#arr)"/>
+          <text class="transition-label" x="215" y="175">mission complete</text>
+
+          <path class="transition-line" d="M 200 220 Q 240 280 280 305" marker-end="url(#arr)"/>
+          <text class="transition-label" x="225" y="260">POST /rover/teleop</text>
+
+          <path class="transition-line" d="M 280 305 Q 240 250 200 235" marker-end="url(#arr)"/>
+          <text class="transition-label" x="220" y="300">rover parked + idle timeout</text>
+
+          <!-- Iter 2 transitions -->
+          <path class="transition-line" d="M 440 105 Q 475 105 510 105" marker-end="url(#arr)" stroke-dasharray="3 3"/>
+          <path class="transition-line" d="M 440 305 Q 475 305 510 305" marker-end="url(#arr)" stroke-dasharray="3 3"/>
+          <path class="transition-line" d="M 590 140 Q 590 155 590 170" marker-end="url(#arr)" stroke-dasharray="3 3"/>
+          <path class="transition-line" d="M 590 270 Q 590 255 590 240" marker-end="url(#arr)" stroke-dasharray="3 3"/>
+        </svg>
+      </div>
+
+      <p>Dashed edges and the three right-most states are iteration 2+ additions.</p>
+    </section>
+
+    <section id="s3"><div class="section-header"><span class="section-num">3.0</span><h2 class="section-title">States</h2></div>
+
+      <div class="data-table-wrap"><table class="data-table"><thead><tr><th>State</th><th>Description</th><th>Iteration</th></tr></thead><tbody>
+        <tr><td><span class="field-name">IDLE</span></td><td>Rover at rest. No mission active. Not being teleoperated.</td><td>1</td></tr>
+        <tr><td><span class="field-name">MAPPING</span></td><td>Drone mapping mission in flight. Rover is stationary and acts as ground station.</td><td>1</td></tr>
+        <tr><td><span class="field-name">TELEOP</span></td><td>Operator actively driving via joystick. Rover moves under direct command.</td><td>1</td></tr>
+        <tr><td><span class="field-name">MOWING</span></td><td>Autonomous coverage in progress.</td><td>2+</td></tr>
+        <tr><td><span class="field-name">PAUSED</span></td><td>Mission paused by operator or by safety event; can be resumed.</td><td>2+</td></tr>
+        <tr><td><span class="field-name">RETURNING</span></td><td>Autonomously returning to dock for charge or end-of-mission.</td><td>2+</td></tr>
+      </tbody></table></div>
+    </section>
+
+    <section id="s4"><div class="section-header"><span class="section-num">4.0</span><h2 class="section-title">Transitions</h2></div>
+
+      <div class="data-table-wrap"><table class="data-table"><thead><tr><th>From</th><th>To</th><th>Trigger</th></tr></thead><tbody>
+        <tr><td>IDLE</td><td>MAPPING</td><td>POST /missions/map</td></tr>
+        <tr><td>MAPPING</td><td>IDLE</td><td>drone landed, image retrieved; or mission failed</td></tr>
+        <tr><td>IDLE</td><td>TELEOP</td><td>first teleop Twist received within 500 ms</td></tr>
+        <tr><td>TELEOP</td><td>IDLE</td><td>no teleop Twist for 5 s AND rover stationary</td></tr>
+        <tr><td>IDLE</td><td>MOWING (iter 2)</td><td>POST /missions/mow</td></tr>
+        <tr><td>MOWING</td><td>PAUSED (iter 2)</td><td>operator pause or safety ESTOP</td></tr>
+        <tr><td>PAUSED</td><td>MOWING (iter 2)</td><td>operator resume AND safety = OK</td></tr>
+        <tr><td>MOWING / PAUSED</td><td>RETURNING (iter 2)</td><td>battery low, or mission complete</td></tr>
+        <tr><td>RETURNING</td><td>IDLE</td><td>dock reached</td></tr>
+      </tbody></table></div>
+    </section>
+
+    <section id="s5"><div class="section-header"><span class="section-num">5.0</span><h2 class="section-title">Iteration 1 Simplification</h2></div>
+      <p>In iteration 1, mission state is <em>derived</em> rather than explicitly held by a single node. The mobile app infers state by combining:</p>
+      <ul class="indent-list">
+        <li>The action server's reported mission state → MAPPING.</li>
+        <li>Recency of /hal/cmd_vel_teleop messages → TELEOP.</li>
+        <li>Otherwise → IDLE.</li>
+      </ul>
+      <p>The /rover/state endpoint returns a <code>mission_state</code> string derived this way. When a formal <code>mission_executor</code> node is introduced in iteration 2, it will own this state and publish it on a dedicated topic; the derivation logic will move from the client to that node.</p>
+    </section>
+
+    <section id="s6"><div class="section-header"><span class="section-num">6.0</span><h2 class="section-title">Open Issues</h2></div>
+      <ol class="indent-list">
+        <li><strong>OPEN-01</strong> — Concurrent mapping + teleop? Iteration 1: no — mapping is rover-stationary. Iteration 2+ may allow drone flight during rover teleop.</li>
+        <li><strong>OPEN-02</strong> — Whether PAUSED is distinct from a safety-triggered ESTOP. Currently: distinct — safety_monitor owns ESTOP; mission_executor owns PAUSED (deliberate operator act).</li>
+      </ol>
+    </section>
+
+    <section id="s7"><div class="section-header"><span class="section-num">7.0</span><h2 class="section-title">Revision</h2></div>
+      <table class="revision-table"><thead><tr><th>Rev</th><th>Date</th><th>Author</th><th>Change</th></tr></thead><tbody><tr><td class="rev">0.1</td><td>2026-04-19</td><td>Louis Roig &amp; Claude Opus 4.7</td><td>Initial draft.</td></tr></tbody></table>
+    </section>
+
+    <div class="footer-nav"><a href="index.html">← State Machines Index</a></div>
+  </main>
+</div>
+<script src="../shared/shared.js"></script>
+</body></html>

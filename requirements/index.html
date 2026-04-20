@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Requirements · Ground-Air Platform Spec</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=IBM+Plex+Sans:wght@300;400;500;600;700&family=IBM+Plex+Serif:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../shared/shared.css">
+</head>
+<body>
+
+<div class="doc-bar">
+  <a class="doc-bar-crumb" href="../index.html">← HOME</a>
+  <span class="doc-bar-sep">·</span>
+  <span class="doc-bar-id">REQ-INDEX</span>
+  <span class="doc-bar-sep">·</span>
+  <span class="doc-bar-path">/requirements</span>
+  <span class="doc-bar-sep">·</span>
+  <span style="color: var(--ink-dim)">REV 0.1</span>
+  <div class="doc-bar-status">
+    <span class="status-dot"></span>
+    <span>DRAFT</span>
+  </div>
+  <div class="doc-bar-tools">
+    <button class="tool-btn" onclick="window.print()">PRINT</button>
+    <button class="tool-btn" onclick="copyLink(event)">COPY LINK</button>
+  </div>
+</div>
+
+<div class="container single">
+  <main>
+
+    <div class="doc-header">
+      <div class="doc-type requirement">§ 05 · OBLIGATIONS</div>
+      <h1 class="doc-title">Requirements</h1>
+      <p class="doc-subtitle">What the system must do, must not do, must satisfy. Allocated to nodes. Traced to tests.</p>
+
+      <div class="doc-meta">
+        <div class="meta-item"><div class="meta-label">Section ID</div><div class="meta-value">REQ</div></div>
+        <div class="meta-item"><div class="meta-label">Documents</div><div class="meta-value">5</div></div>
+        <div class="meta-item"><div class="meta-label">Requirements</div><div class="meta-value">~40 levied</div></div>
+        <div class="meta-item"><div class="meta-label">Status</div><div class="meta-value">Draft · Rev 0.1</div></div>
+      </div>
+    </div>
+
+    <section>
+      <div class="section-header">
+        <span class="section-num">1.0</span>
+        <h2 class="section-title">Requirement taxonomy</h2>
+      </div>
+
+      <p class="prose-serif" style="font-family: var(--font-serif); font-size: 15px;">
+        Requirements are organized by type, not by component. Each requirement has a stable ID of the form <code>&lt;prefix&gt;-&lt;num&gt;</code>, an allocation (which node owns it), a verification method (how it is proven), and a trace to one or more test cases.
+      </p>
+
+      <div class="data-table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr><th>Prefix</th><th>Type</th><th>Meaning</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><span class="field-name">FR-xxx</span></td><td>Functional</td><td>What the system does — capabilities observable to the user.</td></tr>
+            <tr><td><span class="field-name" style="color: var(--accent-safety);">SR-xxx</span></td><td>Safety</td><td>Hazard controls, fail-safe behaviors, independence requirements.</td></tr>
+            <tr><td><span class="field-name" style="color: var(--accent-param);">PR-xxx</span></td><td>Performance</td><td>Rates, latencies, throughput, coverage, battery life.</td></tr>
+            <tr><td><span class="field-name" style="color: var(--accent-sub);">IR-xxx</span></td><td>Interface</td><td>Obligations on the contracts between components (complement to ICDs).</td></tr>
+            <tr><td><span class="field-name" style="color: var(--accent-srv);">REQ-ICD-xxx</span></td><td>Interface-local</td><td>Requirements scoped to a single ICD, numbered under its document ID.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section>
+      <div class="section-header">
+        <span class="section-num">2.0</span>
+        <h2 class="section-title">Documents</h2>
+      </div>
+
+      <ul class="doc-list">
+        <li data-filterable="FR functional requirements">
+          <span class="doc-id">FR</span>
+          <div>
+            <a class="doc-link" href="functional.html">Functional Requirements</a>
+            <div class="doc-oneliner">FR-001 through FR-010. Capabilities the system provides, stated in user-observable terms.</div>
+          </div>
+          <span class="doc-status">DRAFT</span>
+        </li>
+        <li data-filterable="SR safety requirements">
+          <span class="doc-id">SR</span>
+          <div>
+            <a class="doc-link" href="safety.html">Safety Requirements</a>
+            <div class="doc-oneliner">SR-001 through SR-010. Hazard controls, fail-safe defaults, independence constraints.</div>
+          </div>
+          <span class="doc-status">DRAFT</span>
+        </li>
+        <li data-filterable="PR performance requirements rates latencies">
+          <span class="doc-id">PR</span>
+          <div>
+            <a class="doc-link" href="performance.html">Performance Requirements</a>
+            <div class="doc-oneliner">PR-001 through PR-008. Rates, latencies, endurance, convergence times.</div>
+          </div>
+          <span class="doc-status">DRAFT</span>
+        </li>
+        <li data-filterable="IR interface requirements icd">
+          <span class="doc-id">IR</span>
+          <div>
+            <a class="doc-link" href="interface.html">Interface Requirements</a>
+            <div class="doc-oneliner">System-level requirements levied on contracts. Complement to the per-ICD <code>REQ-ICD-*</code> set.</div>
+          </div>
+          <span class="doc-status">DRAFT</span>
+        </li>
+        <li data-filterable="traceability matrix req node test">
+          <span class="doc-id">TRACE</span>
+          <div>
+            <a class="doc-link" href="traceability-matrix.html">Traceability Matrix</a>
+            <div class="doc-oneliner">Grid view: requirements × nodes × tests. Every cell either has a link or a gap flagged for closure.</div>
+          </div>
+          <span class="doc-status">DRAFT</span>
+        </li>
+      </ul>
+    </section>
+
+    <div class="footer-nav">
+      <a href="../state-machines/index.html">← State Machines</a>
+      <span>Next: <a href="../verification/index.html">Verification →</a></span>
+    </div>
+
+  </main>
+</div>
+
+<script src="../shared/shared.js"></script>
+</body>
+</html>

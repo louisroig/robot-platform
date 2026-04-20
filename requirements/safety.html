@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SR · Safety Requirements</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=IBM+Plex+Sans:wght@300;400;500;600;700&family=IBM+Plex+Serif:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../shared/shared.css">
+</head>
+<body>
+<div class="doc-bar">
+  <a class="doc-bar-crumb" href="../index.html">← HOME</a><span class="doc-bar-sep">·</span>
+  <a class="doc-bar-crumb" href="index.html">REQUIREMENTS</a><span class="doc-bar-sep">·</span>
+  <span class="doc-bar-id">SR</span><span class="doc-bar-sep">·</span>
+  <span class="doc-bar-path">Safety Requirements</span><span class="doc-bar-sep">·</span>
+  <span style="color: var(--ink-dim)">REV 0.1</span>
+  <div class="doc-bar-status"><span class="status-dot"></span><span>DRAFT</span></div>
+  <div class="doc-bar-tools"><button class="tool-btn" onclick="window.print()">PRINT</button><button class="tool-btn" onclick="copyLink(event)">COPY LINK</button></div>
+</div>
+<div class="container single">
+  <main class="prose-serif">
+    <div class="doc-header">
+      <div class="doc-type safety">REQUIREMENTS · SAFETY</div>
+      <h1 class="doc-title">Safety Requirements</h1>
+      <p class="doc-subtitle">Hazard controls, fail-safe behaviors, and independence constraints. SR-001 through SR-010.</p>
+      <div class="doc-meta">
+        <div class="meta-item"><div class="meta-label">Document ID</div><div class="meta-value">SR</div></div>
+        <div class="meta-item"><div class="meta-label">Prefix</div><div class="meta-value">SR-</div></div>
+        <div class="meta-item"><div class="meta-label">Count</div><div class="meta-value">10</div></div>
+        <div class="meta-item"><div class="meta-label">Classification</div><div class="meta-value">Safety-critical</div></div>
+      </div>
+    </div>
+
+    <section><div class="section-header"><span class="section-num">1.0</span><h2 class="section-title">Notes</h2></div>
+      <p>Every requirement below is a hazard control. The safety case for iteration 1 rests on these; losing any one requires an explicit mitigation argument before fielding.</p>
+    </section>
+
+    <section><div class="section-header"><span class="section-num">2.0</span><h2 class="section-title">Requirements</h2></div>
+      <ul class="req-list">
+
+        <li class="req-item"><div class="req-id safety">SR-001</div><div>
+          <div class="req-text">The system shall provide a physical e-stop button that, when pressed, shall cut motor power within 100 ms without software involvement.</div>
+          <div class="req-rationale">Hardware path is the first and most trusted safety layer. Independent of any software fault.</div>
+          <div class="req-trace">allocated to: e-stop relay in motor power rail · verified by: <code>TEST-HAL-040</code> (software echo latency), hardware inspection</div>
+        </div></li>
+
+        <li class="req-item"><div class="req-id safety">SR-002</div><div>
+          <div class="req-text">The system shall cease all motion within 500 ms of detecting a person within 3 meters.</div>
+          <div class="req-trace">allocated to: <a href="../nodes/srs-yolo-detector.html">yolo_detector</a>, <a href="../nodes/srs-living-thing-filter.html">living_thing_filter</a>, <a href="../nodes/srs-safety-monitor.html">safety_monitor</a>, <a href="../nodes/srs-roboclaw-driver.html">roboclaw_driver</a> · verified by: <a href="../verification/test-saf-011.html">TEST-SAF-011</a></div>
+        </div></li>
+
+        <li class="req-item"><div class="req-id safety">SR-003</div><div>
+          <div class="req-text">The system shall cease all motion within 500 ms of tilt exceeding 25 degrees.</div>
+          <div class="req-trace">allocated to: <a href="../nodes/srs-imu-driver.html">imu_driver</a>, <a href="../nodes/srs-safety-monitor.html">safety_monitor</a> · verified by: <code>TEST-SAF-018</code></div>
+        </div></li>
+
+        <li class="req-item"><div class="req-id safety">SR-004</div><div>
+          <div class="req-text">The system shall enforce geographic boundaries as defined by user-drawn polygons.</div>
+          <div class="req-trace">allocated to: <a href="../nodes/srs-geofence-enforcer.html">geofence_enforcer</a>, <a href="../nodes/srs-safety-monitor.html">safety_monitor</a> · verified by: <a href="../verification/field-test-protocol.html">VRF-FIELD</a> step 9</div>
+        </div></li>
+
+        <li class="req-item"><div class="req-id safety">SR-005</div><div>
+          <div class="req-text">Safety-critical software shall operate independently of non-critical software (separate callback groups, separate threads).</div>
+          <div class="req-rationale">Prevents a stuck-non-critical callback from blocking safety reasoning.</div>
+          <div class="req-trace">allocated to: <a href="../nodes/srs-safety-monitor.html">safety_monitor</a>, <a href="../nodes/srs-roboclaw-driver.html">roboclaw_driver</a> · verified by: <code>TEST-SAF-025</code>, <a href="../verification/test-hal-009.html">TEST-HAL-009</a></div>
+        </div></li>
+
+        <li class="req-item"><div class="req-id safety">SR-006</div><div>
+          <div class="req-text">Loss of any safety-relevant sensor input shall be treated as worst-case (fail-safe).</div>
+          <div class="req-rationale">Absence of data is unsafe, not safe. Staleness → ESTOP.</div>
+          <div class="req-trace">allocated to: <a href="../nodes/srs-safety-monitor.html">safety_monitor</a> · verified by: <code>TEST-SAF-014</code></div>
+        </div></li>
+
+        <li class="req-item"><div class="req-id safety">SR-007</div><div>
+          <div class="req-text">Recovery from latched safety states shall require explicit operator action.</div>
+          <div class="req-rationale">Automatic un-latching could resume motion unexpectedly.</div>
+          <div class="req-trace">allocated to: <a href="../nodes/srs-safety-monitor.html">safety_monitor</a>, <a href="../nodes/srs-mission-api.html">mission_api</a> · verified by: <code>TEST-SAF-022</code></div>
+        </div></li>
+
+        <li class="req-item"><div class="req-id safety">SR-008</div><div>
+          <div class="req-text">The system shall self-test on startup and shall not permit motion until all required inputs are confirmed active.</div>
+          <div class="req-trace">allocated to: <a href="../nodes/srs-safety-monitor.html">safety_monitor</a> · verified by: <code>TEST-SAF-020</code></div>
+        </div></li>
+
+        <li class="req-item"><div class="req-id safety">SR-009</div><div>
+          <div class="req-text">The system shall detect and reject unauthorized publishers on safety-critical topics.</div>
+          <div class="req-rationale">Single-authority is architectural. Runtime detection is the current enforcement mechanism (SROS2 would be hard enforcement).</div>
+          <div class="req-trace">allocated to: <a href="../nodes/srs-system-monitor.html">system_monitor</a>, <a href="../nodes/srs-safety-monitor.html">safety_monitor</a> · verified by: <a href="../verification/test-saf-016.html">TEST-SAF-016</a></div>
+        </div></li>
+
+        <li class="req-item"><div class="req-id safety">SR-010</div><div>
+          <div class="req-text">Non-finite values (NaN, Inf) in motion commands shall trigger safe-halt.</div>
+          <div class="req-trace">allocated to: <a href="../nodes/srs-roboclaw-driver.html">roboclaw_driver</a>, <a href="../nodes/srs-safety-monitor.html">safety_monitor</a> · verified by: <code>TEST-HAL-011</code></div>
+        </div></li>
+
+      </ul>
+    </section>
+
+    <div class="footer-nav"><a href="functional.html">← Functional</a><span>Next: <a href="performance.html">Performance →</a></span></div>
+  </main>
+</div>
+<script src="../shared/shared.js"></script>
+</body></html>

@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ICD-MAP-003 · /mapping/run_mission action</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=IBM+Plex+Sans:wght@300;400;500;600;700&family=IBM+Plex+Serif:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../shared/shared.css">
+</head>
+<body>
+<div class="doc-bar">
+  <a class="doc-bar-crumb" href="../index.html">← HOME</a><span class="doc-bar-sep">·</span>
+  <a class="doc-bar-crumb" href="index.html">INTERFACES</a><span class="doc-bar-sep">·</span>
+  <span class="doc-bar-id">ICD-MAP-003</span><span class="doc-bar-sep">·</span>
+  <span class="doc-bar-path">/mapping/run_mission</span><span class="doc-bar-sep">·</span>
+  <span style="color: var(--ink-dim)">REV 0.1</span>
+  <div class="doc-bar-status"><span class="status-dot"></span><span>DRAFT</span></div>
+  <div class="doc-bar-tools">
+    <button class="tool-btn" onclick="window.print()">PRINT</button>
+    <button class="tool-btn" onclick="copyLink(event)">COPY LINK</button>
+  </div>
+</div>
+
+<div class="container">
+  <nav class="toc">
+    <div class="toc-title">CONTENTS</div>
+    <ul class="toc-list">
+      <li class="toc-item"><a class="toc-link" href="#s1"><span class="toc-num">1.0</span>Purpose</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s2"><span class="toc-num">2.0</span>Participants</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s3"><span class="toc-num">3.0</span>Action Definition</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s4"><span class="toc-num">4.0</span>Semantics</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s5"><span class="toc-num">5.0</span>Timing</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s6"><span class="toc-num">6.0</span>QoS</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s7"><span class="toc-num">7.0</span>Fault</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s8"><span class="toc-num">8.0</span>Requirements</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s9"><span class="toc-num">9.0</span>Verification</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s10"><span class="toc-num">10.0</span>Open Issues</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s11"><span class="toc-num">11.0</span>Revision</a></li>
+    </ul>
+  </nav>
+
+  <main class="prose-serif">
+    <div class="doc-header">
+      <div class="doc-type interface">INTERFACE CONTROL DOCUMENT · ACTION</div>
+      <h1 class="doc-title"><code>/mapping/run_mission</code></h1>
+      <p class="doc-subtitle">Action interface for triggering a complete drone mapping mission — arm, takeoff, capture, land.</p>
+      <div class="doc-meta">
+        <div class="meta-item"><div class="meta-label">Document ID</div><div class="meta-value">ICD-MAP-003</div></div>
+        <div class="meta-item"><div class="meta-label">Revision</div><div class="meta-value">0.1 · draft</div></div>
+        <div class="meta-item"><div class="meta-label">Owner</div><div class="meta-value">platform_mapping</div></div>
+        <div class="meta-item"><div class="meta-label">Classification</div><div class="meta-value">Mission-control</div></div>
+        <div class="meta-item"><div class="meta-label">Last Updated</div><div class="meta-value">2026-04-19</div></div>
+      </div>
+    </div>
+
+    <section id="s1"><div class="section-header"><span class="section-num">1.0</span><h2 class="section-title">Purpose</h2></div>
+      <p>The <code>/mapping/run_mission</code> action is the control surface for the drone's autonomous mapping mission. It is invoked by mission_api when the operator taps "Map My Yard." It runs to completion over ~3 minutes, providing feedback at each state transition.</p>
+    </section>
+
+    <section id="s2"><div class="section-header"><span class="section-num">2.0</span><h2 class="section-title">Participants</h2></div>
+      <div class="participants">
+        <div class="participant-card srv"><div class="participant-role">Action Server</div><div class="participant-name">drone_mission_coordinator</div>
+          <div class="participant-detail"><strong>SRS</strong><a href="../nodes/srs-drone-mission-coordinator.html">SRS-MAP-001</a><strong>State machine</strong><a href="../state-machines/sm-drone-mission.html">SM-DRN-001</a></div></div>
+        <div class="participant-card srv"><div class="participant-role">Action Client</div><div class="participant-name">mission_api</div>
+          <div class="participant-detail"><strong>Role</strong>Called on <code>POST /missions/map</code>. Forwards feedback to the operator app via the telemetry stream.</div></div>
+      </div>
+    </section>
+
+    <section id="s3"><div class="section-header"><span class="section-num">3.0</span><h2 class="section-title">Action Definition</h2></div>
+      <p>Action type: <code>platform_msgs/action/RunMappingMission</code> (custom).</p>
+      <div class="code-block" data-lang="IDL"><span class="comment"># Goal</span>
+float32 altitude_m              <span class="comment"># target capture altitude AGL (default 30.0)</span>
+string output_name              <span class="comment"># identifier for saved image, e.g. "front_yard_20260419"</span>
+<span class="comment">---</span>
+<span class="comment"># Result</span>
+bool success
+string mission_id               <span class="comment"># UUID of mission record</span>
+string image_path               <span class="comment"># populated if success=true</span>
+string failure_reason           <span class="comment"># populated if success=false</span>
+<span class="comment">---</span>
+<span class="comment"># Feedback</span>
+string phase                    <span class="comment"># "ARMING","TAKEOFF","CLIMB","CAPTURE","DESCENT","LAND","IMAGE_TRANSFER","GEOREF"</span>
+float32 progress                <span class="comment"># 0.0 to 1.0</span>
+float32 altitude_m              <span class="comment"># current drone altitude</span>
+float32 battery_pct             <span class="comment"># current drone battery</span></div>
+    </section>
+
+    <section id="s4"><div class="section-header"><span class="section-num">4.0</span><h2 class="section-title">Semantics</h2></div>
+      <p>On goal accept, the server returns an accepted response immediately (within 100 ms) and begins executing the mission. Progress feedback is published at ~2 Hz throughout. Goal can be canceled; cancellation triggers immediate land (ABORTING state). A successful result populates <code>image_path</code>; a failed result populates <code>failure_reason</code>.</p>
+      <p>Mission states and transitions are formally specified in <a href="../state-machines/sm-drone-mission.html">SM-DRN-001</a>.</p>
+    </section>
+
+    <section id="s5"><div class="section-header"><span class="section-num">5.0</span><h2 class="section-title">Timing</h2></div>
+      <div class="data-table-wrap"><table class="data-table"><thead><tr><th>Param</th><th>Value</th></tr></thead>
+        <tbody>
+          <tr><td>Accept latency</td><td>≤ 100 ms</td></tr>
+          <tr><td>Feedback rate</td><td>~ 2 Hz</td></tr>
+          <tr><td>Typical mission duration</td><td>120 – 240 s</td></tr>
+          <tr><td>Abort-to-ground latency</td><td>≤ 30 s (descent time)</td></tr>
+        </tbody></table></div>
+    </section>
+
+    <section id="s6"><div class="section-header"><span class="section-num">6.0</span><h2 class="section-title">QoS</h2></div>
+      <p>ROS 2 action default QoS on all three channels (goal, result, feedback). RELIABLE where required by protocol.</p>
+    </section>
+
+    <section id="s7"><div class="section-header"><span class="section-num">7.0</span><h2 class="section-title">Fault</h2></div>
+      <div class="data-table-wrap"><table class="data-table"><thead><tr><th>Fault</th><th>Response</th></tr></thead>
+        <tbody>
+          <tr><td>Arm failure</td><td>Result: success=false, reason="arm_failed: &lt;mavlink_error&gt;". Drone never lifted.</td></tr>
+          <tr><td>GPS lock lost during mission</td><td>Mission aborts; drone lands at current position (ArduCopter failsafe).</td></tr>
+          <tr><td>Low battery during mission</td><td>Mission aborts; drone executes RTL (return to launch).</td></tr>
+          <tr><td>Operator cancellation</td><td>Same as abort; drone lands.</td></tr>
+          <tr><td>Image capture fails</td><td>Drone still lands; result carries success=false, reason="capture_failed".</td></tr>
+        </tbody></table></div>
+    </section>
+
+    <section id="s8"><div class="section-header"><span class="section-num">8.0</span><h2 class="section-title">Requirements</h2></div>
+      <ul class="req-list">
+        <li class="req-item"><div class="req-id">REQ-ICD-MAP-003-01</div><div><div class="req-text">Goal shall be accepted within 100 ms of submission when the drone is in a valid pre-arm state.</div><div class="req-trace">verified by: <code>TEST-MAP-020</code></div></div></li>
+        <li class="req-item"><div class="req-id">REQ-ICD-MAP-003-02</div><div><div class="req-text">Feedback shall be emitted at ≥ 1 Hz throughout mission execution.</div><div class="req-trace">verified by: <code>TEST-MAP-021</code></div></div></li>
+        <li class="req-item"><div class="req-id">REQ-ICD-MAP-003-03</div><div><div class="req-text">On cancellation or safety abort, the drone shall reach the ground within 30 s.</div><div class="req-trace">verified by: <code>TEST-MAP-022</code></div></div></li>
+      </ul>
+    </section>
+
+    <section id="s9"><div class="section-header"><span class="section-num">9.0</span><h2 class="section-title">Verification</h2></div>
+      <div class="data-table-wrap"><table class="data-table"><thead><tr><th>Test</th><th>Method</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td><span class="field-name">TEST-MAP-020</span></td><td>Field</td><td>Submit 10 goals; measure accept latency distribution.</td></tr>
+          <tr><td><span class="field-name">TEST-MAP-021</span></td><td>Field</td><td>Record feedback timestamps during full mission.</td></tr>
+          <tr><td><span class="field-name">TEST-MAP-022</span></td><td>Field</td><td>Cancel mission mid-climb; measure time to ground contact.</td></tr>
+        </tbody></table></div>
+    </section>
+
+    <section id="s10"><div class="section-header"><span class="section-num">10.0</span><h2 class="section-title">Open Issues</h2></div>
+      <ol class="indent-list">
+        <li><strong>OPEN-01</strong> — Multi-waypoint capture paths for larger yards are iteration 2.</li>
+        <li><strong>OPEN-02</strong> — Weather-abort criteria (wind, precipitation) currently operator-manual; should be sensor-based in iteration 2.</li>
+      </ol>
+    </section>
+
+    <section id="s11"><div class="section-header"><span class="section-num">11.0</span><h2 class="section-title">Revision</h2></div>
+      <table class="revision-table"><thead><tr><th>Rev</th><th>Date</th><th>Author</th><th>Change</th></tr></thead>
+        <tbody><tr><td class="rev">0.1</td><td>2026-04-19</td><td>Louis Roig &amp; Claude Opus 4.7</td><td>Initial draft.</td></tr></tbody></table>
+    </section>
+
+    <div class="footer-nav"><a href="index.html">← Interfaces Index</a><span>Related: <a href="icd-mapping-aerial-image.html">/mapping/latest_aerial_image</a></span></div>
+  </main>
+</div>
+<script src="../shared/shared.js"></script>
+</body></html>

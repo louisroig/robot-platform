@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ICD-API-001 · Mission REST API</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=IBM+Plex+Sans:wght@300;400;500;600;700&family=IBM+Plex+Serif:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../shared/shared.css">
+</head>
+<body>
+<div class="doc-bar">
+  <a class="doc-bar-crumb" href="../index.html">← HOME</a><span class="doc-bar-sep">·</span>
+  <a class="doc-bar-crumb" href="index.html">INTERFACES</a><span class="doc-bar-sep">·</span>
+  <span class="doc-bar-id">ICD-API-001</span><span class="doc-bar-sep">·</span>
+  <span class="doc-bar-path">Mission REST API</span><span class="doc-bar-sep">·</span>
+  <span style="color: var(--ink-dim)">REV 0.1</span>
+  <div class="doc-bar-status"><span class="status-dot"></span><span>DRAFT</span></div>
+  <div class="doc-bar-tools">
+    <button class="tool-btn" onclick="window.print()">PRINT</button>
+    <button class="tool-btn" onclick="copyLink(event)">COPY LINK</button>
+  </div>
+</div>
+
+<div class="container">
+  <nav class="toc">
+    <div class="toc-title">CONTENTS</div>
+    <ul class="toc-list">
+      <li class="toc-item"><a class="toc-link" href="#s1"><span class="toc-num">1.0</span>Purpose</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s2"><span class="toc-num">2.0</span>Participants</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s3"><span class="toc-num">3.0</span>Endpoints</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s4"><span class="toc-num">4.0</span>Authentication</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s5"><span class="toc-num">5.0</span>Error Model</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s6"><span class="toc-num">6.0</span>Timing &amp; Rate</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s7"><span class="toc-num">7.0</span>Fault</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s8"><span class="toc-num">8.0</span>Requirements</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s9"><span class="toc-num">9.0</span>Verification</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s10"><span class="toc-num">10.0</span>Open Issues</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s11"><span class="toc-num">11.0</span>Revision</a></li>
+    </ul>
+  </nav>
+
+  <main class="prose-serif">
+    <div class="doc-header">
+      <div class="doc-type interface">INTERFACE CONTROL DOCUMENT · EXTERNAL</div>
+      <h1 class="doc-title">Mission REST API</h1>
+      <p class="doc-subtitle">HTTPS REST surface between the operator's mobile application and the rover. Served by <code>mission_api</code> on the Pi.</p>
+      <div class="doc-meta">
+        <div class="meta-item"><div class="meta-label">Document ID</div><div class="meta-value">ICD-API-001</div></div>
+        <div class="meta-item"><div class="meta-label">Revision</div><div class="meta-value">0.1 · draft</div></div>
+        <div class="meta-item"><div class="meta-label">Owner</div><div class="meta-value">platform_api</div></div>
+        <div class="meta-item"><div class="meta-label">Classification</div><div class="meta-value">External</div></div>
+        <div class="meta-item"><div class="meta-label">Last Updated</div><div class="meta-value">2026-04-19</div></div>
+      </div>
+    </div>
+
+    <section id="s1"><div class="section-header"><span class="section-num">1.0</span><h2 class="section-title">Purpose</h2></div>
+      <p>Defines the HTTPS REST surface the operator app uses to command and observe the rover. Every endpoint is authenticated via bearer token and served by the <a href="../nodes/srs-mission-api.html">mission_api</a> FastAPI service. This is the external contract; internal rclpy calls from the service to ROS 2 nodes are not part of this ICD.</p>
+    </section>
+
+    <section id="s2"><div class="section-header"><span class="section-num">2.0</span><h2 class="section-title">Participants</h2></div>
+      <div class="participants">
+        <div class="participant-card pub"><div class="participant-role">Server</div><div class="participant-name">mission_api</div>
+          <div class="participant-detail"><strong>Transport</strong>HTTPS on TCP 8443<strong>Host</strong>Pi 5 on home LAN; advertised as <code>rover.local</code> via mDNS</div></div>
+        <div class="participant-card sub"><div class="participant-role">Client</div><div class="participant-name">Operator mobile app</div>
+          <div class="participant-detail"><strong>Auth</strong>Bearer token in <code>Authorization</code> header</div></div>
+      </div>
+    </section>
+
+    <section id="s3"><div class="section-header"><span class="section-num">3.0</span><h2 class="section-title">Endpoints</h2></div>
+
+      <div class="subsection-title">Missions</div>
+      <div class="data-table-wrap"><table class="data-table"><thead><tr><th>Method</th><th>Path</th><th>Purpose</th><th>Maps to</th></tr></thead>
+        <tbody>
+          <tr><td><span class="field-type">POST</span></td><td><code>/missions/map</code></td><td>Trigger drone mapping mission</td><td><a href="icd-mapping-mission-action.html">/mapping/run_mission</a></td></tr>
+          <tr><td><span class="field-type">GET</span></td><td><code>/missions/{id}/status</code></td><td>Poll mission state</td><td>Action feedback</td></tr>
+          <tr><td><span class="field-type">GET</span></td><td><code>/missions/{id}/result</code></td><td>Retrieve mission metadata when complete</td><td>Latest <a href="icd-mapping-aerial-image.html">AerialImageMeta</a></td></tr>
+          <tr><td><span class="field-type">GET</span></td><td><code>/missions/{id}/image</code></td><td>Download captured JPEG</td><td>Disk file referenced by AerialImageMeta</td></tr>
+        </tbody></table></div>
+
+      <div class="subsection-title">Zones</div>
+      <div class="data-table-wrap"><table class="data-table"><thead><tr><th>Method</th><th>Path</th><th>Purpose</th><th>Maps to</th></tr></thead>
+        <tbody>
+          <tr><td><span class="field-type">POST</span></td><td><code>/zones</code></td><td>Save a new drawn zone</td><td>boundary_ingester persistence</td></tr>
+          <tr><td><span class="field-type">GET</span></td><td><code>/zones</code></td><td>List saved zones</td><td><code>/mapping/list_zones</code> service</td></tr>
+          <tr><td><span class="field-type">POST</span></td><td><code>/zones/{name}/activate</code></td><td>Set active zone</td><td><code>/mapping/load_zone</code> service</td></tr>
+          <tr><td><span class="field-type">DELETE</span></td><td><code>/zones/{name}</code></td><td>Remove a saved zone</td><td>boundary_ingester delete</td></tr>
+        </tbody></table></div>
+
+      <div class="subsection-title">Rover</div>
+      <div class="data-table-wrap"><table class="data-table"><thead><tr><th>Method</th><th>Path</th><th>Purpose</th><th>Maps to</th></tr></thead>
+        <tbody>
+          <tr><td><span class="field-type">GET</span></td><td><code>/rover/state</code></td><td>Current pose, safety, battery snapshot</td><td>latest <a href="icd-safety-state.html">/safety/state</a> + <a href="icd-localization-pose.html">/localization/pose</a> + <a href="icd-hal-battery.html">/hal/battery</a></td></tr>
+          <tr><td><span class="field-type">POST</span></td><td><code>/rover/teleop</code></td><td>Single teleop command</td><td>Publish Twist on <code>/hal/cmd_vel_teleop</code></td></tr>
+          <tr><td><span class="field-type">POST</span></td><td><code>/rover/estop</code></td><td>Soft e-stop</td><td>Publish latching trigger to safety_monitor</td></tr>
+          <tr><td><span class="field-type">POST</span></td><td><code>/rover/reset_safety</code></td><td>Clear latched safety state</td><td><a href="icd-safety-reset-srv.html">/safety/reset</a> service</td></tr>
+          <tr><td><span class="field-type">POST</span></td><td><code>/rover/goto</code></td><td>Waypoint nav command (iter 2+)</td><td><code>/nav/goto</code> action</td></tr>
+        </tbody></table></div>
+    </section>
+
+    <section id="s4"><div class="section-header"><span class="section-num">4.0</span><h2 class="section-title">Authentication</h2></div>
+      <p>Every endpoint requires a bearer token:</p>
+      <div class="code-block" data-lang="HTTP">Authorization: Bearer &lt;token&gt;</div>
+      <p>Tokens are issued manually via a CLI tool (<code>rover-token issue --name &quot;iPhone&quot;</code>) and stored hashed in <code>/var/lib/platform/tokens.db</code>. Revocation is by CLI (<code>rover-token revoke &lt;id&gt;</code>). Iteration 1 has no self-service enrollment; the operator pairs devices manually.</p>
+      <p>TLS is mandatory. Self-signed certificate pinned in the mobile app at install.</p>
+    </section>
+
+    <section id="s5"><div class="section-header"><span class="section-num">5.0</span><h2 class="section-title">Error Model</h2></div>
+      <div class="data-table-wrap"><table class="data-table"><thead><tr><th>HTTP</th><th>Meaning</th></tr></thead>
+        <tbody>
+          <tr><td>200 / 201 / 202 / 204</td><td>Success (RESTful conventions)</td></tr>
+          <tr><td>400</td><td>Malformed request (e.g., self-intersecting polygon)</td></tr>
+          <tr><td>401</td><td>Missing or invalid bearer token</td></tr>
+          <tr><td>403</td><td>Token valid but action not permitted</td></tr>
+          <tr><td>404</td><td>Mission id / zone name not found</td></tr>
+          <tr><td>409</td><td>Resource conflict (e.g., mission already running)</td></tr>
+          <tr><td>503</td><td>Safety state disallows action (e.g., teleop while ESTOP)</td></tr>
+          <tr><td>500</td><td>Unexpected internal error</td></tr>
+        </tbody></table></div>
+      <p>Error responses carry a JSON body: <code>{"error": "...", "detail": "..."}</code>.</p>
+    </section>
+
+    <section id="s6"><div class="section-header"><span class="section-num">6.0</span><h2 class="section-title">Timing &amp; Rate</h2></div>
+      <div class="data-table-wrap"><table class="data-table"><thead><tr><th>Endpoint</th><th>Target latency (p95)</th></tr></thead>
+        <tbody>
+          <tr><td>/rover/state</td><td>≤ 50 ms</td></tr>
+          <tr><td>/rover/teleop</td><td>≤ 30 ms</td></tr>
+          <tr><td>/rover/estop</td><td>≤ 100 ms end-to-end to motors stopping</td></tr>
+          <tr><td>/missions/map</td><td>≤ 500 ms accept</td></tr>
+          <tr><td>/missions/{id}/image</td><td>depends on image size (~2 MB)</td></tr>
+        </tbody></table></div>
+      <p>No explicit rate-limiting in iteration 1; /rover/teleop is expected to be called 20–30 Hz during active joystick use.</p>
+    </section>
+
+    <section id="s7"><div class="section-header"><span class="section-num">7.0</span><h2 class="section-title">Fault</h2></div>
+      <ul class="indent-list">
+        <li><strong>mission_api crash:</strong> systemd restart. Connections drop; client reconnects; operator sees transient "disconnected" state in app.</li>
+        <li><strong>ROS 2 side unavailable (safety_monitor down):</strong> Endpoints returning rover state return 503 with message.</li>
+        <li><strong>Invalid token:</strong> 401.</li>
+      </ul>
+    </section>
+
+    <section id="s8"><div class="section-header"><span class="section-num">8.0</span><h2 class="section-title">Requirements</h2></div>
+      <ul class="req-list">
+        <li class="req-item"><div class="req-id">REQ-ICD-API-001-01</div><div><div class="req-text">All endpoints shall require a valid bearer token; requests without one shall be rejected with 401 before any side effect.</div><div class="req-trace">verified by: <code>TEST-API-001</code></div></div></li>
+        <li class="req-item"><div class="req-id">REQ-ICD-API-001-02</div><div><div class="req-text">/rover/estop shall cause <code>/safety/state</code> to transition to ESTOP within 200 ms of the HTTP request returning 200.</div><div class="req-trace">verified by: <code>TEST-API-002</code></div></div></li>
+        <li class="req-item"><div class="req-id">REQ-ICD-API-001-03</div><div><div class="req-text">Teleop commands received when safety state is ESTOP shall be ignored and return 503.</div><div class="req-trace">verified by: <code>TEST-API-003</code></div></div></li>
+      </ul>
+    </section>
+
+    <section id="s9"><div class="section-header"><span class="section-num">9.0</span><h2 class="section-title">Verification</h2></div>
+      <div class="data-table-wrap"><table class="data-table"><thead><tr><th>Test</th><th>Method</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td><span class="field-name">TEST-API-001</span></td><td>Integration</td><td>Issue request with no token, invalid token; verify 401 in each case.</td></tr>
+          <tr><td><span class="field-name">TEST-API-002</span></td><td>Integration</td><td>Time POST /rover/estop → /safety/state=ESTOP propagation.</td></tr>
+          <tr><td><span class="field-name">TEST-API-003</span></td><td>Integration</td><td>Trigger ESTOP; issue teleop; verify 503.</td></tr>
+        </tbody></table></div>
+    </section>
+
+    <section id="s10"><div class="section-header"><span class="section-num">10.0</span><h2 class="section-title">Open Issues</h2></div>
+      <ol class="indent-list">
+        <li><strong>OPEN-01</strong> — Teleop over REST is inefficient; see <a href="../architecture/data-flow-mission.html">ARCH-003 §4</a> OPEN-01 for discussion of moving to a WebSocket / UDP transport.</li>
+        <li><strong>OPEN-02</strong> — Self-service token enrollment flow (QR-code pairing) is an iteration-2 UX improvement.</li>
+        <li><strong>OPEN-03</strong> — OpenAPI spec auto-generated by FastAPI is the companion machine-readable document.</li>
+      </ol>
+    </section>
+
+    <section id="s11"><div class="section-header"><span class="section-num">11.0</span><h2 class="section-title">Revision</h2></div>
+      <table class="revision-table"><thead><tr><th>Rev</th><th>Date</th><th>Author</th><th>Change</th></tr></thead>
+        <tbody><tr><td class="rev">0.1</td><td>2026-04-19</td><td>Louis Roig &amp; Claude Opus 4.7</td><td>Initial draft.</td></tr></tbody></table>
+    </section>
+
+    <div class="footer-nav"><a href="index.html">← Interfaces Index</a><span>Related: <a href="icd-mission-telemetry-ws.html">Telemetry WebSocket →</a></span></div>
+  </main>
+</div>
+<script src="../shared/shared.js"></script>
+</body></html>

@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ICD-HAL-005 · /hal/imu/mag</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=IBM+Plex+Sans:wght@300;400;500;600;700&family=IBM+Plex+Serif:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../shared/shared.css">
+</head>
+<body>
+<div class="doc-bar">
+  <a class="doc-bar-crumb" href="../index.html">← HOME</a><span class="doc-bar-sep">·</span>
+  <a class="doc-bar-crumb" href="index.html">INTERFACES</a><span class="doc-bar-sep">·</span>
+  <span class="doc-bar-id">ICD-HAL-005</span><span class="doc-bar-sep">·</span>
+  <span class="doc-bar-path">/hal/imu/mag</span><span class="doc-bar-sep">·</span>
+  <span style="color: var(--ink-dim)">REV 0.1</span>
+  <div class="doc-bar-status"><span class="status-dot"></span><span>DRAFT</span></div>
+  <div class="doc-bar-tools">
+    <button class="tool-btn" onclick="window.print()">PRINT</button>
+    <button class="tool-btn" onclick="copyLink(event)">COPY LINK</button>
+  </div>
+</div>
+
+<div class="container">
+  <nav class="toc">
+    <div class="toc-title">CONTENTS</div>
+    <ul class="toc-list">
+      <li class="toc-item"><a class="toc-link" href="#s1"><span class="toc-num">1.0</span>Purpose</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s2"><span class="toc-num">2.0</span>Participants</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s3"><span class="toc-num">3.0</span>Message</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s4"><span class="toc-num">4.0</span>Semantics</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s5"><span class="toc-num">5.0</span>Timing</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s6"><span class="toc-num">6.0</span>QoS</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s7"><span class="toc-num">7.0</span>Fault</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s8"><span class="toc-num">8.0</span>Requirements</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s9"><span class="toc-num">9.0</span>Verification</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s10"><span class="toc-num">10.0</span>Open Issues</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s11"><span class="toc-num">11.0</span>Revision</a></li>
+    </ul>
+  </nav>
+
+  <main class="prose-serif">
+    <div class="doc-header">
+      <div class="doc-type interface">INTERFACE CONTROL DOCUMENT</div>
+      <h1 class="doc-title"><code>/hal/imu/mag</code></h1>
+      <p class="doc-subtitle">Magnetic field vector from the MMC5983MA magnetometer. Used for yaw-drift correction in the global EKF.</p>
+      <div class="doc-meta">
+        <div class="meta-item"><div class="meta-label">Document ID</div><div class="meta-value">ICD-HAL-005</div></div>
+        <div class="meta-item"><div class="meta-label">Revision</div><div class="meta-value">0.1 · draft</div></div>
+        <div class="meta-item"><div class="meta-label">Owner</div><div class="meta-value">platform_hal</div></div>
+        <div class="meta-item"><div class="meta-label">Classification</div><div class="meta-value">Sensing</div></div>
+        <div class="meta-item"><div class="meta-label">Last Updated</div><div class="meta-value">2026-04-19</div></div>
+      </div>
+    </div>
+
+    <section id="s1"><div class="section-header"><span class="section-num">1.0</span><h2 class="section-title">Purpose</h2></div>
+      <p>Provides Earth-frame magnetic field readings for yaw-drift correction in the global EKF. Independent of accel+gyro; publishes at a lower rate because magnetic field changes slowly.</p>
+      <p>Not used for safety. Optional input; if magnetometer fails, EKF continues with degraded yaw accuracy (drift unbounded over long durations).</p>
+    </section>
+
+    <section id="s2"><div class="section-header"><span class="section-num">2.0</span><h2 class="section-title">Participants</h2></div>
+      <div class="participants">
+        <div class="participant-card pub">
+          <div class="participant-role">Publisher</div><div class="participant-name">imu_driver</div>
+          <div class="participant-detail"><strong>SRS</strong><a href="../nodes/srs-imu-driver.html">SRS-HAL-002</a><strong>Hardware</strong>MMC5983MA via I²C alongside the ISM330DHCX.</div>
+        </div>
+        <div class="participant-card sub">
+          <div class="participant-role">Subscriber</div><div class="participant-name">ekf_local</div>
+          <div class="participant-detail"><strong>Role</strong>Consumes magnetic field along with IMU and odometry for yaw correction.</div>
+        </div>
+      </div>
+    </section>
+
+    <section id="s3"><div class="section-header"><span class="section-num">3.0</span><h2 class="section-title">Message</h2></div>
+      <p>Type: <code>sensor_msgs/msg/MagneticField</code>. Field <code>magnetic_field</code> populated in Tesla. Covariance populated from calibration.</p>
+    </section>
+
+    <section id="s4"><div class="section-header"><span class="section-num">4.0</span><h2 class="section-title">Semantics</h2></div>
+      <p>Hard-iron and soft-iron calibration is applied by the driver. Raw sensor output is transformed by a calibration matrix stored in <code>mower_config/imu_calibration.yaml</code>. Calibration is re-done per-yard (large metal structures shift the null point).</p>
+      <p>Values represent Earth's magnetic field at the rover's location in the <code>imu_link</code> frame. Typical magnitude ~50 µT; declination depends on location.</p>
+    </section>
+
+    <section id="s5"><div class="section-header"><span class="section-num">5.0</span><h2 class="section-title">Timing</h2></div>
+      <p>50 Hz ± 5 Hz. Read latency ≤ 8 ms over I²C.</p>
+    </section>
+
+    <section id="s6"><div class="section-header"><span class="section-num">6.0</span><h2 class="section-title">QoS</h2></div>
+      <p>RELIABLE, KEEP_LAST depth 5, VOLATILE. No deadline — EKF tolerates short gaps.</p>
+    </section>
+
+    <section id="s7"><div class="section-header"><span class="section-num">7.0</span><h2 class="section-title">Fault</h2></div>
+      <div class="data-table-wrap"><table class="data-table"><thead><tr><th>Fault</th><th>Response</th></tr></thead>
+        <tbody>
+          <tr><td>Mag I²C fault</td><td>Driver suspends mag publication, continues IMU. Emits diagnostic.</td></tr>
+          <tr><td>Unexpectedly large field magnitude (&gt; 200 µT)</td><td>Likely local magnetic disturbance; driver emits warning. EKF down-weights.</td></tr>
+          <tr><td>Calibration file missing</td><td>Driver refuses to publish mag; IMU continues; EKF operates without yaw correction (degraded).</td></tr>
+        </tbody></table></div>
+    </section>
+
+    <section id="s8"><div class="section-header"><span class="section-num">8.0</span><h2 class="section-title">Requirements</h2></div>
+      <ul class="req-list">
+        <li class="req-item"><div class="req-id">REQ-ICD-005-01</div><div><div class="req-text">Publication rate shall be 50 Hz ± 5 Hz when the sensor is healthy and calibration is loaded.</div><div class="req-trace">verified by: <code>TEST-HAL-025</code></div></div></li>
+        <li class="req-item"><div class="req-id">REQ-ICD-005-02</div><div><div class="req-text">Hard-iron / soft-iron calibration shall be applied prior to publication; uncalibrated raw values shall not be published.</div><div class="req-trace">verified by: <code>TEST-HAL-026</code></div></div></li>
+      </ul>
+    </section>
+
+    <section id="s9"><div class="section-header"><span class="section-num">9.0</span><h2 class="section-title">Verification</h2></div>
+      <div class="data-table-wrap"><table class="data-table"><thead><tr><th>Test</th><th>Method</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td><span class="field-name">TEST-HAL-025</span></td><td>Integration</td><td>60 s rate monitor.</td></tr>
+          <tr><td><span class="field-name">TEST-HAL-026</span></td><td>Bench</td><td>Rotate on turntable 360°; verify field vector traces a circle of expected radius.</td></tr>
+        </tbody></table></div>
+    </section>
+
+    <section id="s10"><div class="section-header"><span class="section-num">10.0</span><h2 class="section-title">Open Issues</h2></div>
+      <ol class="indent-list">
+        <li><strong>OPEN-01</strong> — Per-yard calibration UX. Currently a CLI tool; mobile-app wizard is iteration 2.</li>
+        <li><strong>OPEN-02</strong> — Metal-rich yards (e.g., near HVAC units) may need per-region calibration rather than single-point.</li>
+      </ol>
+    </section>
+
+    <section id="s11"><div class="section-header"><span class="section-num">11.0</span><h2 class="section-title">Revision</h2></div>
+      <table class="revision-table"><thead><tr><th>Rev</th><th>Date</th><th>Author</th><th>Change</th></tr></thead>
+        <tbody><tr><td class="rev">0.1</td><td>2026-04-19</td><td>Louis Roig &amp; Claude Opus 4.7</td><td>Initial draft.</td></tr></tbody></table>
+    </section>
+
+    <div class="footer-nav"><a href="index.html">← Interfaces Index</a><span>Related: <a href="icd-hal-imu-data.html">/hal/imu/data</a></span></div>
+  </main>
+</div>
+<script src="../shared/shared.js"></script>
+</body></html>

@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SRS-MAP-002 · image_retriever</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=IBM+Plex+Sans:wght@300;400;500;600;700&family=IBM+Plex+Serif:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../shared/shared.css">
+</head>
+<body>
+<div class="doc-bar">
+  <a class="doc-bar-crumb" href="../index.html">← HOME</a><span class="doc-bar-sep">·</span>
+  <a class="doc-bar-crumb" href="index.html">NODES</a><span class="doc-bar-sep">·</span>
+  <span class="doc-bar-id">SRS-MAP-002</span><span class="doc-bar-sep">·</span>
+  <span class="doc-bar-path">image_retriever</span><span class="doc-bar-sep">·</span>
+  <span style="color: var(--ink-dim)">REV 0.1</span>
+  <div class="doc-bar-status"><span class="status-dot"></span><span>DRAFT</span></div>
+  <div class="doc-bar-tools"><button class="tool-btn" onclick="window.print()">PRINT</button><button class="tool-btn" onclick="copyLink(event)">COPY LINK</button></div>
+</div>
+<div class="container">
+  <nav class="toc">
+    <div class="toc-title">CONTENTS</div>
+    <ul class="toc-list">
+      <li class="toc-item"><a class="toc-link" href="#s1"><span class="toc-num">1.0</span>Purpose</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s2"><span class="toc-num">2.0</span>Scope</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s3"><span class="toc-num">3.0</span>Interfaces</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s4"><span class="toc-num">4.0</span>Functional</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s5"><span class="toc-num">5.0</span>Performance</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s6"><span class="toc-num">6.0</span>Safety</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s7"><span class="toc-num">7.0</span>Dependencies</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s8"><span class="toc-num">8.0</span>Config</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s9"><span class="toc-num">9.0</span>Failure</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s10"><span class="toc-num">10.0</span>Verification</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s11"><span class="toc-num">11.0</span>Open Issues</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s12"><span class="toc-num">12.0</span>Revision</a></li>
+    </ul>
+  </nav>
+  <main class="prose-serif">
+    <div class="doc-header">
+      <div class="doc-type">SOFTWARE REQUIREMENTS SPECIFICATION · MAPPING</div>
+      <h1 class="doc-title">image_retriever</h1>
+      <p class="doc-subtitle">Pulls captured still images from the drone's XIAO ESP32-S3 over Wi-Fi and persists them to rover disk.</p>
+      <div class="doc-meta">
+        <div class="meta-item"><div class="meta-label">Document ID</div><div class="meta-value">SRS-MAP-002</div></div>
+        <div class="meta-item"><div class="meta-label">Revision</div><div class="meta-value">0.1 · draft</div></div>
+        <div class="meta-item"><div class="meta-label">Owner</div><div class="meta-value">platform_mapping</div></div>
+        <div class="meta-item"><div class="meta-label">Language</div><div class="meta-value">Python (rclpy + requests)</div></div>
+        <div class="meta-item"><div class="meta-label">Classification</div><div class="meta-value">Data transport</div></div>
+        <div class="meta-item"><div class="meta-label">Last Updated</div><div class="meta-value">2026-04-19</div></div>
+      </div>
+    </div>
+
+    <section id="s1"><div class="section-header"><span class="section-num">1.0</span><h2 class="section-title">Purpose</h2></div>
+      <p>Provides a ROS 2 service <code>/mapping/retrieve_latest_image</code> that fetches the most recent capture from the XIAO's HTTP server and writes it to <code>/var/lib/platform/images/&lt;mission_id&gt;/capture.jpg</code>. Called by <a href="srs-drone-mission-coordinator.html">drone_mission_coordinator</a> after landing.</p>
+    </section>
+
+    <section id="s2"><div class="section-header"><span class="section-num">2.0</span><h2 class="section-title">Scope</h2></div>
+      <p>In: HTTP fetch, retry with backoff, persistence, metadata sidecar. Out: image processing (georeferencer's job); multi-image mosaicking.</p>
+    </section>
+
+    <section id="s3"><div class="section-header"><span class="section-num">3.0</span><h2 class="section-title">Interfaces</h2></div>
+      <p>Service server: <code>/mapping/retrieve_latest_image</code> (<code>std_srvs/Trigger</code> with extended request for mission_id). Client of XIAO HTTP endpoint (external to ROS). Publisher: <code>/diagnostics</code>.</p>
+    </section>
+
+    <section id="s4"><div class="section-header"><span class="section-num">4.0</span><h2 class="section-title">Functional</h2></div>
+      <ul class="req-list">
+        <li class="req-item"><div class="req-id">SRS-MAP-002-F01</div><div><div class="req-text">Issue HTTP GET to <code>http://xiao.local/latest.jpg</code>; stream to disk at configured path.</div><div class="req-trace">verified by: <code>TEST-MAP-040</code></div></div></li>
+        <li class="req-item"><div class="req-id">SRS-MAP-002-F02</div><div><div class="req-text">Retry up to 3× with exponential backoff (1 s, 2 s, 4 s) on transient failure.</div><div class="req-trace">verified by: <code>TEST-MAP-041</code></div></div></li>
+      </ul>
+    </section>
+
+    <section id="s5"><div class="section-header"><span class="section-num">5.0</span><h2 class="section-title">Performance</h2></div>
+      <p>Download a 2 MB JPEG over 5 GHz Wi-Fi in &lt; 5 s. Node CPU cost negligible.</p>
+    </section>
+
+    <section id="s6"><div class="section-header"><span class="section-num">6.0</span><h2 class="section-title">Safety</h2></div>
+      <p>Not safety-critical. Failure to retrieve image fails the mission cleanly; no motion consequences.</p>
+    </section>
+
+    <section id="s7"><div class="section-header"><span class="section-num">7.0</span><h2 class="section-title">Dependencies</h2></div>
+      <p>rclpy, requests, std_srvs. XIAO firmware (<a href="firmware-xiao-bridge.html">FW-XIAO</a>) HTTP endpoint contract.</p>
+    </section>
+
+    <section id="s8"><div class="section-header"><span class="section-num">8.0</span><h2 class="section-title">Configuration</h2></div>
+      <div class="data-table-wrap"><table class="data-table"><thead><tr><th>Parameter</th><th>Default</th></tr></thead><tbody>
+        <tr><td><span class="field-name">xiao_host</span></td><td>xiao.local</td></tr>
+        <tr><td><span class="field-name">image_dir</span></td><td>/var/lib/platform/images</td></tr>
+        <tr><td><span class="field-name">http_timeout_s</span></td><td>10</td></tr>
+        <tr><td><span class="field-name">retry_attempts</span></td><td>3</td></tr>
+      </tbody></table></div>
+    </section>
+
+    <section id="s9"><div class="section-header"><span class="section-num">9.0</span><h2 class="section-title">Failure Modes</h2></div>
+      <p>XIAO unreachable (Wi-Fi signal, firmware crash): exhaust retries → service returns failure. Disk full: emit diagnostic; return failure.</p>
+    </section>
+
+    <section id="s10"><div class="section-header"><span class="section-num">10.0</span><h2 class="section-title">Verification</h2></div>
+      <p>TEST-MAP-040 (happy path), TEST-MAP-041 (retry on transient failure).</p>
+    </section>
+
+    <section id="s11"><div class="section-header"><span class="section-num">11.0</span><h2 class="section-title">Open Issues</h2></div>
+      <ol class="indent-list">
+        <li><strong>OPEN-01</strong> — Image rotation on transfer (so app-side display doesn't need to). Deferred — keep server-side passthrough.</li>
+      </ol>
+    </section>
+
+    <section id="s12"><div class="section-header"><span class="section-num">12.0</span><h2 class="section-title">Revision</h2></div>
+      <table class="revision-table"><thead><tr><th>Rev</th><th>Date</th><th>Author</th><th>Change</th></tr></thead><tbody><tr><td class="rev">0.1</td><td>2026-04-19</td><td>Louis Roig &amp; Claude Opus 4.7</td><td>Initial draft.</td></tr></tbody></table>
+    </section>
+
+    <div class="footer-nav"><a href="index.html">← Nodes Index</a></div>
+  </main>
+</div>
+<script src="../shared/shared.js"></script>
+</body></html>

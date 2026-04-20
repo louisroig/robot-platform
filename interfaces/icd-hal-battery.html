@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ICD-HAL-006 · /hal/battery</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=IBM+Plex+Sans:wght@300;400;500;600;700&family=IBM+Plex+Serif:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../shared/shared.css">
+</head>
+<body>
+<div class="doc-bar">
+  <a class="doc-bar-crumb" href="../index.html">← HOME</a><span class="doc-bar-sep">·</span>
+  <a class="doc-bar-crumb" href="index.html">INTERFACES</a><span class="doc-bar-sep">·</span>
+  <span class="doc-bar-id">ICD-HAL-006</span><span class="doc-bar-sep">·</span>
+  <span class="doc-bar-path">/hal/battery</span><span class="doc-bar-sep">·</span>
+  <span style="color: var(--ink-dim)">REV 0.1</span>
+  <div class="doc-bar-status"><span class="status-dot"></span><span>DRAFT</span></div>
+  <div class="doc-bar-tools">
+    <button class="tool-btn" onclick="window.print()">PRINT</button>
+    <button class="tool-btn" onclick="copyLink(event)">COPY LINK</button>
+  </div>
+</div>
+
+<div class="container">
+  <nav class="toc">
+    <div class="toc-title">CONTENTS</div>
+    <ul class="toc-list">
+      <li class="toc-item"><a class="toc-link" href="#s1"><span class="toc-num">1.0</span>Purpose</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s2"><span class="toc-num">2.0</span>Participants</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s3"><span class="toc-num">3.0</span>Message</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s4"><span class="toc-num">4.0</span>Semantics</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s5"><span class="toc-num">5.0</span>Timing</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s6"><span class="toc-num">6.0</span>QoS</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s7"><span class="toc-num">7.0</span>Fault</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s8"><span class="toc-num">8.0</span>Requirements</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s9"><span class="toc-num">9.0</span>Verification</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s10"><span class="toc-num">10.0</span>Open Issues</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s11"><span class="toc-num">11.0</span>Revision</a></li>
+    </ul>
+  </nav>
+
+  <main class="prose-serif">
+    <div class="doc-header">
+      <div class="doc-type interface">INTERFACE CONTROL DOCUMENT</div>
+      <h1 class="doc-title"><code>/hal/battery</code></h1>
+      <p class="doc-subtitle">Pack voltage, current, percentage, and health derived from the RoboClaw's battery sense input. Consumed by the safety monitor and system monitor.</p>
+      <div class="doc-meta">
+        <div class="meta-item"><div class="meta-label">Document ID</div><div class="meta-value">ICD-HAL-006</div></div>
+        <div class="meta-item"><div class="meta-label">Revision</div><div class="meta-value">0.1 · draft</div></div>
+        <div class="meta-item"><div class="meta-label">Owner</div><div class="meta-value">platform_hal</div></div>
+        <div class="meta-item"><div class="meta-label">Classification</div><div class="meta-value">Sensing · mission-affecting</div></div>
+        <div class="meta-item"><div class="meta-label">Last Updated</div><div class="meta-value">2026-04-19</div></div>
+      </div>
+    </div>
+
+    <section id="s1"><div class="section-header"><span class="section-num">1.0</span><h2 class="section-title">Purpose</h2></div>
+      <p>Published once per second. Reports pack voltage, current draw, estimated state-of-charge percentage, and a health flag. Used by <a href="../nodes/srs-safety-monitor.html">safety_monitor</a> to trigger CRITICAL state at low SoC and by <a href="../nodes/srs-system-monitor.html">system_monitor</a> for diagnostics and telemetry.</p>
+    </section>
+
+    <section id="s2"><div class="section-header"><span class="section-num">2.0</span><h2 class="section-title">Participants</h2></div>
+      <div class="participants">
+        <div class="participant-card pub"><div class="participant-role">Publisher</div><div class="participant-name">roboclaw_driver</div>
+          <div class="participant-detail"><strong>SRS</strong><a href="../nodes/srs-roboclaw-driver.html">SRS-HAL-001</a><strong>Source</strong>RoboClaw main battery voltage ADC + main current sense register.</div></div>
+        <div class="participant-card sub"><div class="participant-role">Subscribers</div><div class="participant-name">safety_monitor, system_monitor, telemetry_publisher</div>
+          <div class="participant-detail"><strong>Safety use</strong>CRITICAL trigger when <code>percentage &lt; critical_batt_pct</code> (15%).</div></div>
+      </div>
+    </section>
+
+    <section id="s3"><div class="section-header"><span class="section-num">3.0</span><h2 class="section-title">Message</h2></div>
+      <p>Type: <code>sensor_msgs/msg/BatteryState</code>. Populated fields:</p>
+      <div class="data-table-wrap"><table class="data-table"><thead><tr><th>Field</th><th>Populated?</th><th>Notes</th></tr></thead><tbody>
+        <tr><td><span class="field-name">voltage</span></td><td>yes</td><td>Pack voltage, V. Range 12.0 – 16.8 V for 4S LiFePO4/LiPo.</td></tr>
+        <tr><td><span class="field-name">current</span></td><td>yes</td><td>Positive = discharge, A.</td></tr>
+        <tr><td><span class="field-name">charge</span></td><td>no (NaN)</td><td>Coulomb counter not available from RoboClaw.</td></tr>
+        <tr><td><span class="field-name">capacity</span></td><td>no (NaN)</td><td>—</td></tr>
+        <tr><td><span class="field-name">percentage</span></td><td>yes</td><td>Estimated SoC (0.0 – 1.0). Derived from voltage curve (chemistry-dependent), filtered.</td></tr>
+        <tr><td><span class="field-name">power_supply_status</span></td><td>yes</td><td>DISCHARGING (1) always in iter 1; charging is manual/off-line.</td></tr>
+        <tr><td><span class="field-name">power_supply_health</span></td><td>yes</td><td>GOOD or UNKNOWN based on voltage sanity checks.</td></tr>
+        <tr><td><span class="field-name">power_supply_technology</span></td><td>yes</td><td>Parameterized per chemistry (LIPO or LFP).</td></tr>
+      </tbody></table></div>
+    </section>
+
+    <section id="s4"><div class="section-header"><span class="section-num">4.0</span><h2 class="section-title">Semantics</h2></div>
+      <p>Voltage → SoC curve is chemistry-dependent. For 4S LiPo: 16.8 V = 100%, 14.8 V nominal (~60%), 12.0 V = 0%. For 4S LiFePO4: flatter curve, 14.6 V = 100%, 13.2 V nominal, 10.0 V = 0%. Curve selection via <code>battery_chemistry</code> parameter.</p>
+      <p>Percentage is low-pass filtered (τ = 5 s) to suppress transients during acceleration.</p>
+    </section>
+
+    <section id="s5"><div class="section-header"><span class="section-num">5.0</span><h2 class="section-title">Timing</h2></div>
+      <p>1 Hz ± 0.2 Hz. Poll cadence matches; no value publish when RoboClaw query fails.</p>
+    </section>
+
+    <section id="s6"><div class="section-header"><span class="section-num">6.0</span><h2 class="section-title">QoS</h2></div>
+      <p>RELIABLE, KEEP_LAST depth 3, TRANSIENT_LOCAL (so late-joining subscribers see a starting value immediately).</p>
+    </section>
+
+    <section id="s7"><div class="section-header"><span class="section-num">7.0</span><h2 class="section-title">Fault</h2></div>
+      <div class="data-table-wrap"><table class="data-table"><thead><tr><th>Fault</th><th>Response</th></tr></thead>
+        <tbody>
+          <tr><td>Voltage &lt; 11.0 V sustained 2 s</td><td>power_supply_health = DEAD. Safety monitor transitions to CRITICAL regardless of percentage.</td></tr>
+          <tr><td>Read failure</td><td>Publishes last known value with stale stamp. safety_monitor treats stamp age &gt; 5 s as CRITICAL.</td></tr>
+          <tr><td>Percentage reads implausibly constant</td><td>Driver emits diagnostic; no further action.</td></tr>
+        </tbody></table></div>
+    </section>
+
+    <section id="s8"><div class="section-header"><span class="section-num">8.0</span><h2 class="section-title">Requirements</h2></div>
+      <ul class="req-list">
+        <li class="req-item"><div class="req-id">REQ-ICD-006-01</div><div><div class="req-text">Publication rate shall be 1 Hz ± 0.2 Hz.</div><div class="req-trace">verified by: <code>TEST-HAL-030</code></div></div></li>
+        <li class="req-item"><div class="req-id">REQ-ICD-006-02</div><div><div class="req-text">Voltage accuracy shall be ± 0.1 V as verified against a calibrated bench meter.</div><div class="req-trace">verified by: <code>TEST-HAL-031</code></div></div></li>
+        <li class="req-item"><div class="req-id">REQ-ICD-006-03</div><div><div class="req-text">SoC percentage shall follow chemistry-configured voltage curve; chemistry parameter shall be overridable per deployment.</div><div class="req-trace">verified by: <code>TEST-HAL-032</code></div></div></li>
+      </ul>
+    </section>
+
+    <section id="s9"><div class="section-header"><span class="section-num">9.0</span><h2 class="section-title">Verification</h2></div>
+      <div class="data-table-wrap"><table class="data-table"><thead><tr><th>Test</th><th>Method</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td><span class="field-name">TEST-HAL-030</span></td><td>Integration</td><td>60 s rate monitor.</td></tr>
+          <tr><td><span class="field-name">TEST-HAL-031</span></td><td>Bench</td><td>Apply bench supply at 12.0, 14.8, 16.0 V; compare reported voltage.</td></tr>
+          <tr><td><span class="field-name">TEST-HAL-032</span></td><td>Unit</td><td>Feed synthetic voltage sequence; verify percentage matches configured curve.</td></tr>
+        </tbody></table></div>
+    </section>
+
+    <section id="s10"><div class="section-header"><span class="section-num">10.0</span><h2 class="section-title">Open Issues</h2></div>
+      <ol class="indent-list">
+        <li><strong>OPEN-01</strong> — Iteration 2: integrate coulomb counting for better SoC. Voltage-only is inaccurate under high load.</li>
+        <li><strong>OPEN-02</strong> — Per-cell balancing visibility depends on a BMS; iteration 1 has none.</li>
+      </ol>
+    </section>
+
+    <section id="s11"><div class="section-header"><span class="section-num">11.0</span><h2 class="section-title">Revision</h2></div>
+      <table class="revision-table"><thead><tr><th>Rev</th><th>Date</th><th>Author</th><th>Change</th></tr></thead>
+        <tbody><tr><td class="rev">0.1</td><td>2026-04-19</td><td>Louis Roig &amp; Claude Opus 4.7</td><td>Initial draft.</td></tr></tbody></table>
+    </section>
+
+    <div class="footer-nav"><a href="index.html">← Interfaces Index</a><span>Related: <a href="icd-safety-state.html">/safety/state</a></span></div>
+  </main>
+</div>
+<script src="../shared/shared.js"></script>
+</body></html>

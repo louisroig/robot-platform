@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ICD-HAL-007 · /hal/estop_pressed</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=IBM+Plex+Sans:wght@300;400;500;600;700&family=IBM+Plex+Serif:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../shared/shared.css">
+</head>
+<body>
+<div class="doc-bar">
+  <a class="doc-bar-crumb" href="../index.html">← HOME</a><span class="doc-bar-sep">·</span>
+  <a class="doc-bar-crumb" href="index.html">INTERFACES</a><span class="doc-bar-sep">·</span>
+  <span class="doc-bar-id">ICD-HAL-007</span><span class="doc-bar-sep">·</span>
+  <span class="doc-bar-path">/hal/estop_pressed</span><span class="doc-bar-sep">·</span>
+  <span style="color: var(--ink-dim)">REV 0.1</span>
+  <div class="doc-bar-status"><span class="status-dot"></span><span>DRAFT</span></div>
+  <div class="doc-bar-tools">
+    <button class="tool-btn" onclick="window.print()">PRINT</button>
+    <button class="tool-btn" onclick="copyLink(event)">COPY LINK</button>
+  </div>
+</div>
+
+<div class="container">
+  <nav class="toc">
+    <div class="toc-title">CONTENTS</div>
+    <ul class="toc-list">
+      <li class="toc-item"><a class="toc-link" href="#s1"><span class="toc-num">1.0</span>Purpose</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s2"><span class="toc-num">2.0</span>Participants</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s3"><span class="toc-num">3.0</span>Message</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s4"><span class="toc-num">4.0</span>Semantics</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s5"><span class="toc-num">5.0</span>Timing</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s6"><span class="toc-num">6.0</span>QoS</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s7"><span class="toc-num">7.0</span>Fault</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s8"><span class="toc-num">8.0</span>Requirements</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s9"><span class="toc-num">9.0</span>Verification</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s10"><span class="toc-num">10.0</span>Open Issues</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s11"><span class="toc-num">11.0</span>Revision</a></li>
+    </ul>
+  </nav>
+
+  <main class="prose-serif">
+    <div class="doc-header">
+      <div class="doc-type safety">INTERFACE CONTROL DOCUMENT · SAFETY</div>
+      <h1 class="doc-title"><code>/hal/estop_pressed</code></h1>
+      <p class="doc-subtitle">State of the physical e-stop button, polled via GPIO. The software echo of a hardware safety signal.</p>
+      <div class="doc-meta">
+        <div class="meta-item"><div class="meta-label">Document ID</div><div class="meta-value">ICD-HAL-007</div></div>
+        <div class="meta-item"><div class="meta-label">Revision</div><div class="meta-value">0.1 · draft</div></div>
+        <div class="meta-item"><div class="meta-label">Owner</div><div class="meta-value">platform_hal</div></div>
+        <div class="meta-item"><div class="meta-label">Classification</div><div class="meta-value">Safety-critical</div></div>
+        <div class="meta-item"><div class="meta-label">Last Updated</div><div class="meta-value">2026-04-19</div></div>
+      </div>
+    </div>
+
+    <section id="s1"><div class="section-header"><span class="section-num">1.0</span><h2 class="section-title">Purpose</h2></div>
+      <p>The physical e-stop button is a normally-closed (NC) bulkhead switch wired in series with the motor power rail. Pressing it cuts motor power with no software involvement. It is also wired to a GPIO input pin on the Pi so that software can observe the state.</p>
+      <p>This topic carries that observation. It is safety-critical because <a href="../nodes/srs-safety-monitor.html">safety_monitor</a> uses it to propagate the e-stop state into <code>/safety/state</code>, which downstream systems (mobile app, mission_api, logs) consume.</p>
+      <div class="callout safety">
+        <div class="callout-label">Independence principle</div>
+        <p>The hardware e-stop path does <em>not</em> depend on this topic. Motors stop when the button is pressed because power is cut — not because this topic tells them to. This topic informs the software; the hardware is the enforcement.</p>
+      </div>
+    </section>
+
+    <section id="s2"><div class="section-header"><span class="section-num">2.0</span><h2 class="section-title">Participants</h2></div>
+      <div class="participants">
+        <div class="participant-card pub"><div class="participant-role">Publisher</div><div class="participant-name">estop_monitor</div>
+          <div class="participant-detail"><strong>SRS</strong><a href="../nodes/srs-estop-monitor.html">SRS-HAL-003</a><strong>Hardware</strong>GPIO BCM 17, input with pull-up, debounced.</div></div>
+        <div class="participant-card sub"><div class="participant-role">Subscriber</div><div class="participant-name">safety_monitor</div>
+          <div class="participant-detail"><strong>Use</strong>Transitions to ESTOP on TRUE; latches state until <code>/safety/reset</code> is called.</div></div>
+      </div>
+    </section>
+
+    <section id="s3"><div class="section-header"><span class="section-num">3.0</span><h2 class="section-title">Message</h2></div>
+      <p>Type: <code>std_msgs/msg/Bool</code>. Field <code>data</code>: TRUE = button pressed (motor power cut); FALSE = button released.</p>
+    </section>
+
+    <section id="s4"><div class="section-header"><span class="section-num">4.0</span><h2 class="section-title">Semantics</h2></div>
+      <p>NC switch semantics: the wire is closed (GPIO reads LOW via pull-up to GND) when the button is <em>released</em>. Pressing opens the circuit; GPIO reads HIGH. The driver inverts so that <code>data = true</code> means pressed.</p>
+      <p>Debouncing: GPIO is sampled at 50 Hz; state changes are accepted only after 3 consecutive matching reads (60 ms debounce).</p>
+      <p>Transitions are published on-change (within one sample period) AND periodically at 20 Hz as a liveness keepalive. The safety monitor uses the keepalive to detect failure of the estop_monitor node itself.</p>
+    </section>
+
+    <section id="s5"><div class="section-header"><span class="section-num">5.0</span><h2 class="section-title">Timing</h2></div>
+      <div class="data-table-wrap"><table class="data-table"><thead><tr><th>Parameter</th><th>Value</th></tr></thead>
+        <tbody>
+          <tr><td>Keepalive rate</td><td>20 Hz</td></tr>
+          <tr><td>On-change latency</td><td>≤ 60 ms (debounce)</td></tr>
+          <tr><td>Staleness threshold (safety)</td><td>200 ms → assume pressed</td></tr>
+        </tbody></table></div>
+    </section>
+
+    <section id="s6"><div class="section-header"><span class="section-num">6.0</span><h2 class="section-title">QoS</h2></div>
+      <p>RELIABLE, KEEP_LAST depth 5, TRANSIENT_LOCAL — late-joining safety_monitor should immediately see current state.</p>
+    </section>
+
+    <section id="s7"><div class="section-header"><span class="section-num">7.0</span><h2 class="section-title">Fault</h2></div>
+      <div class="data-table-wrap"><table class="data-table"><thead><tr><th>Fault</th><th>Response</th></tr></thead>
+        <tbody>
+          <tr><td>estop_monitor node crash</td><td>systemd restart within 2 s. During gap, topic staleness triggers safety_monitor's fail-safe: assume pressed → ESTOP.</td></tr>
+          <tr><td>GPIO read error</td><td>Driver retries; if persistent, emits diagnostic, halts publication. safety_monitor fail-safes.</td></tr>
+          <tr><td>Broken wire (NC fails open)</td><td>GPIO reads HIGH permanently → reported as pressed → ESTOP. Correct fail-safe.</td></tr>
+          <tr><td>Stuck-closed wire (NC stuck pressed)</td><td>Button cannot register release. System stays in ESTOP until physical repair. Detected by startup self-test (§8).</td></tr>
+        </tbody></table></div>
+    </section>
+
+    <section id="s8"><div class="section-header"><span class="section-num">8.0</span><h2 class="section-title">Requirements</h2></div>
+      <ul class="req-list">
+        <li class="req-item"><div class="req-id">REQ-ICD-007-01</div><div><div class="req-text">Button-press to topic publication latency shall be ≤ 100 ms (ninety-fifth percentile).</div><div class="req-trace">verified by: <code>TEST-HAL-040</code></div></div></li>
+        <li class="req-item"><div class="req-id">REQ-ICD-007-02</div><div><div class="req-text">A broken wire in the NC path shall be published as pressed (fail-safe).</div><div class="req-trace">verified by: <code>TEST-HAL-041</code></div></div></li>
+        <li class="req-item"><div class="req-id">REQ-ICD-007-03</div><div><div class="req-text">The topic shall publish at ≥ 20 Hz even when the state is not changing (keepalive).</div><div class="req-trace">verified by: <code>TEST-HAL-042</code></div></div></li>
+      </ul>
+    </section>
+
+    <section id="s9"><div class="section-header"><span class="section-num">9.0</span><h2 class="section-title">Verification</h2></div>
+      <div class="data-table-wrap"><table class="data-table"><thead><tr><th>Test</th><th>Method</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td><span class="field-name">TEST-HAL-040</span></td><td>Bench</td><td>Scope-probed simultaneous GPIO transition and topic timestamp; 1000 button presses, statistical analysis.</td></tr>
+          <tr><td><span class="field-name">TEST-HAL-041</span></td><td>Bench</td><td>Disconnect NC wire; verify topic reads pressed; reconnect; verify topic reads released after debounce.</td></tr>
+          <tr><td><span class="field-name">TEST-HAL-042</span></td><td>Integration</td><td>Record topic over 60 s with button not pressed; verify ≥ 1200 messages.</td></tr>
+        </tbody></table></div>
+    </section>
+
+    <section id="s10"><div class="section-header"><span class="section-num">10.0</span><h2 class="section-title">Open Issues</h2></div>
+      <ol class="indent-list">
+        <li><strong>OPEN-01</strong> — Iteration 2+: duplicate the e-stop signal into the safety MCU for redundancy.</li>
+        <li><strong>OPEN-02</strong> — Remote/wireless e-stop from mobile app is a separate mechanism (<code>POST /rover/estop</code> in <a href="icd-mission-rest-api.html">ICD-API-001</a>) and does not appear on this topic.</li>
+      </ol>
+    </section>
+
+    <section id="s11"><div class="section-header"><span class="section-num">11.0</span><h2 class="section-title">Revision</h2></div>
+      <table class="revision-table"><thead><tr><th>Rev</th><th>Date</th><th>Author</th><th>Change</th></tr></thead>
+        <tbody><tr><td class="rev">0.1</td><td>2026-04-19</td><td>Louis Roig &amp; Claude Opus 4.7</td><td>Initial draft.</td></tr></tbody></table>
+    </section>
+
+    <div class="footer-nav"><a href="index.html">← Interfaces Index</a><span>Related: <a href="icd-safety-state.html">/safety/state</a></span></div>
+  </main>
+</div>
+<script src="../shared/shared.js"></script>
+</body></html>

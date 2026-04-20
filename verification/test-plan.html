@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VRF-PLAN · Test Plan</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=IBM+Plex+Sans:wght@300;400;500;600;700&family=IBM+Plex+Serif:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../shared/shared.css">
+</head>
+<body>
+<div class="doc-bar">
+  <a class="doc-bar-crumb" href="../index.html">← HOME</a><span class="doc-bar-sep">·</span>
+  <a class="doc-bar-crumb" href="index.html">VERIFICATION</a><span class="doc-bar-sep">·</span>
+  <span class="doc-bar-id">VRF-PLAN</span><span class="doc-bar-sep">·</span>
+  <span class="doc-bar-path">Test Plan</span><span class="doc-bar-sep">·</span>
+  <span style="color: var(--ink-dim)">REV 0.1</span>
+  <div class="doc-bar-status"><span class="status-dot"></span><span>DRAFT</span></div>
+  <div class="doc-bar-tools"><button class="tool-btn" onclick="window.print()">PRINT</button><button class="tool-btn" onclick="copyLink(event)">COPY LINK</button></div>
+</div>
+<div class="container">
+  <nav class="toc">
+    <div class="toc-title">CONTENTS</div>
+    <ul class="toc-list">
+      <li class="toc-item"><a class="toc-link" href="#s1"><span class="toc-num">1.0</span>Purpose</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s2"><span class="toc-num">2.0</span>Strategy</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s3"><span class="toc-num">3.0</span>Methods</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s4"><span class="toc-num">4.0</span>Tooling</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s5"><span class="toc-num">5.0</span>CI/CD</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s6"><span class="toc-num">6.0</span>Coverage</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s7"><span class="toc-num">7.0</span>Entry/Exit</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s8"><span class="toc-num">8.0</span>Open Issues</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s9"><span class="toc-num">9.0</span>Revision</a></li>
+    </ul>
+  </nav>
+
+  <main class="prose-serif">
+    <div class="doc-header">
+      <div class="doc-type test">VERIFICATION · PLAN</div>
+      <h1 class="doc-title">Test Plan</h1>
+      <p class="doc-subtitle">Overall verification strategy for iteration 1 — methods, tooling, coverage targets, and the entry/exit criteria for each test phase.</p>
+      <div class="doc-meta">
+        <div class="meta-item"><div class="meta-label">Document ID</div><div class="meta-value">VRF-PLAN</div></div>
+        <div class="meta-item"><div class="meta-label">Revision</div><div class="meta-value">0.1 · draft</div></div>
+      </div>
+    </div>
+
+    <section id="s1"><div class="section-header"><span class="section-num">1.0</span><h2 class="section-title">Purpose</h2></div>
+      <p>Umbrella document for iteration-1 verification. Describes the test strategy, the test methods and where each applies, the tooling we use, how CI runs them, what coverage we target, and the entry/exit criteria for progressing between test phases. Individual test protocols live in their own documents; this document is the frame they plug into.</p>
+    </section>
+
+    <section id="s2"><div class="section-header"><span class="section-num">2.0</span><h2 class="section-title">Strategy</h2></div>
+      <p>Iteration-1 verification is pragmatic, not certification-oriented. Three principles:</p>
+      <ol class="indent-list">
+        <li><strong>Safety first.</strong> Safety-critical requirements get the highest-fidelity verification available: integration tests with real DDS, fault injection, and the M6 field test. Safety correctness is the bar; there is no "good enough" for SR-001 through SR-010.</li>
+        <li><strong>Unit-first for non-safety.</strong> Pure-function components (georeferencing math, polygon validation, filter routing) are unit-tested with mocks. Cheap and fast.</li>
+        <li><strong>Field test is the final arbiter.</strong> The <a href="field-test-protocol.html">M6 field test</a> is the single pass/fail gate for iteration-1 closure. Until it runs cleanly five times, iteration 1 is not done.</li>
+      </ol>
+    </section>
+
+    <section id="s3"><div class="section-header"><span class="section-num">3.0</span><h2 class="section-title">Methods</h2></div>
+
+      <div class="data-table-wrap"><table class="data-table"><thead><tr><th>Method</th><th>Scope</th><th>Where it runs</th><th>When</th></tr></thead><tbody>
+        <tr><td><span class="field-name">Unit</span></td><td>Single class/function, mocked dependencies.</td><td>pytest (Python) / gtest (C++).</td><td>On every PR.</td></tr>
+        <tr><td><span class="field-name">Integration</span></td><td>Multiple nodes over real DDS, no physical hardware.</td><td>launch_testing with mocked serial/GPIO.</td><td>On every PR to main.</td></tr>
+        <tr><td><span class="field-name">System (HIL)</span></td><td>Full software stack with real RoboClaw/IMU on bench.</td><td>Pi 5 + sensor breakout board.</td><td>Pre-release, manually.</td></tr>
+        <tr><td><span class="field-name">Field</span></td><td>Full stack, real hardware, real yard.</td><td>Author's yard / test site.</td><td>M-milestone gates.</td></tr>
+        <tr><td><span class="field-name">Chaos / fault-inject</span></td><td>Simulate failures (kill nodes, spoof topics).</td><td>launch_testing extensions.</td><td>Pre-M6.</td></tr>
+      </tbody></table></div>
+    </section>
+
+    <section id="s4"><div class="section-header"><span class="section-num">4.0</span><h2 class="section-title">Tooling</h2></div>
+      <ul class="indent-list">
+        <li><strong>pytest</strong> for Python unit and integration tests.</li>
+        <li><strong>Google Test (gtest)</strong> for C++ unit tests (safety_monitor).</li>
+        <li><strong>launch_testing</strong> (ROS 2) for orchestrating multi-node integration tests with inline assertions.</li>
+        <li><strong>ros2 topic hz / rostopic echo</strong> as dev-bench utilities.</li>
+        <li><strong>rosbag2</strong> for record/replay in integration and chaos tests.</li>
+        <li><strong>pytest-timeout, pytest-asyncio</strong> as support plugins.</li>
+      </ul>
+    </section>
+
+    <section id="s5"><div class="section-header"><span class="section-num">5.0</span><h2 class="section-title">CI / CD</h2></div>
+      <ul class="indent-list">
+        <li>GitHub Actions runs on every PR and main-branch commit.</li>
+        <li>Matrix covers: Ubuntu 24.04 (ROS 2 Humble arm64 container), Python 3.12, gcc 13.</li>
+        <li>Unit + integration tests run in CI. System (HIL) and field tests are manual.</li>
+        <li>Failing test blocks merge.</li>
+        <li>Static checks: <code>ament_cpplint</code>, <code>ament_flake8</code>, <code>mypy</code> on Python, and the custom platform/application-boundary lint (<a href="../architecture/platform-vs-application.html">ARCH-005 §3</a>).</li>
+      </ul>
+    </section>
+
+    <section id="s6"><div class="section-header"><span class="section-num">6.0</span><h2 class="section-title">Coverage</h2></div>
+
+      <div class="data-table-wrap"><table class="data-table"><thead><tr><th>Area</th><th>Target</th><th>Minimum</th></tr></thead><tbody>
+        <tr><td>safety_monitor C++ logic</td><td>90% line</td><td>80%</td></tr>
+        <tr><td>Python nodes</td><td>70% line</td><td>60%</td></tr>
+        <tr><td>All requirements</td><td>every req has ≥ 1 test</td><td>every <a href="../requirements/safety.html">SR-*</a> has ≥ 1 test</td></tr>
+        <tr><td>ICD requirements</td><td>every <code>REQ-ICD-*</code> mapped to a test</td><td>every safety-critical ICD's reqs</td></tr>
+      </tbody></table></div>
+    </section>
+
+    <section id="s7"><div class="section-header"><span class="section-num">7.0</span><h2 class="section-title">Entry / Exit Criteria</h2></div>
+
+      <div class="subsection-title">7.1 Entry to HIL (System) testing</div>
+      <ul class="indent-list">
+        <li>All unit and integration tests passing for 1 week.</li>
+        <li>Safety-monitor SRS fully implemented.</li>
+        <li>Bench hardware assembled and calibrated (ticks-per-meter, IMU).</li>
+      </ul>
+
+      <div class="subsection-title">7.2 Entry to field testing</div>
+      <ul class="indent-list">
+        <li>All HIL tests passing for 2 days of continuous operation (with simulated commands).</li>
+        <li>E-stop button installed and verified by physical inspection.</li>
+        <li>Operator qualified on mobile app and understands abort procedures.</li>
+      </ul>
+
+      <div class="subsection-title">7.3 Exit — Iteration 1 complete</div>
+      <ul class="indent-list">
+        <li><a href="field-test-protocol.html">VRF-FIELD</a> passes 5 consecutive trials.</li>
+        <li>No known safety-critical bugs open.</li>
+        <li>All SR-* and PR-* requirements verified.</li>
+        <li>Traceability matrix shows no unverified rows.</li>
+      </ul>
+    </section>
+
+    <section id="s8"><div class="section-header"><span class="section-num">8.0</span><h2 class="section-title">Open Issues</h2></div>
+      <ol class="indent-list">
+        <li><strong>OPEN-01</strong> — Formal coverage reporting (lcov or coverage.py) not yet integrated into CI. Targeted by M3.</li>
+        <li><strong>OPEN-02</strong> — Chaos testing suite is nascent — one test (TEST-SAF-015 network chaos) defined; others pending.</li>
+      </ol>
+    </section>
+
+    <section id="s9"><div class="section-header"><span class="section-num">9.0</span><h2 class="section-title">Revision</h2></div>
+      <table class="revision-table"><thead><tr><th>Rev</th><th>Date</th><th>Author</th><th>Change</th></tr></thead><tbody><tr><td class="rev">0.1</td><td>2026-04-19</td><td>Louis Roig &amp; Claude Opus 4.7</td><td>Initial draft.</td></tr></tbody></table>
+    </section>
+
+    <div class="footer-nav"><a href="index.html">← Verification Index</a></div>
+  </main>
+</div>
+<script src="../shared/shared.js"></script>
+</body></html>

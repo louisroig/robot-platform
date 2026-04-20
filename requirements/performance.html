@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PR · Performance Requirements</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=IBM+Plex+Sans:wght@300;400;500;600;700&family=IBM+Plex+Serif:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../shared/shared.css">
+</head>
+<body>
+<div class="doc-bar">
+  <a class="doc-bar-crumb" href="../index.html">← HOME</a><span class="doc-bar-sep">·</span>
+  <a class="doc-bar-crumb" href="index.html">REQUIREMENTS</a><span class="doc-bar-sep">·</span>
+  <span class="doc-bar-id">PR</span><span class="doc-bar-sep">·</span>
+  <span class="doc-bar-path">Performance Requirements</span><span class="doc-bar-sep">·</span>
+  <span style="color: var(--ink-dim)">REV 0.1</span>
+  <div class="doc-bar-status"><span class="status-dot"></span><span>DRAFT</span></div>
+  <div class="doc-bar-tools"><button class="tool-btn" onclick="window.print()">PRINT</button><button class="tool-btn" onclick="copyLink(event)">COPY LINK</button></div>
+</div>
+<div class="container single">
+  <main class="prose-serif">
+    <div class="doc-header">
+      <div class="doc-type requirement">REQUIREMENTS · PERFORMANCE</div>
+      <h1 class="doc-title">Performance Requirements</h1>
+      <p class="doc-subtitle">Rates, latencies, throughput, endurance. PR-001 through PR-008.</p>
+      <div class="doc-meta">
+        <div class="meta-item"><div class="meta-label">Document ID</div><div class="meta-value">PR</div></div>
+        <div class="meta-item"><div class="meta-label">Prefix</div><div class="meta-value">PR-</div></div>
+        <div class="meta-item"><div class="meta-label">Count</div><div class="meta-value">8</div></div>
+      </div>
+    </div>
+
+    <section><div class="section-header"><span class="section-num">1.0</span><h2 class="section-title">Requirements</h2></div>
+      <ul class="req-list">
+
+        <li class="req-item"><div class="req-id performance">PR-001</div><div>
+          <div class="req-text">Safety state publication rate shall be at least 10 Hz.</div>
+          <div class="req-trace">allocated to: <a href="../nodes/srs-safety-monitor.html">safety_monitor</a> · verified by: <a href="../verification/test-saf-011.html">TEST-SAF-010</a></div>
+        </div></li>
+
+        <li class="req-item"><div class="req-id performance">PR-002</div><div>
+          <div class="req-text">Velocity command pipeline latency (raw → safe → motors) shall be at most 50 ms end-to-end.</div>
+          <div class="req-trace">allocated to: safety_monitor, <a href="../nodes/srs-roboclaw-driver.html">roboclaw_driver</a> · verified by: <code>TEST-SAF-025</code></div>
+        </div></li>
+
+        <li class="req-item"><div class="req-id performance">PR-003</div><div>
+          <div class="req-text">The rover shall travel at up to 0.7 m/s linearly and 1.5 rad/s angularly (iteration 1).</div>
+          <div class="req-trace">allocated to: roboclaw_driver · verified by: <code>TEST-HAL-070</code></div>
+        </div></li>
+
+        <li class="req-item"><div class="req-id performance">PR-004</div><div>
+          <div class="req-text">Visual SLAM pose estimate shall converge within 5 seconds of startup in a previously-mapped area.</div>
+          <div class="req-trace">allocated to: <a href="../nodes/integration-rtabmap.html">RTAB-Map</a>, ekf_global · verified by: <code>TEST-LOC-020</code> (iter 2 — multi-session)</div>
+        </div></li>
+
+        <li class="req-item"><div class="req-id performance">PR-005</div><div>
+          <div class="req-text">Object detection shall run at a minimum of 10 frames per second.</div>
+          <div class="req-trace">allocated to: <a href="../nodes/srs-yolo-detector.html">yolo_detector</a> · verified by: <code>TEST-PER-001</code></div>
+        </div></li>
+
+        <li class="req-item"><div class="req-id performance">PR-006</div><div>
+          <div class="req-text">The mobile app shall display telemetry within 1 second of the rover's state change.</div>
+          <div class="req-trace">allocated to: <a href="../nodes/srs-telemetry-publisher.html">telemetry_publisher</a>, mobile app · verified by: <code>TEST-API-011</code></div>
+        </div></li>
+
+        <li class="req-item"><div class="req-id performance">PR-007</div><div>
+          <div class="req-text">Rover battery life shall support at least 2 hours of continuous teleop operation.</div>
+          <div class="req-rationale">Operator-in-the-loop operation is the iteration-1 steady state; anything less makes testing impractical.</div>
+          <div class="req-trace">allocated to: rover hardware design (4S 5 Ah pack, motor draw budget) · verified by: <code>TEST-HAL-080</code> (field endurance)</div>
+        </div></li>
+
+        <li class="req-item"><div class="req-id performance">PR-008</div><div>
+          <div class="req-text">Drone mapping mission shall complete within 3 minutes for a 0.25-acre yard.</div>
+          <div class="req-trace">allocated to: <a href="../nodes/srs-drone-mission-coordinator.html">drone_mission_coordinator</a> · verified by: <a href="../verification/field-test-protocol.html">VRF-FIELD</a> step 4</div>
+        </div></li>
+
+      </ul>
+    </section>
+
+    <div class="footer-nav"><a href="safety.html">← Safety</a><span>Next: <a href="interface.html">Interface →</a></span></div>
+  </main>
+</div>
+<script src="../shared/shared.js"></script>
+</body></html>

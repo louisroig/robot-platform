@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TEST-HAL-009 · Motor driver command timeout</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=IBM+Plex+Sans:wght@300;400;500;600;700&family=IBM+Plex+Serif:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../shared/shared.css">
+</head>
+<body>
+<div class="doc-bar">
+  <a class="doc-bar-crumb" href="../index.html">← HOME</a><span class="doc-bar-sep">·</span>
+  <a class="doc-bar-crumb" href="index.html">VERIFICATION</a><span class="doc-bar-sep">·</span>
+  <span class="doc-bar-id">TEST-HAL-009</span><span class="doc-bar-sep">·</span>
+  <span class="doc-bar-path">Command timeout</span><span class="doc-bar-sep">·</span>
+  <span style="color: var(--ink-dim)">REV 0.1</span>
+  <div class="doc-bar-status"><span class="status-dot"></span><span>DRAFT</span></div>
+  <div class="doc-bar-tools"><button class="tool-btn" onclick="window.print()">PRINT</button><button class="tool-btn" onclick="copyLink(event)">COPY LINK</button></div>
+</div>
+<div class="container single">
+  <main class="prose-serif">
+    <div class="doc-header">
+      <div class="doc-type test">TEST PROTOCOL · HAL</div>
+      <h1 class="doc-title">Motor driver command timeout</h1>
+      <p class="doc-subtitle">Integration test: verify motors halt within 500 ms of loss of <code>/hal/cmd_vel_safe</code>. Second independent safety layer.</p>
+      <div class="doc-meta">
+        <div class="meta-item"><div class="meta-label">Test ID</div><div class="meta-value">TEST-HAL-009</div></div>
+        <div class="meta-item"><div class="meta-label">Method</div><div class="meta-value">Integration</div></div>
+        <div class="meta-item"><div class="meta-label">Automation</div><div class="meta-value">CI (launch_testing)</div></div>
+      </div>
+    </div>
+
+    <section><div class="section-header"><span class="section-num">1.0</span><h2 class="section-title">Requirements verified</h2></div>
+      <ul class="indent-list">
+        <li><a href="../requirements/safety.html">SR-005</a> — safety-critical components operate independently.</li>
+        <li><a href="../interfaces/icd-hal-cmd-vel-safe.html">REQ-ICD-002-03</a> — subscriber halts within 500 ms of last message.</li>
+        <li><a href="../nodes/srs-roboclaw-driver.html">SRS-HAL-001-F04</a> — command timeout.</li>
+      </ul>
+    </section>
+
+    <section><div class="section-header"><span class="section-num">2.0</span><h2 class="section-title">Method</h2></div>
+      <p>Integration test. roboclaw_driver runs with a mock serial adapter that records every sent command to an in-memory log. A test harness publishes cmd_vel_safe, then stops publishing. The test verifies that the next motor command sent to the mocked serial is zero within 500 ms of the last published cmd_vel_safe.</p>
+    </section>
+
+    <section><div class="section-header"><span class="section-num">3.0</span><h2 class="section-title">Preconditions</h2></div>
+      <ul class="indent-list">
+        <li>roboclaw_driver launched with <code>cmd_vel_timeout_ms = 500</code>.</li>
+        <li>Mock serial attached; commands logged with microsecond timestamp.</li>
+        <li>No other publisher on <code>/hal/cmd_vel_safe</code>.</li>
+      </ul>
+    </section>
+
+    <section><div class="section-header"><span class="section-num">4.0</span><h2 class="section-title">Procedure</h2></div>
+      <ol class="indent-list">
+        <li>Publish <code>Twist(linear.x=0.3, angular.z=0)</code> on <code>/hal/cmd_vel_safe</code> at 50 Hz.</li>
+        <li>Verify the mock serial log shows non-zero motor commands.</li>
+        <li>Stop publishing at time t_stop.</li>
+        <li>Scan the mock serial log for the first motor command with both tracks at zero after t_stop. Record t_zero.</li>
+        <li>Compute latency = t_zero − t_stop.</li>
+        <li>Repeat steps 1–5 ten times.</li>
+      </ol>
+    </section>
+
+    <section><div class="section-header"><span class="section-num">5.0</span><h2 class="section-title">Expected results</h2></div>
+      <ul class="indent-list">
+        <li>Every trial's latency ≤ 500 ms.</li>
+        <li>p95 &lt; 550 ms (accounting for the 500 ms threshold + ~50 ms margin for serial hop).</li>
+        <li>No non-zero motor command is issued after t_zero.</li>
+      </ul>
+    </section>
+
+    <section><div class="section-header"><span class="section-num">6.0</span><h2 class="section-title">Pass / fail</h2></div>
+      <p><strong>Pass:</strong> All 10 trials latency ≤ 600 ms (100 ms margin beyond spec); no late non-zero commands.</p>
+      <p><strong>Fail:</strong> Any trial &gt; 600 ms, or any non-zero command issued beyond t_zero + 100 ms.</p>
+    </section>
+
+    <section><div class="section-header"><span class="section-num">7.0</span><h2 class="section-title">Fixtures</h2></div>
+      <p><code>test/fixtures/mock_roboclaw_serial.py</code> — implements the RoboClaw binary protocol at serial-packet level and logs commands.</p>
+    </section>
+
+    <section><div class="section-header"><span class="section-num">8.0</span><h2 class="section-title">Automation status</h2></div>
+      <p>Automated. <code>platform_hal/test/test_hal_009_cmd_vel_timeout.py</code>. Runs on every PR.</p>
+    </section>
+
+    <section><div class="section-header"><span class="section-num">9.0</span><h2 class="section-title">Revision</h2></div>
+      <table class="revision-table"><thead><tr><th>Rev</th><th>Date</th><th>Author</th><th>Change</th></tr></thead><tbody><tr><td class="rev">0.1</td><td>2026-04-19</td><td>Louis Roig &amp; Claude Opus 4.7</td><td>Initial draft.</td></tr></tbody></table>
+    </section>
+
+    <div class="footer-nav"><a href="index.html">← Verification Index</a><span>Related: <a href="../nodes/srs-roboclaw-driver.html">SRS-HAL-001</a></span></div>
+  </main>
+</div>
+<script src="../shared/shared.js"></script>
+</body></html>

@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SRS-PER-001 · yolo_detector</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=IBM+Plex+Sans:wght@300;400;500;600;700&family=IBM+Plex+Serif:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../shared/shared.css">
+</head>
+<body>
+<div class="doc-bar">
+  <a class="doc-bar-crumb" href="../index.html">← HOME</a><span class="doc-bar-sep">·</span>
+  <a class="doc-bar-crumb" href="index.html">NODES</a><span class="doc-bar-sep">·</span>
+  <span class="doc-bar-id">SRS-PER-001</span><span class="doc-bar-sep">·</span>
+  <span class="doc-bar-path">yolo_detector</span><span class="doc-bar-sep">·</span>
+  <span style="color: var(--ink-dim)">REV 0.1</span>
+  <div class="doc-bar-status"><span class="status-dot"></span><span>DRAFT</span></div>
+  <div class="doc-bar-tools"><button class="tool-btn" onclick="window.print()">PRINT</button><button class="tool-btn" onclick="copyLink(event)">COPY LINK</button></div>
+</div>
+
+<div class="container">
+  <nav class="toc">
+    <div class="toc-title">CONTENTS</div>
+    <ul class="toc-list">
+      <li class="toc-item"><a class="toc-link" href="#s1"><span class="toc-num">1.0</span>Purpose</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s2"><span class="toc-num">2.0</span>Scope</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s3"><span class="toc-num">3.0</span>Interfaces</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s4"><span class="toc-num">4.0</span>Functional</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s5"><span class="toc-num">5.0</span>Performance</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s6"><span class="toc-num">6.0</span>Safety</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s7"><span class="toc-num">7.0</span>Dependencies</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s8"><span class="toc-num">8.0</span>Config</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s9"><span class="toc-num">9.0</span>Failure</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s10"><span class="toc-num">10.0</span>Verification</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s11"><span class="toc-num">11.0</span>Open Issues</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s12"><span class="toc-num">12.0</span>Revision</a></li>
+    </ul>
+  </nav>
+
+  <main class="prose-serif">
+    <div class="doc-header">
+      <div class="doc-type">SOFTWARE REQUIREMENTS SPECIFICATION · PERCEPTION</div>
+      <h1 class="doc-title">yolo_detector</h1>
+      <p class="doc-subtitle">Runs YOLO object detection on the OAK-D Lite's onboard NPU and publishes spatial detections for downstream consumers.</p>
+      <div class="doc-meta">
+        <div class="meta-item"><div class="meta-label">Document ID</div><div class="meta-value">SRS-PER-001</div></div>
+        <div class="meta-item"><div class="meta-label">Revision</div><div class="meta-value">0.1 · draft</div></div>
+        <div class="meta-item"><div class="meta-label">Owner</div><div class="meta-value">platform_perception</div></div>
+        <div class="meta-item"><div class="meta-label">Language</div><div class="meta-value">Python (rclpy + DepthAI)</div></div>
+        <div class="meta-item"><div class="meta-label">Classification</div><div class="meta-value">Perception</div></div>
+        <div class="meta-item"><div class="meta-label">Last Updated</div><div class="meta-value">2026-04-19</div></div>
+      </div>
+    </div>
+
+    <section id="s1"><div class="section-header"><span class="section-num">1.0</span><h2 class="section-title">Purpose</h2></div>
+      <p>Loads a YOLOv8n model onto the OAK-D Lite's VPU, runs inference on the color image stream, fuses 2D bounding-box centroids with the camera's onboard stereo depth to estimate 3D position in the rover's <code>base_link</code> frame, and publishes a DetectionArray.</p>
+    </section>
+
+    <section id="s2"><div class="section-header"><span class="section-num">2.0</span><h2 class="section-title">Scope</h2></div>
+      <p>In: DepthAI pipeline setup, model load, inference cadence, spatial centroid extraction, frame transform to base_link, publication. Out: semantic segmentation, multi-model voting, tracking (iter 2+).</p>
+    </section>
+
+    <section id="s3"><div class="section-header"><span class="section-num">3.0</span><h2 class="section-title">Interfaces</h2></div>
+      <p>Publishers: <a href="../interfaces/icd-perception-detections.html">/perception/detections</a> (target 10 Hz), <code>/diagnostics</code>. Subscribers: none (camera stream is internal to DepthAI).</p>
+    </section>
+
+    <section id="s4"><div class="section-header"><span class="section-num">4.0</span><h2 class="section-title">Functional</h2></div>
+      <ul class="req-list">
+        <li class="req-item"><div class="req-id">SRS-PER-001-F01</div><div><div class="req-text">Run YOLOv8n (5-class subset configured for relevant outdoor objects) on the OAK-D NPU at ≥ 10 fps.</div><div class="req-trace">verified by: <code>TEST-PER-001</code></div></div></li>
+        <li class="req-item"><div class="req-id">SRS-PER-001-F02</div><div><div class="req-text">For each detection above <code>confidence_threshold</code>, compute 3D position via the OAK-D's spatial-detection feature.</div><div class="req-trace">verified by: <code>TEST-PER-003</code></div></div></li>
+        <li class="req-item"><div class="req-id">SRS-PER-001-F03</div><div><div class="req-text">Transform detection coordinates from camera frame to <code>base_link</code> using the static camera pose parameters.</div><div class="req-trace">verified by: <code>TEST-PER-003</code></div></div></li>
+      </ul>
+    </section>
+
+    <section id="s5"><div class="section-header"><span class="section-num">5.0</span><h2 class="section-title">Performance</h2></div>
+      <ul class="req-list">
+        <li class="req-item"><div class="req-id">SRS-PER-001-P01</div><div><div class="req-text">Inference rate ≥ 10 fps; floor 8 fps under thermal throttling.</div><div class="req-trace">verified by: <code>TEST-PER-001</code></div></div></li>
+        <li class="req-item"><div class="req-id">SRS-PER-001-P02</div><div><div class="req-text">Pi-side CPU &lt; 15% (inference runs on VPU).</div><div class="req-trace">verified by: <code>TEST-PER-005</code></div></div></li>
+        <li class="req-item"><div class="req-id">SRS-PER-001-P03</div><div><div class="req-text">Frame-to-publish latency &lt; 150 ms p95.</div><div class="req-trace">verified by: <code>TEST-PER-006</code></div></div></li>
+      </ul>
+    </section>
+
+    <section id="s6"><div class="section-header"><span class="section-num">6.0</span><h2 class="section-title">Safety</h2></div>
+      <p>Although not itself safety-critical, the node's output feeds safety-critical filtering. If OAK-D becomes silent, downstream staleness triggers ESTOP via <a href="../nodes/srs-safety-monitor.html">safety_monitor</a>. Node shall not emit fabricated detections when the camera is unavailable.</p>
+    </section>
+
+    <section id="s7"><div class="section-header"><span class="section-num">7.0</span><h2 class="section-title">Dependencies</h2></div>
+      <ul class="indent-list"><li>depthai SDK.</li><li>depthai_ros_driver (off-the-shelf) for model install helpers.</li><li>platform_msgs.</li></ul>
+    </section>
+
+    <section id="s8"><div class="section-header"><span class="section-num">8.0</span><h2 class="section-title">Configuration</h2></div>
+      <div class="data-table-wrap"><table class="data-table"><thead><tr><th>Parameter</th><th>Default</th></tr></thead><tbody>
+        <tr><td><span class="field-name">model_blob_path</span></td><td>$HOME/.config/platform/yolov8n.blob</td></tr>
+        <tr><td><span class="field-name">confidence_threshold</span></td><td>0.4</td></tr>
+        <tr><td><span class="field-name">max_detections</span></td><td>20</td></tr>
+        <tr><td><span class="field-name">camera_frame_to_base_link_m</span></td><td>[x,y,z,roll,pitch,yaw]</td></tr>
+        <tr><td><span class="field-name">classes_enabled</span></td><td>[person, dog, cat, chair, bicycle]</td></tr>
+      </tbody></table></div>
+    </section>
+
+    <section id="s9"><div class="section-header"><span class="section-num">9.0</span><h2 class="section-title">Failure Modes</h2></div>
+      <ul class="indent-list">
+        <li>USB disconnect: DepthAI exception; node exits; systemd restart.</li>
+        <li>Model blob missing: node refuses to start with a specific log line pointing to the blob path.</li>
+        <li>Overheating: OAK-D throttles inference rate; node logs warning; downstream reacts to staleness.</li>
+      </ul>
+    </section>
+
+    <section id="s10"><div class="section-header"><span class="section-num">10.0</span><h2 class="section-title">Verification</h2></div>
+      <p>TEST-PER-001 (rate), TEST-PER-002 (confidence filtering), TEST-PER-003 (frame transform), TEST-PER-005 (CPU), TEST-PER-006 (latency).</p>
+    </section>
+
+    <section id="s11"><div class="section-header"><span class="section-num">11.0</span><h2 class="section-title">Open Issues</h2></div>
+      <ol class="indent-list">
+        <li><strong>OPEN-01</strong> — Model selection. YOLOv8n is initial; YOLOv10n or a smaller dedicated "person+pet" model may give better latency / accuracy. Benchmark pending.</li>
+        <li><strong>OPEN-02</strong> — Temporal filtering (a cheap tracker for stability) is iteration 2.</li>
+        <li><strong>OPEN-03</strong> — Night / low-light. OAK-D has IR but no IR illuminator on iteration 1. Low-light operation is out of envelope.</li>
+      </ol>
+    </section>
+
+    <section id="s12"><div class="section-header"><span class="section-num">12.0</span><h2 class="section-title">Revision</h2></div>
+      <table class="revision-table"><thead><tr><th>Rev</th><th>Date</th><th>Author</th><th>Change</th></tr></thead>
+        <tbody><tr><td class="rev">0.1</td><td>2026-04-19</td><td>Louis Roig &amp; Claude Opus 4.7</td><td>Initial draft.</td></tr></tbody></table>
+    </section>
+
+    <div class="footer-nav"><a href="index.html">← Nodes Index</a><span>Anatomy: <a href="anatomy-yolo-detector.html">ANAT-YOL</a></span></div>
+  </main>
+</div>
+<script src="../shared/shared.js"></script>
+</body></html>

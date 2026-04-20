@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FR · Functional Requirements</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=IBM+Plex+Sans:wght@300;400;500;600;700&family=IBM+Plex+Serif:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../shared/shared.css">
+</head>
+<body>
+<div class="doc-bar">
+  <a class="doc-bar-crumb" href="../index.html">← HOME</a><span class="doc-bar-sep">·</span>
+  <a class="doc-bar-crumb" href="index.html">REQUIREMENTS</a><span class="doc-bar-sep">·</span>
+  <span class="doc-bar-id">FR</span><span class="doc-bar-sep">·</span>
+  <span class="doc-bar-path">Functional Requirements</span><span class="doc-bar-sep">·</span>
+  <span style="color: var(--ink-dim)">REV 0.1</span>
+  <div class="doc-bar-status"><span class="status-dot"></span><span>DRAFT</span></div>
+  <div class="doc-bar-tools"><button class="tool-btn" onclick="window.print()">PRINT</button><button class="tool-btn" onclick="copyLink(event)">COPY LINK</button></div>
+</div>
+<div class="container single">
+  <main class="prose-serif">
+    <div class="doc-header">
+      <div class="doc-type requirement">REQUIREMENTS · FUNCTIONAL</div>
+      <h1 class="doc-title">Functional Requirements</h1>
+      <p class="doc-subtitle">What the system does, stated in user-observable terms. FR-001 through FR-010.</p>
+      <div class="doc-meta">
+        <div class="meta-item"><div class="meta-label">Document ID</div><div class="meta-value">FR</div></div>
+        <div class="meta-item"><div class="meta-label">Prefix</div><div class="meta-value">FR-</div></div>
+        <div class="meta-item"><div class="meta-label">Count</div><div class="meta-value">10</div></div>
+        <div class="meta-item"><div class="meta-label">Revision</div><div class="meta-value">0.1 · draft</div></div>
+      </div>
+    </div>
+
+    <section><div class="section-header"><span class="section-num">1.0</span><h2 class="section-title">How to read</h2></div>
+      <p>Each requirement below carries:</p>
+      <ul class="indent-list">
+        <li>A stable ID.</li>
+        <li>A statement using "shall."</li>
+        <li>Allocation — which node(s) implement it.</li>
+        <li>Verification trace — which test(s) prove it.</li>
+        <li>Rationale — why it exists, when non-obvious.</li>
+      </ul>
+    </section>
+
+    <section><div class="section-header"><span class="section-num">2.0</span><h2 class="section-title">Requirements</h2></div>
+      <ul class="req-list">
+
+        <li class="req-item"><div class="req-id">FR-001</div><div>
+          <div class="req-text">The system shall map a user-specified yard by triggering an autonomous drone flight.</div>
+          <div class="req-rationale">Establishes the aerial-imagery foundation upon which boundary drawing depends.</div>
+          <div class="req-trace">allocated to: <a href="../nodes/srs-drone-mission-coordinator.html">drone_mission_coordinator</a>, <a href="../nodes/srs-mission-api.html">mission_api</a> · verified by: <a href="../verification/field-test-protocol.html">VRF-FIELD</a></div>
+        </div></li>
+
+        <li class="req-item"><div class="req-id">FR-002</div><div>
+          <div class="req-text">The user shall be able to draw polygonal boundaries on an aerial image from a mobile application.</div>
+          <div class="req-trace">allocated to: mobile app, <a href="../nodes/srs-mission-api.html">mission_api</a>, <a href="../nodes/srs-boundary-ingester.html">boundary_ingester</a> · verified by: <a href="../verification/field-test-protocol.html">VRF-FIELD</a> steps 5–6</div>
+        </div></li>
+
+        <li class="req-item"><div class="req-id">FR-003</div><div>
+          <div class="req-text">The rover shall respect drawn boundaries by ceasing motion when the boundary is crossed.</div>
+          <div class="req-rationale">Primary purpose of the geofence subsystem.</div>
+          <div class="req-trace">allocated to: <a href="../nodes/srs-geofence-enforcer.html">geofence_enforcer</a>, <a href="../nodes/srs-safety-monitor.html">safety_monitor</a> · verified by: <a href="../verification/field-test-protocol.html">VRF-FIELD</a> step 9</div>
+        </div></li>
+
+        <li class="req-item"><div class="req-id">FR-004</div><div>
+          <div class="req-text">The rover shall detect humans and pets in its field of view and stop motion when detections occur within a configurable danger radius.</div>
+          <div class="req-trace">allocated to: <a href="../nodes/srs-yolo-detector.html">yolo_detector</a>, <a href="../nodes/srs-living-thing-filter.html">living_thing_filter</a>, <a href="../nodes/srs-safety-monitor.html">safety_monitor</a> · verified by: <a href="../verification/test-saf-011.html">TEST-SAF-011</a></div>
+        </div></li>
+
+        <li class="req-item"><div class="req-id">FR-005</div><div>
+          <div class="req-text">The user shall be able to teleoperate the rover from the mobile application.</div>
+          <div class="req-trace">allocated to: mobile app, <a href="../nodes/srs-mission-api.html">mission_api</a>, twist_mux, safety_monitor, <a href="../nodes/srs-roboclaw-driver.html">roboclaw_driver</a> · verified by: <a href="../verification/field-test-protocol.html">VRF-FIELD</a> steps 7, 10</div>
+        </div></li>
+
+        <li class="req-item"><div class="req-id">FR-006</div><div>
+          <div class="req-text">The rover shall provide live telemetry (pose, battery, safety state) to the mobile application.</div>
+          <div class="req-trace">allocated to: <a href="../nodes/srs-telemetry-publisher.html">telemetry_publisher</a> · verified by: <code>TEST-API-010</code></div>
+        </div></li>
+
+        <li class="req-item"><div class="req-id">FR-007</div><div>
+          <div class="req-text">The system shall persist drawn boundaries across reboots.</div>
+          <div class="req-trace">allocated to: <a href="../nodes/srs-boundary-ingester.html">boundary_ingester</a> · verified by: <code>TEST-MAP-001</code></div>
+        </div></li>
+
+        <li class="req-item"><div class="req-id">FR-008</div><div>
+          <div class="req-text">The drone shall capture georeferenced aerial imagery suitable for boundary drawing.</div>
+          <div class="req-trace">allocated to: <a href="../nodes/srs-drone-mission-coordinator.html">drone_mission_coordinator</a>, <a href="../nodes/srs-image-retriever.html">image_retriever</a>, <a href="../nodes/srs-georeferencer.html">georeferencer</a> · verified by: <code>TEST-MAP-010</code>, <code>TEST-MAP-011</code></div>
+        </div></li>
+
+        <li class="req-item"><div class="req-id">FR-009</div><div>
+          <div class="req-text">The system shall log all motion commands and safety events to persistent storage.</div>
+          <div class="req-rationale">Post-incident forensic capability; audit for stakeholder review.</div>
+          <div class="req-trace">allocated to: rosbag2 (systemd-managed), <a href="../nodes/srs-system-monitor.html">system_monitor</a> · verified by: <code>TEST-HAL-060</code></div>
+        </div></li>
+
+        <li class="req-item"><div class="req-id">FR-010</div><div>
+          <div class="req-text">The mobile application shall display the rover's current position overlaid on the aerial image.</div>
+          <div class="req-trace">allocated to: mobile app, <a href="../nodes/srs-telemetry-publisher.html">telemetry_publisher</a> · verified by: <a href="../verification/field-test-protocol.html">VRF-FIELD</a></div>
+        </div></li>
+
+      </ul>
+    </section>
+
+    <div class="footer-nav"><a href="index.html">← Requirements Index</a><span>Next: <a href="safety.html">Safety Requirements →</a></span></div>
+  </main>
+</div>
+<script src="../shared/shared.js"></script>
+</body></html>

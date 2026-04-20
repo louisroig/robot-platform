@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SM-SAF-001 · safety_monitor state machine</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=IBM+Plex+Sans:wght@300;400;500;600;700&family=IBM+Plex+Serif:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../shared/shared.css">
+</head>
+<body>
+
+<div class="doc-bar">
+  <a class="doc-bar-crumb" href="../index.html">← HOME</a><span class="doc-bar-sep">·</span>
+  <a class="doc-bar-crumb" href="index.html">STATE MACHINES</a><span class="doc-bar-sep">·</span>
+  <span class="doc-bar-id">SM-SAF-001</span><span class="doc-bar-sep">·</span>
+  <span class="doc-bar-path">safety_monitor</span><span class="doc-bar-sep">·</span>
+  <span style="color: var(--ink-dim)">REV 0.1</span>
+  <div class="doc-bar-status"><span class="status-dot"></span><span>DRAFT</span></div>
+  <div class="doc-bar-tools"><button class="tool-btn" onclick="window.print()">PRINT</button><button class="tool-btn" onclick="copyLink(event)">COPY LINK</button></div>
+</div>
+
+<div class="container">
+  <nav class="toc">
+    <div class="toc-title">CONTENTS</div>
+    <ul class="toc-list">
+      <li class="toc-item"><a class="toc-link" href="#s1"><span class="toc-num">1.0</span>Purpose</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s2"><span class="toc-num">2.0</span>Diagram</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s3"><span class="toc-num">3.0</span>States</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s4"><span class="toc-num">4.0</span>Transitions</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s5"><span class="toc-num">5.0</span>Invariants</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s6"><span class="toc-num">6.0</span>Timing</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s7"><span class="toc-num">7.0</span>Open Issues</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s8"><span class="toc-num">8.0</span>Revision</a></li>
+    </ul>
+  </nav>
+
+  <main class="prose-serif">
+
+    <div class="doc-header">
+      <div class="doc-type state">STATE MACHINE · SAFETY-CRITICAL</div>
+      <h1 class="doc-title">safety_monitor state machine</h1>
+      <p class="doc-subtitle">Four-state machine gating all motion and tool engagement. The most safety-load-bearing document in the corpus.</p>
+      <div class="doc-meta">
+        <div class="meta-item"><div class="meta-label">Document ID</div><div class="meta-value">SM-SAF-001</div></div>
+        <div class="meta-item"><div class="meta-label">Node</div><div class="meta-value"><a href="../nodes/srs-safety-monitor.html">safety_monitor</a></div></div>
+        <div class="meta-item"><div class="meta-label">Revision</div><div class="meta-value">0.1 · draft</div></div>
+        <div class="meta-item"><div class="meta-label">Classification</div><div class="meta-value">Safety-critical</div></div>
+        <div class="meta-item"><div class="meta-label">Last Updated</div><div class="meta-value">2026-04-19</div></div>
+      </div>
+    </div>
+
+    <section id="s1"><div class="section-header"><span class="section-num">1.0</span><h2 class="section-title">Purpose</h2></div>
+      <p>Formal specification of the four-state machine implemented inside <a href="../nodes/srs-safety-monitor.html">safety_monitor</a>. Every transition, every invariant, every timing property of that node's core loop is captured here.</p>
+    </section>
+
+    <section id="s2"><div class="section-header"><span class="section-num">2.0</span><h2 class="section-title">Diagram</h2></div>
+
+      <div class="state-diagram">
+        <svg viewBox="0 0 900 480" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+              <path d="M 0 0 L 10 5 L 0 10 z" fill="#7a8a99"/>
+            </marker>
+          </defs>
+
+          <!-- States -->
+          <rect class="state-node ok" x="80" y="180" width="140" height="80" rx="6"/>
+          <text class="state-label" x="150" y="215">OK</text>
+          <text class="state-label sub" x="150" y="235">motion + tool permitted</text>
+
+          <rect class="state-node warn" x="320" y="100" width="160" height="80" rx="6"/>
+          <text class="state-label" x="400" y="135">WARNING</text>
+          <text class="state-label sub" x="400" y="155">motion on, degraded</text>
+
+          <rect class="state-node estop" x="320" y="280" width="160" height="80" rx="6"/>
+          <text class="state-label" x="400" y="315">ESTOP</text>
+          <text class="state-label sub" x="400" y="335">motion blocked</text>
+
+          <rect class="state-node critical" x="620" y="180" width="180" height="80" rx="6"/>
+          <text class="state-label" x="710" y="215">CRITICAL</text>
+          <text class="state-label sub" x="710" y="235">battery — controlled stop</text>
+
+          <!-- Transitions (simplified labels) -->
+          <path class="transition-line" d="M 220 210 Q 280 180 320 140" marker-end="url(#arr)"/>
+          <text class="transition-label" x="265" y="175">person/tilt-warn</text>
+
+          <path class="transition-line" d="M 320 160 Q 280 200 220 230" marker-end="url(#arr)"/>
+          <text class="transition-label" x="265" y="225">clear+dwell</text>
+
+          <path class="transition-line" d="M 220 240 Q 280 280 320 320" marker-end="url(#arr)"/>
+          <text class="transition-label" x="260" y="275">person/estop/geofence</text>
+
+          <path class="transition-line" d="M 320 340 Q 260 340 220 260" marker-end="url(#arr)"/>
+          <text class="transition-label" x="250" y="355">reset + clear</text>
+
+          <path class="transition-line" d="M 480 330 Q 560 310 620 240" marker-end="url(#arr)"/>
+          <text class="transition-label" x="555" y="295">—</text>
+
+          <path class="transition-line" d="M 620 200 Q 550 160 480 140" marker-end="url(#arr)"/>
+          <text class="transition-label" x="550" y="170">batt &lt; crit</text>
+
+          <!-- OK → CRITICAL direct (battery) -->
+          <path class="transition-line" d="M 220 190 Q 450 60 620 190" marker-end="url(#arr)"/>
+          <text class="transition-label" x="420" y="70">batt &lt; crit</text>
+
+          <!-- Legend -->
+          <g transform="translate(80, 420)">
+            <rect class="state-node ok" x="0" y="0" width="14" height="14"/>
+            <text class="state-label sub" x="22" y="11" text-anchor="start">OK</text>
+            <rect class="state-node warn" x="80" y="0" width="14" height="14"/>
+            <text class="state-label sub" x="102" y="11" text-anchor="start">WARNING</text>
+            <rect class="state-node estop" x="200" y="0" width="14" height="14"/>
+            <text class="state-label sub" x="222" y="11" text-anchor="start">ESTOP</text>
+            <rect class="state-node critical" x="300" y="0" width="14" height="14"/>
+            <text class="state-label sub" x="322" y="11" text-anchor="start">CRITICAL (dashed)</text>
+          </g>
+        </svg>
+      </div>
+
+      <p>Startup: always enters <code>ESTOP</code> with reason <em>"startup — waiting for topics"</em>. Transitions to <code>OK</code> only after every subscribed topic has been received at least once.</p>
+    </section>
+
+    <section id="s3"><div class="section-header"><span class="section-num">3.0</span><h2 class="section-title">States</h2></div>
+
+      <div class="data-table-wrap"><table class="data-table"><thead><tr><th>State</th><th>Value</th><th>motion_permitted</th><th>tool_permitted</th><th>Description</th></tr></thead><tbody>
+        <tr><td><span class="field-name">OK</span></td><td>0</td><td>TRUE</td><td>TRUE</td><td>Nominal operation. No active triggers.</td></tr>
+        <tr><td><span class="field-name">WARNING</span></td><td>1</td><td>TRUE</td><td>TRUE</td><td>Degraded condition detected (person in warning radius, tilt &gt; warning_deg, battery &lt; 25% but &gt; critical). Operator notified; motion continues.</td></tr>
+        <tr><td><span class="field-name">ESTOP</span></td><td>2</td><td>FALSE</td><td>FALSE</td><td>Safe-halt. cmd_vel_safe = 0 (with ramp). Covers all motion-blocking conditions.</td></tr>
+        <tr><td><span class="field-name">CRITICAL</span></td><td>3</td><td>TRUE</td><td>FALSE</td><td>Battery critical (&lt; 15%). Motion permitted to reach a safe stop; tool blocked. Not auto-clearable.</td></tr>
+      </tbody></table></div>
+    </section>
+
+    <section id="s4"><div class="section-header"><span class="section-num">4.0</span><h2 class="section-title">Transitions</h2></div>
+
+      <div class="data-table-wrap"><table class="data-table"><thead><tr><th>From</th><th>To</th><th>Trigger</th><th>Guard</th><th>Action</th></tr></thead><tbody>
+        <tr><td>OK</td><td>WARNING</td><td>person within warning_radius_m</td><td>NOT within danger_radius</td><td>populate reasons[]</td></tr>
+        <tr><td>OK</td><td>WARNING</td><td>tilt &gt; tilt_warning_deg</td><td>NOT &gt; tilt_limit</td><td>populate reasons[]</td></tr>
+        <tr><td>OK</td><td>WARNING</td><td>battery &lt; 25%</td><td>NOT &lt; critical_batt_pct</td><td>populate reasons[]</td></tr>
+        <tr><td>WARNING</td><td>OK</td><td>all warning triggers clear</td><td>cleared for estop_dwell_clear_sec</td><td>clear reasons[]</td></tr>
+        <tr><td>OK or WARNING</td><td>ESTOP</td><td>person within danger_radius_m</td><td>—</td><td>initiate decel ramp</td></tr>
+        <tr><td>OK or WARNING</td><td>ESTOP</td><td>tilt &gt; tilt_limit_deg</td><td>—</td><td>bypass ramp, publish zero</td></tr>
+        <tr><td>OK or WARNING</td><td>ESTOP</td><td>estop_pressed = TRUE</td><td>—</td><td>latch; initiate decel ramp</td></tr>
+        <tr><td>OK or WARNING</td><td>ESTOP</td><td>geofence OUTSIDE</td><td>—</td><td>initiate decel ramp</td></tr>
+        <tr><td>OK or WARNING</td><td>ESTOP</td><td>any subscribed topic stale</td><td>—</td><td>fail-safe zero</td></tr>
+        <tr><td>OK or WARNING</td><td>ESTOP</td><td>rogue publisher detected</td><td>—</td><td>latch</td></tr>
+        <tr><td>OK or WARNING</td><td>ESTOP</td><td>NaN/Inf in cmd_vel_raw</td><td>—</td><td>publish zero</td></tr>
+        <tr><td>ESTOP</td><td>OK</td><td>all triggers clear + dwell</td><td>none are latched</td><td>clear reasons; resume passthrough</td></tr>
+        <tr><td>ESTOP</td><td>OK</td><td>/safety/reset called</td><td>all triggers currently clear</td><td>clear latch bits</td></tr>
+        <tr><td>any</td><td>CRITICAL</td><td>battery &lt; critical_batt_pct</td><td>—</td><td>set tool_permitted=FALSE, keep motion_permitted=TRUE</td></tr>
+        <tr><td>CRITICAL</td><td>any</td><td>—</td><td>—</td><td>not auto-clearable; requires charging and node restart</td></tr>
+      </tbody></table></div>
+    </section>
+
+    <section id="s5"><div class="section-header"><span class="section-num">5.0</span><h2 class="section-title">Invariants</h2></div>
+      <ul class="indent-list">
+        <li><strong>INV-1.</strong> <code>tool_permitted</code> ⇒ <code>state ∈ {OK, WARNING}</code>. Tool is never permitted in ESTOP or CRITICAL.</li>
+        <li><strong>INV-2.</strong> <code>cmd_vel_safe = 0</code> when <code>state = ESTOP</code>, within the decel-ramp tolerance. Immediate zero if tilt-triggered.</li>
+        <li><strong>INV-3.</strong> <code>/safety/state</code> published at ≥ 10 Hz under all conditions. No silence.</li>
+        <li><strong>INV-4.</strong> Hardware heartbeat (iteration 2+) pulses at 100 Hz with &lt; 5 ms jitter. Iteration 1: placeholder only.</li>
+        <li><strong>INV-5.</strong> Latched ESTOPs require <code>/safety/reset</code>. Auto-clearable do not.</li>
+        <li><strong>INV-6.</strong> <code>/safety/reset</code> returns success only if all underlying trigger conditions are currently clear.</li>
+        <li><strong>INV-7.</strong> Stale topic data is treated as worst case. Absence of data is unsafe.</li>
+      </ul>
+    </section>
+
+    <section id="s6"><div class="section-header"><span class="section-num">6.0</span><h2 class="section-title">Timing</h2></div>
+
+      <div class="data-table-wrap"><table class="data-table"><thead><tr><th>Property</th><th>Value</th></tr></thead><tbody>
+        <tr><td>Evaluation cycle period</td><td>100 ms (10 Hz)</td></tr>
+        <tr><td>Transition to ESTOP latency</td><td>≤ 50 ms from trigger condition arrival</td></tr>
+        <tr><td>Decel ramp maximum duration</td><td>350 ms (at v=0.7 m/s, a=2.0 m/s²)</td></tr>
+        <tr><td>Auto-clear dwell</td><td>3 s (<code>estop_dwell_clear_sec</code>)</td></tr>
+        <tr><td>Startup self-test duration</td><td>typically 2 s until all topics seen</td></tr>
+      </tbody></table></div>
+    </section>
+
+    <section id="s7"><div class="section-header"><span class="section-num">7.0</span><h2 class="section-title">Open Issues</h2></div>
+      <ol class="indent-list">
+        <li><strong>OPEN-01</strong> — Formal verification via TLA+ model generated from this table. Candidate iteration 3.</li>
+        <li><strong>OPEN-02</strong> — CRITICAL-to-OK path requires operator intervention (park + charge). Consider a graceful charging-detected transition in iteration 2.</li>
+        <li><strong>OPEN-03</strong> — Multiple simultaneous triggers: the <code>reasons[]</code> array preserves all, but the state is a single scalar. Consumers interested in the worst single trigger currently have to infer.</li>
+      </ol>
+    </section>
+
+    <section id="s8"><div class="section-header"><span class="section-num">8.0</span><h2 class="section-title">Revision</h2></div>
+      <table class="revision-table"><thead><tr><th>Rev</th><th>Date</th><th>Author</th><th>Change</th></tr></thead><tbody><tr><td class="rev">0.1</td><td>2026-04-19</td><td>Louis Roig &amp; Claude Opus 4.7</td><td>Initial draft.</td></tr></tbody></table>
+    </section>
+
+    <div class="footer-nav"><a href="index.html">← State Machines Index</a><span>Related: <a href="../nodes/srs-safety-monitor.html">SRS-SAF-001</a></span></div>
+  </main>
+</div>
+
+<script src="../shared/shared.js"></script>
+</body>
+</html>
