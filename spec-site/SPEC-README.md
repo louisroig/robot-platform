@@ -55,7 +55,7 @@ Change a token in `shared.css` → the whole corpus restyles consistently.
 
 ### Adding a new node SRS
 
-1. Copy any existing SRS from `nodes/` as a template (e.g., `nodes/srs-roboclaw-driver.html`).
+1. Copy any existing SRS from `nodes/` as a template (e.g., `nodes/srs-motor-driver.html`).
 2. Keep the standard sections: Purpose → Scope → Interfaces → Functional Reqs → Performance Reqs → Safety Reqs → State Machine → Dependencies → Configuration → Failure Modes → Verification → Open Issues → Revision History.
 3. In the Interfaces table, every row links to its corresponding ICD.
 4. Add a new row to `nodes/index.html` under the right subsection.

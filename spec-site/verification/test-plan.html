@@ -62,7 +62,7 @@
       <div class="data-table-wrap"><table class="data-table"><thead><tr><th>Method</th><th>Scope</th><th>Where it runs</th><th>When</th></tr></thead><tbody>
         <tr><td><span class="field-name">Unit</span></td><td>Single class/function, mocked dependencies.</td><td>pytest (Python) / gtest (C++).</td><td>On every PR.</td></tr>
         <tr><td><span class="field-name">Integration</span></td><td>Multiple nodes over real DDS, no physical hardware.</td><td>launch_testing with mocked serial/GPIO.</td><td>On every PR to main.</td></tr>
-        <tr><td><span class="field-name">System (HIL)</span></td><td>Full software stack with real RoboClaw/IMU on bench.</td><td>Pi 5 + sensor breakout board.</td><td>Pre-release, manually.</td></tr>
+        <tr><td><span class="field-name">System (HIL)</span></td><td>Full software stack with real BTS7960 H-bridges + IMU on bench.</td><td>Pi 5 + sensor breakout board.</td><td>Pre-release, manually.</td></tr>
         <tr><td><span class="field-name">Field</span></td><td>Full stack, real hardware, real yard.</td><td>Author's yard / test site.</td><td>M-milestone gates.</td></tr>
         <tr><td><span class="field-name">Chaos / fault-inject</span></td><td>Simulate failures (kill nodes, spoof topics).</td><td>launch_testing extensions.</td><td>Pre-M6.</td></tr>
       </tbody></table></div>
@@ -82,7 +82,7 @@
     <section id="s5"><div class="section-header"><span class="section-num">5.0</span><h2 class="section-title">CI / CD</h2></div>
       <ul class="indent-list">
         <li>GitHub Actions runs on every PR and main-branch commit.</li>
-        <li>Matrix covers: Ubuntu 24.04 (ROS 2 Humble arm64 container), Python 3.12, gcc 13.</li>
+        <li>Matrix covers: Ubuntu 24.04 (ROS 2 Jazzy arm64 container), Python 3.12, gcc 13.</li>
         <li>Unit + integration tests run in CI. System (HIL) and field tests are manual.</li>
         <li>Failing test blocks merge.</li>
         <li>Static checks: <code>ament_cpplint</code>, <code>ament_flake8</code>, <code>mypy</code> on Python, and the custom platform/application-boundary lint (<a href="../architecture/platform-vs-application.html">ARCH-005 §3</a>).</li>

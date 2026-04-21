@@ -37,7 +37,7 @@
           <tr><td><a href="functional.html#s2" class="field-name">FR-002</a></td><td>User draws polygon</td><td>mobile app, mission_api, boundary_ingester</td><td>VRF-FIELD</td></tr>
           <tr><td><a href="functional.html#s2" class="field-name">FR-003</a></td><td>Rover respects boundary</td><td>geofence_enforcer, safety_monitor</td><td>VRF-FIELD step 9</td></tr>
           <tr><td><a href="functional.html#s2" class="field-name">FR-004</a></td><td>Person-detect stop</td><td>yolo_detector, living_thing_filter, safety_monitor</td><td><a href="../verification/test-saf-011.html">TEST-SAF-011</a></td></tr>
-          <tr><td><a href="functional.html#s2" class="field-name">FR-005</a></td><td>Teleop from app</td><td>mobile app, mission_api, twist_mux, safety_monitor, roboclaw_driver</td><td>VRF-FIELD steps 7,10</td></tr>
+          <tr><td><a href="functional.html#s2" class="field-name">FR-005</a></td><td>Teleop from app</td><td>mobile app, mission_api, twist_mux, safety_monitor, motor_driver</td><td>VRF-FIELD steps 7,10</td></tr>
           <tr><td><a href="functional.html#s2" class="field-name">FR-006</a></td><td>Live telemetry</td><td>telemetry_publisher</td><td>TEST-API-010</td></tr>
           <tr><td><a href="functional.html#s2" class="field-name">FR-007</a></td><td>Persist boundaries</td><td>boundary_ingester</td><td>TEST-MAP-001</td></tr>
           <tr><td><a href="functional.html#s2" class="field-name">FR-008</a></td><td>Drone georef imagery</td><td>drone_mission_coordinator, image_retriever, georeferencer</td><td>TEST-MAP-010, TEST-MAP-011</td></tr>
@@ -52,15 +52,15 @@
         <thead><tr><th>Req ID</th><th>Statement (short)</th><th>Allocated to</th><th>Verified by</th></tr></thead>
         <tbody>
           <tr><td><a href="safety.html#s2" class="field-name" style="color: var(--accent-safety);">SR-001</a></td><td>Hardware e-stop &lt; 100 ms</td><td>e-stop relay</td><td>TEST-HAL-040 + HW inspection</td></tr>
-          <tr><td><a href="safety.html#s2" class="field-name" style="color: var(--accent-safety);">SR-002</a></td><td>Person-stop &lt; 500 ms</td><td>perception + safety_monitor + roboclaw_driver</td><td><a href="../verification/test-saf-011.html">TEST-SAF-011</a></td></tr>
+          <tr><td><a href="safety.html#s2" class="field-name" style="color: var(--accent-safety);">SR-002</a></td><td>Person-stop &lt; 500 ms</td><td>perception + safety_monitor + motor_driver</td><td><a href="../verification/test-saf-011.html">TEST-SAF-011</a></td></tr>
           <tr><td><a href="safety.html#s2" class="field-name" style="color: var(--accent-safety);">SR-003</a></td><td>Tilt-stop &lt; 500 ms</td><td>imu_driver + safety_monitor</td><td>TEST-SAF-018</td></tr>
           <tr><td><a href="safety.html#s2" class="field-name" style="color: var(--accent-safety);">SR-004</a></td><td>Geofence enforced</td><td>geofence_enforcer + safety_monitor</td><td>VRF-FIELD step 9</td></tr>
-          <tr><td><a href="safety.html#s2" class="field-name" style="color: var(--accent-safety);">SR-005</a></td><td>Safety-critical isolated threads</td><td>safety_monitor, roboclaw_driver</td><td>TEST-SAF-025, <a href="../verification/test-hal-009.html">TEST-HAL-009</a></td></tr>
+          <tr><td><a href="safety.html#s2" class="field-name" style="color: var(--accent-safety);">SR-005</a></td><td>Safety-critical isolated threads</td><td>safety_monitor, motor_driver</td><td>TEST-SAF-025, <a href="../verification/test-hal-009.html">TEST-HAL-009</a></td></tr>
           <tr><td><a href="safety.html#s2" class="field-name" style="color: var(--accent-safety);">SR-006</a></td><td>Stale input = worst case</td><td>safety_monitor</td><td>TEST-SAF-014</td></tr>
           <tr><td><a href="safety.html#s2" class="field-name" style="color: var(--accent-safety);">SR-007</a></td><td>Latched states need operator action</td><td>safety_monitor, mission_api</td><td>TEST-SAF-022</td></tr>
           <tr><td><a href="safety.html#s2" class="field-name" style="color: var(--accent-safety);">SR-008</a></td><td>Startup self-test</td><td>safety_monitor</td><td>TEST-SAF-020</td></tr>
           <tr><td><a href="safety.html#s2" class="field-name" style="color: var(--accent-safety);">SR-009</a></td><td>Rogue-publisher detect</td><td>system_monitor, safety_monitor</td><td><a href="../verification/test-saf-016.html">TEST-SAF-016</a></td></tr>
-          <tr><td><a href="safety.html#s2" class="field-name" style="color: var(--accent-safety);">SR-010</a></td><td>NaN/Inf rejection</td><td>roboclaw_driver, safety_monitor</td><td>TEST-HAL-011</td></tr>
+          <tr><td><a href="safety.html#s2" class="field-name" style="color: var(--accent-safety);">SR-010</a></td><td>NaN/Inf rejection</td><td>motor_driver, safety_monitor</td><td>TEST-HAL-011</td></tr>
         </tbody>
       </table></div>
     </section>
@@ -70,8 +70,8 @@
         <thead><tr><th>Req ID</th><th>Statement (short)</th><th>Allocated to</th><th>Verified by</th></tr></thead>
         <tbody>
           <tr><td><a href="performance.html" class="field-name" style="color: var(--accent-param);">PR-001</a></td><td>/safety/state ≥ 10 Hz</td><td>safety_monitor</td><td><a href="../verification/test-saf-011.html">TEST-SAF-010</a></td></tr>
-          <tr><td><a href="performance.html" class="field-name" style="color: var(--accent-param);">PR-002</a></td><td>Cmd pipeline ≤ 50 ms</td><td>safety_monitor, roboclaw_driver</td><td>TEST-SAF-025</td></tr>
-          <tr><td><a href="performance.html" class="field-name" style="color: var(--accent-param);">PR-003</a></td><td>Velocity bounds</td><td>roboclaw_driver</td><td>TEST-HAL-070</td></tr>
+          <tr><td><a href="performance.html" class="field-name" style="color: var(--accent-param);">PR-002</a></td><td>Cmd pipeline ≤ 50 ms</td><td>safety_monitor, motor_driver</td><td>TEST-SAF-025</td></tr>
+          <tr><td><a href="performance.html" class="field-name" style="color: var(--accent-param);">PR-003</a></td><td>Velocity bounds</td><td>motor_driver</td><td>TEST-HAL-070</td></tr>
           <tr><td><a href="performance.html" class="field-name" style="color: var(--accent-param);">PR-004</a></td><td>SLAM convergence &lt; 5 s</td><td>RTAB-Map, ekf_global</td><td>TEST-LOC-020 (iter 2)</td></tr>
           <tr><td><a href="performance.html" class="field-name" style="color: var(--accent-param);">PR-005</a></td><td>Detection ≥ 10 fps</td><td>yolo_detector</td><td>TEST-PER-001</td></tr>
           <tr><td><a href="performance.html" class="field-name" style="color: var(--accent-param);">PR-006</a></td><td>Telemetry &lt; 1 s</td><td>telemetry_publisher, mobile app</td><td>TEST-API-011</td></tr>

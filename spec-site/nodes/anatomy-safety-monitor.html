@@ -215,7 +215,7 @@
         <div class="leaf-desc">Gated velocity command — passthrough or zero.</div>
         <div class="leaf-details"><div class="leaf-details-inner">
           <span class="label">Message</span>geometry_msgs/Twist
-          <span class="label">Consumer</span>roboclaw_driver (SOLE).
+          <span class="label">Consumer</span>motor_driver (SOLE).
           <span class="label">Invariant</span>When state != OK, linear.x and angular.z are zero (within decel ramp).
         </div></div>
       </div>
@@ -261,7 +261,7 @@
       <div class="leaf"><div class="leaf-header"><span class="leaf-name">Watchdog</span><span class="leaf-type">systemd + ROS</span></div>
         <div class="leaf-desc">Two-level supervision.</div>
         <div class="leaf-details"><div class="leaf-details-inner">
-          <span class="label">systemd</span>Crash → restart &lt; 2s. During gap, roboclaw_driver timeout halts motors.
+          <span class="label">systemd</span>Crash → restart &lt; 2s. During gap, motor_driver timeout halts motors.
           <span class="label">ROS diagnostic</span>Publishes health; system_monitor aggregates.
         </div></div>
       </div>

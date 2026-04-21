@@ -110,14 +110,14 @@
 
         <div class="participant-card sub">
           <div class="participant-role">Subscriber</div>
-          <div class="participant-name">roboclaw_driver</div>
+          <div class="participant-name">motor_driver</div>
           <div class="participant-detail">
             <strong>Package</strong>
             platform_hal
             <strong>SRS</strong>
-            <a href="../nodes/srs-roboclaw-driver.html">SRS-HAL-001</a>
+            <a href="../nodes/srs-motor-driver.html">SRS-HAL-001</a>
             <strong>Responsibility</strong>
-            Converts incoming Twist to per-side track velocities via skid-steer kinematics. Sends serial commands to the RoboClaw motor controller.
+            Converts incoming Twist to per-side track velocities via skid-steer kinematics. Drives PWM and direction signals via GPIO to the BTS7960 H-bridges.
             <strong>Failure behavior</strong>
             Implements <code>cmd_vel_timeout_ms</code> (default 500 ms). If no message received within timeout, commands zero velocity. Provides a second independent safety layer against communication loss.
           </div>
@@ -392,14 +392,14 @@ angular.z(t) <span class="keyword">=</span> sign(ω₀) <span class="keyword">×
           <div class="req-id">REQ-ICD-002-03</div>
           <div>
             <div class="req-text">The subscriber shall halt motor commands within 500 ms of the last received message.</div>
-            <div class="req-trace">allocated to: <a href="../nodes/srs-roboclaw-driver.html">roboclaw_driver</a> · verified by: <a href="../verification/test-hal-009.html">TEST-HAL-009</a></div>
+            <div class="req-trace">allocated to: <a href="../nodes/srs-motor-driver.html">motor_driver</a> · verified by: <a href="../verification/test-hal-009.html">TEST-HAL-009</a></div>
           </div>
         </li>
         <li class="req-item">
           <div class="req-id">REQ-ICD-002-04</div>
           <div>
             <div class="req-text">The subscriber shall reject messages containing non-finite values (NaN, ±Inf) in any Twist field and trigger safe-halt.</div>
-            <div class="req-trace">allocated to: <a href="../nodes/srs-roboclaw-driver.html">roboclaw_driver</a> · verified by: <code>TEST-HAL-011</code></div>
+            <div class="req-trace">allocated to: <a href="../nodes/srs-motor-driver.html">motor_driver</a> · verified by: <code>TEST-HAL-011</code></div>
           </div>
         </li>
         <li class="req-item">
@@ -413,7 +413,7 @@ angular.z(t) <span class="keyword">=</span> sign(ω₀) <span class="keyword">×
           <div class="req-id">REQ-ICD-002-06</div>
           <div>
             <div class="req-text">The QoS profile of both publisher and subscriber shall match §6. Deviations shall be caught by <code>TEST-QOS-003</code> at startup.</div>
-            <div class="req-trace">allocated to: safety_monitor, roboclaw_driver · verified by: <code>TEST-QOS-003</code></div>
+            <div class="req-trace">allocated to: safety_monitor, motor_driver · verified by: <code>TEST-QOS-003</code></div>
           </div>
         </li>
         <li class="req-item">

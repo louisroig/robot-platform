@@ -2,7 +2,7 @@
 <html lang="en" class="anatomy">
 <head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ANAT-HAL · roboclaw_driver anatomy</title>
+<title>ANAT-HAL · motor_driver anatomy</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=IBM+Plex+Sans:wght@300;400;500;600&family=IBM+Plex+Serif:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../shared/shared.css">
@@ -10,10 +10,10 @@
 <body class="anatomy">
 
 <div class="anatomy-header">
-  <div class="anatomy-header-title">NODE ANATOMY · <strong>roboclaw_driver</strong></div>
+  <div class="anatomy-header-title">NODE ANATOMY · <strong>motor_driver</strong></div>
   <div class="anatomy-header-subtitle">hardware abstraction · motor controller boundary</div>
   <div class="anatomy-header-controls">
-    <a href="srs-roboclaw-driver.html" class="ctrl-btn">SRS</a>
+    <a href="srs-motor-driver.html" class="ctrl-btn">SRS</a>
     <a href="index.html" class="ctrl-btn">← NODES</a>
     <span class="zoom-indicator" id="zoomIndicator">100%</span>
     <button class="ctrl-btn" id="zoomOut">−</button><button class="ctrl-btn" id="zoomIn">+</button>
@@ -29,8 +29,8 @@
     <div class="center-node" id="centerNode">
       <div class="reticle tl"></div><div class="reticle tr"></div><div class="reticle bl"></div><div class="reticle br"></div>
       <div class="center-label">ROS 2 NODE · HAL</div>
-      <div class="center-name">roboclaw_driver</div>
-      <div class="center-desc">Vendor-boundary node for the RoboClaw 2x15A motor controller. Translates Twist commands into skid-steer per-track velocities, integrates encoder counts into odometry, reports battery. Above this layer the motor controller is generic; below it, vendor-specific.</div>
+      <div class="center-name">motor_driver</div>
+      <div class="center-desc">Vendor-boundary node for two BTS7960 43A H-bridges driving the left and right tracks. Translates Twist commands into open-loop PWM duty cycle and direction via GPIO. No encoder feedback; no battery telemetry. Above this layer the motor control is generic; below it, GPIO-level.</div>
       <div class="center-meta">
         <span>LANG · <strong>Python</strong></span>
         <span>PKG · <strong>platform_hal</strong></span>
@@ -63,11 +63,11 @@
         </div></div>
       </div>
 
-      <div class="leaf"><div class="leaf-header"><span class="leaf-name">Encoder integration</span><span class="leaf-type">50 Hz</span></div>
-        <div class="leaf-desc">Midpoint integration for pose.</div>
+      <div class="leaf"><div class="leaf-header"><span class="leaf-name">Velocity to PWM mapping</span><span class="leaf-type">open-loop</span></div>
+        <div class="leaf-desc">Map track velocity → duty cycle 0–100%; sign determines direction.</div>
         <div class="leaf-details"><div class="leaf-details-inner">
-          <span class="label">Wrap</span>Signed-int32 delta handles single wrap per cycle.
-          <span class="label">Covariance</span>Tuned from calibration runs.
+          <span class="label">Calibration</span>Per-speed empirical mapping; accounts for track slip.
+          <span class="label">Update rate</span>50 Hz.
         </div></div>
       </div>
 
@@ -79,16 +79,16 @@
       </div>
 
       <div class="leaf"><div class="leaf-header"><span class="leaf-name">NaN/Inf guard</span><span class="leaf-type">defensive</span></div>
-        <div class="leaf-desc">Reject non-finite Twist fields before serial send.</div>
+        <div class="leaf-desc">Reject non-finite Twist fields before GPIO write.</div>
         <div class="leaf-details"><div class="leaf-details-inner">
           <span class="label">Action</span>Safe-halt + diagnostic WARN.
         </div></div>
       </div>
 
-      <div class="leaf"><div class="leaf-header"><span class="leaf-name">Encoder cross-check</span><span class="leaf-type">health</span></div>
-        <div class="leaf-desc">Compare commanded vs. reported velocity.</div>
+      <div class="leaf"><div class="leaf-header"><span class="leaf-name">Stall detection (IMU cross-check)</span><span class="leaf-type">health</span></div>
+        <div class="leaf-desc">Compare commanded nonzero velocity vs. IMU acceleration.</div>
         <div class="leaf-details"><div class="leaf-details-inner">
-          <span class="label">Use</span>Detect frozen encoder; publish degraded odom with increased covariance.
+          <span class="label">Use</span>Detect motor stall or BTS7960 thermal shutdown; publish degraded diagnostic.
         </div></div>
       </div>
     </div>
@@ -96,62 +96,59 @@
     <div class="branch param" style="left: 3200px; top: 200px;">
       <div class="branch-header"><span class="branch-letter">C</span><span class="branch-title">Parameters</span><span class="branch-count">config</span></div>
 
-      <div class="leaf"><div class="leaf-header"><span class="leaf-name">serial_port</span><span class="leaf-type">string</span></div>
-        <div class="leaf-desc">/dev/ttyACM_roboclaw (udev).</div></div>
+      <div class="leaf"><div class="leaf-header"><span class="leaf-name">pwm_left_pin</span><span class="leaf-type">int (BCM)</span></div>
+        <div class="leaf-desc">GPIO pin for left track PWM.</div></div>
+      <div class="leaf"><div class="leaf-header"><span class="leaf-name">dir_left_pin</span><span class="leaf-type">int (BCM)</span></div></div>
+      <div class="leaf"><div class="leaf-header"><span class="leaf-name">pwm_right_pin</span><span class="leaf-type">int (BCM)</span></div></div>
+      <div class="leaf"><div class="leaf-header"><span class="leaf-name">dir_right_pin</span><span class="leaf-type">int (BCM)</span></div></div>
+      <div class="leaf"><div class="leaf-header"><span class="leaf-name">pwm_frequency_hz</span><span class="leaf-type">int · 2000</span></div></div>
       <div class="leaf"><div class="leaf-header"><span class="leaf-name">track_width_m</span><span class="leaf-type">double · 0.28</span></div></div>
-      <div class="leaf"><div class="leaf-header"><span class="leaf-name">ticks_per_meter</span><span class="leaf-type">int</span></div>
-        <div class="leaf-desc">Calibrated per chassis build.</div></div>
       <div class="leaf"><div class="leaf-header"><span class="leaf-name">max_linear_vel</span><span class="leaf-type">double · 0.7</span></div></div>
       <div class="leaf"><div class="leaf-header"><span class="leaf-name">max_angular_vel</span><span class="leaf-type">double · 1.5</span></div></div>
       <div class="leaf"><div class="leaf-header"><span class="leaf-name">cmd_vel_timeout_ms</span><span class="leaf-type">int · 500</span></div></div>
-      <div class="leaf"><div class="leaf-header"><span class="leaf-name">battery_chemistry</span><span class="leaf-type">enum · LIPO</span></div></div>
     </div>
 
     <div class="branch pub" style="left: 3200px; top: 1100px;">
-      <div class="branch-header"><span class="branch-letter">D</span><span class="branch-title">Publishers · Outputs</span><span class="branch-count">3 topics</span></div>
+      <div class="branch-header"><span class="branch-letter">D</span><span class="branch-title">Publishers · Outputs</span><span class="branch-count">1 topic</span></div>
 
-      <div class="leaf"><div class="leaf-header"><span class="leaf-name">/hal/odom</span><span class="leaf-type">50 Hz</span></div>
-        <div class="leaf-desc">Wheel odometry. See ICD-HAL-003.</div></div>
-      <div class="leaf"><div class="leaf-header"><span class="leaf-name">/hal/odom_status</span><span class="leaf-type">10 Hz</span></div>
-        <div class="leaf-desc">Per-track velocity, raw ticks, encoder health flag.</div></div>
-      <div class="leaf"><div class="leaf-header"><span class="leaf-name">/hal/battery</span><span class="leaf-type">1 Hz</span></div>
-        <div class="leaf-desc">BatteryState derived from main-battery ADC.</div></div>
+      <div class="leaf"><div class="leaf-header"><span class="leaf-name">/diagnostics</span><span class="leaf-type">1 Hz</span></div>
+        <div class="leaf-desc">GPIO health, stall detection, thermal alerts.</div></div>
     </div>
 
     <div class="branch hw" style="left: 1630px; top: 1800px; width: 400px;">
-      <div class="branch-header"><span class="branch-letter">E</span><span class="branch-title">Hardware Interactions</span><span class="branch-count">serial</span></div>
+      <div class="branch-header"><span class="branch-letter">E</span><span class="branch-title">Hardware Interactions</span><span class="branch-count">GPIO</span></div>
 
-      <div class="leaf"><div class="leaf-header"><span class="leaf-name">RoboClaw USB serial</span><span class="leaf-type">115200 8N1</span></div>
-        <div class="leaf-desc">USB-serial to the 2x15A controller.</div>
+      <div class="leaf"><div class="leaf-header"><span class="leaf-name">BTS7960 L PWM + DIR</span><span class="leaf-type">hardware PWM</span></div>
+        <div class="leaf-desc">GPIO pins to left H-bridge.</div>
         <div class="leaf-details"><div class="leaf-details-inner">
-          <span class="label">Device</span>/dev/ttyACM_roboclaw (udev symlink)
-          <span class="label">Protocol</span>Binary packet: header | cmd | args | CRC16
-          <span class="label">Commands used</span>Drive M1/M2, read encoders, read main battery voltage, read main battery current.
+          <span class="label">Frequency</span>2 kHz (configurable)
+          <span class="label">Duty cycle</span>0–100% proportional to track speed
+          <span class="label">Direction</span>DIR pin logic: 1 = forward, 0 = reverse (or vice versa per wiring)
         </div></div>
       </div>
 
-      <div class="leaf"><div class="leaf-header"><span class="leaf-name">Encoder inputs</span><span class="leaf-type">quadrature</span></div>
-        <div class="leaf-desc">Onboard encoders wired to RoboClaw. Not read directly by Pi.</div></div>
+      <div class="leaf"><div class="leaf-header"><span class="leaf-name">BTS7960 R PWM + DIR</span><span class="leaf-type">hardware PWM</span></div>
+        <div class="leaf-desc">GPIO pins to right H-bridge.</div></div>
     </div>
 
     <div class="branch safety" style="left: 60px; top: 1500px;">
       <div class="branch-header"><span class="branch-letter">F</span><span class="branch-title">Lifecycle &amp; Diagnostics</span><span class="branch-count">runtime</span></div>
 
-      <div class="leaf"><div class="leaf-header"><span class="leaf-name">Serial open retry</span><span class="leaf-type">startup</span></div>
-        <div class="leaf-desc">Re-attempt open every 1 s on failure; emit diagnostic.</div></div>
+      <div class="leaf"><div class="leaf-header"><span class="leaf-name">GPIO init retry</span><span class="leaf-type">startup</span></div>
+        <div class="leaf-desc">Re-attempt GPIO config every 1 s on failure; emit diagnostic.</div></div>
 
       <div class="leaf"><div class="leaf-header"><span class="leaf-name">Startup zero-velocity hold</span><span class="leaf-type">safety default</span></div>
         <div class="leaf-desc">Motors commanded to zero until first valid cmd_vel_safe received.</div>
         <div class="leaf-details"><div class="leaf-details-inner">
-          <span class="label">Why</span>Otherwise a stale RoboClaw command could start the motors at boot.
+          <span class="label">Why</span>Otherwise a stale command could drive the motors at boot.
         </div></div>
       </div>
 
       <div class="leaf"><div class="leaf-header"><span class="leaf-name">Diagnostic publisher</span><span class="leaf-type">1 Hz</span></div>
-        <div class="leaf-desc">Publishes encoder health, serial state, current draw.</div></div>
+        <div class="leaf-desc">Publishes GPIO health, stall flags, thermal status.</div></div>
 
       <div class="leaf"><div class="leaf-header"><span class="leaf-name">Performance budget</span><span class="leaf-type">real-time</span></div>
-        <div class="leaf-desc">Serial round-trip ≤ 10 ms; CPU &lt; 8%.</div></div>
+        <div class="leaf-desc">GPIO write ≤ 5 ms; CPU &lt; 3%.</div></div>
     </div>
 
   </div>

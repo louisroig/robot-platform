@@ -46,7 +46,7 @@
 
         <li class="req-item"><div class="req-id safety">SR-002</div><div>
           <div class="req-text">The system shall cease all motion within 500 ms of detecting a person within 3 meters.</div>
-          <div class="req-trace">allocated to: <a href="../nodes/srs-yolo-detector.html">yolo_detector</a>, <a href="../nodes/srs-living-thing-filter.html">living_thing_filter</a>, <a href="../nodes/srs-safety-monitor.html">safety_monitor</a>, <a href="../nodes/srs-roboclaw-driver.html">roboclaw_driver</a> · verified by: <a href="../verification/test-saf-011.html">TEST-SAF-011</a></div>
+          <div class="req-trace">allocated to: <a href="../nodes/srs-yolo-detector.html">yolo_detector</a>, <a href="../nodes/srs-living-thing-filter.html">living_thing_filter</a>, <a href="../nodes/srs-safety-monitor.html">safety_monitor</a>, <a href="../nodes/srs-motor-driver.html">motor_driver</a> · verified by: <a href="../verification/test-saf-011.html">TEST-SAF-011</a></div>
         </div></li>
 
         <li class="req-item"><div class="req-id safety">SR-003</div><div>
@@ -62,7 +62,7 @@
         <li class="req-item"><div class="req-id safety">SR-005</div><div>
           <div class="req-text">Safety-critical software shall operate independently of non-critical software (separate callback groups, separate threads).</div>
           <div class="req-rationale">Prevents a stuck-non-critical callback from blocking safety reasoning.</div>
-          <div class="req-trace">allocated to: <a href="../nodes/srs-safety-monitor.html">safety_monitor</a>, <a href="../nodes/srs-roboclaw-driver.html">roboclaw_driver</a> · verified by: <code>TEST-SAF-025</code>, <a href="../verification/test-hal-009.html">TEST-HAL-009</a></div>
+          <div class="req-trace">allocated to: <a href="../nodes/srs-safety-monitor.html">safety_monitor</a>, <a href="../nodes/srs-motor-driver.html">motor_driver</a> · verified by: <code>TEST-SAF-025</code>, <a href="../verification/test-hal-009.html">TEST-HAL-009</a></div>
         </div></li>
 
         <li class="req-item"><div class="req-id safety">SR-006</div><div>
@@ -90,7 +90,7 @@
 
         <li class="req-item"><div class="req-id safety">SR-010</div><div>
           <div class="req-text">Non-finite values (NaN, Inf) in motion commands shall trigger safe-halt.</div>
-          <div class="req-trace">allocated to: <a href="../nodes/srs-roboclaw-driver.html">roboclaw_driver</a>, <a href="../nodes/srs-safety-monitor.html">safety_monitor</a> · verified by: <code>TEST-HAL-011</code></div>
+          <div class="req-trace">allocated to: <a href="../nodes/srs-motor-driver.html">motor_driver</a>, <a href="../nodes/srs-safety-monitor.html">safety_monitor</a> · verified by: <code>TEST-HAL-011</code></div>
         </div></li>
 
       </ul>

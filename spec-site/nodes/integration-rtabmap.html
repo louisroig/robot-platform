@@ -22,7 +22,7 @@
     <div class="doc-header">
       <div class="doc-type">INTEGRATION NOTES · OFF-THE-SHELF</div>
       <h1 class="doc-title">RTAB-Map Configuration</h1>
-      <p class="doc-subtitle">Visual SLAM via RTAB-Map using the OAK-D Lite stereo pair. Deployment profile and tuning highlights.</p>
+      <p class="doc-subtitle">Visual SLAM via RTAB-Map using the OAK-D Lite FF stereo pair. Deployment profile and tuning highlights.</p>
       <div class="doc-meta">
         <div class="meta-item"><div class="meta-label">Document ID</div><div class="meta-value">INT-RTAB</div></div>
         <div class="meta-item"><div class="meta-label">Revision</div><div class="meta-value">0.1 · draft</div></div>
@@ -31,12 +31,12 @@
     </div>
 
     <section><div class="section-header"><span class="section-num">1.0</span><h2 class="section-title">Purpose</h2></div>
-      <p>Visual SLAM for the ground rover. RTAB-Map consumes the OAK-D Lite's stereo image streams and the IMU, produces a pose estimate and a 3D feature map, and publishes pose via <code>/rtabmap/odom</code> — which the global EKF fuses with <a href="../interfaces/icd-odometry-filtered.html">/odometry/filtered</a>.</p>
+      <p>Visual SLAM for the ground rover. RTAB-Map consumes the OAK-D Lite FF's stereo image streams and the IMU, produces a pose estimate and a 3D feature map, and publishes pose via <code>/rtabmap/odom</code> — which the global EKF fuses with <a href="../interfaces/icd-odometry-filtered.html">/odometry/filtered</a>.</p>
     </section>
 
     <section><div class="section-header"><span class="section-num">2.0</span><h2 class="section-title">Pipeline</h2></div>
       <ul class="indent-list">
-        <li><strong>Input.</strong> Stereo left+right color from OAK-D Lite at 720p 15 fps; IMU pre-integrated via <a href="../interfaces/icd-hal-imu-data.html">/hal/imu/data</a>.</li>
+        <li><strong>Input.</strong> Stereo left+right color from OAK-D Lite FF at 720p 15 fps; IMU pre-integrated via <a href="../interfaces/icd-hal-imu-data.html">/hal/imu/data</a>.</li>
         <li><strong>Front-end.</strong> GFTT+BRIEF features (fast on CPU; sufficient for outdoor grass-and-foliage scenes).</li>
         <li><strong>Back-end.</strong> g2o optimization on loop closures.</li>
         <li><strong>Output.</strong> <code>/rtabmap/odom</code> (pose in <code>map</code> frame), <code>/rtabmap/grid_map</code> (unused in iter 1).</li>

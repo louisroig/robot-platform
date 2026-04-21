@@ -45,7 +45,7 @@
     <div class="doc-header">
       <div class="doc-type interface">INTERFACE CONTROL DOCUMENT</div>
       <h1 class="doc-title"><code>/perception/detections</code></h1>
-      <p class="doc-subtitle">Raw YOLO object detections from the OAK-D Lite. All classes, no filtering. Input to the living-thing filter.</p>
+      <p class="doc-subtitle">Raw YOLO object detections from the OAK-D Lite FF. All classes, no filtering. Input to the living-thing filter.</p>
       <div class="doc-meta">
         <div class="meta-item"><div class="meta-label">Document ID</div><div class="meta-value">ICD-PER-001</div></div>
         <div class="meta-item"><div class="meta-label">Revision</div><div class="meta-value">0.1 · draft</div></div>
@@ -56,14 +56,14 @@
     </div>
 
     <section id="s1"><div class="section-header"><span class="section-num">1.0</span><h2 class="section-title">Purpose</h2></div>
-      <p>The <code>/perception/detections</code> topic carries all object detections from the YOLO model running on the OAK-D Lite's onboard NPU. Every detection regardless of class is published here. Downstream, the <a href="../nodes/srs-living-thing-filter.html">living_thing_filter</a> bifurcates the stream into <a href="icd-perception-people.html">/perception/people</a> and <a href="icd-perception-obstacles.html">/perception/obstacles</a>.</p>
+      <p>The <code>/perception/detections</code> topic carries all object detections from the YOLO model running on the OAK-D Lite FF's onboard NPU. Every detection regardless of class is published here. Downstream, the <a href="../nodes/srs-living-thing-filter.html">living_thing_filter</a> bifurcates the stream into <a href="icd-perception-people.html">/perception/people</a> and <a href="icd-perception-obstacles.html">/perception/obstacles</a>.</p>
       <p>This topic is not directly consumed by safety. Safety listens to the filtered <code>/perception/people</code> topic; this raw stream exists for observability, debugging, and for any downstream consumer that wants custom filtering.</p>
     </section>
 
     <section id="s2"><div class="section-header"><span class="section-num">2.0</span><h2 class="section-title">Participants</h2></div>
       <div class="participants">
         <div class="participant-card pub"><div class="participant-role">Publisher</div><div class="participant-name">yolo_detector</div>
-          <div class="participant-detail"><strong>SRS</strong><a href="../nodes/srs-yolo-detector.html">SRS-PER-001</a><strong>Pipeline</strong>OAK-D Lite color stream → YOLO model on onboard NPU → driver-side post-processing → publish.</div></div>
+          <div class="participant-detail"><strong>SRS</strong><a href="../nodes/srs-yolo-detector.html">SRS-PER-001</a><strong>Pipeline</strong>OAK-D Lite FF color stream → YOLO model on onboard NPU → driver-side post-processing → publish.</div></div>
         <div class="participant-card sub"><div class="participant-role">Subscriber</div><div class="participant-name">living_thing_filter</div>
           <div class="participant-detail"><strong>Role</strong>Splits into people vs. obstacles by COCO class.</div></div>
       </div>
@@ -89,7 +89,7 @@ string source          <span class="comment"># "ground_camera" (iter 1) | "drone
     <section id="s4"><div class="section-header"><span class="section-num">4.0</span><h2 class="section-title">Semantics</h2></div>
       <p>Each array represents all detections from one inference cycle. An empty array means "no detections above confidence threshold," not "camera failed" (that would cause the topic to stop publishing).</p>
       <p>Classes follow the COCO 80-class label set. The default confidence threshold is 0.4, tunable via <code>confidence_threshold</code> parameter. Below-threshold detections are dropped before publication to reduce bandwidth.</p>
-      <p>Position is derived from the stereo depth at the bounding-box centroid. Stereo baseline 7.5 cm (OAK-D Lite). Distance accuracy at 3 m is approximately ± 10 cm; at 10 m approximately ± 1 m.</p>
+      <p>Position is derived from the stereo depth at the bounding-box centroid. Stereo baseline 7.5 cm (OAK-D Lite FF). Distance accuracy at 3 m is approximately ± 10 cm; at 10 m approximately ± 1 m.</p>
     </section>
 
     <section id="s5"><div class="section-header"><span class="section-num">5.0</span><h2 class="section-title">Timing</h2></div>

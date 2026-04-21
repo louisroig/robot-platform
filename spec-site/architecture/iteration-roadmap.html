@@ -20,7 +20,7 @@
   <span class="doc-bar-sep">·</span>
   <span class="doc-bar-path">Iteration Roadmap</span>
   <span class="doc-bar-sep">·</span>
-  <span style="color: var(--ink-dim)">REV 0.2</span>
+  <span style="color: var(--ink-dim)">REV 0.3</span>
   <div class="doc-bar-status">
     <span class="status-dot"></span>
     <span>DRAFT</span>
@@ -57,7 +57,7 @@
 
       <div class="doc-meta">
         <div class="meta-item"><div class="meta-label">Document ID</div><div class="meta-value">ARCH-006</div></div>
-        <div class="meta-item"><div class="meta-label">Revision</div><div class="meta-value">0.2 · draft</div></div>
+        <div class="meta-item"><div class="meta-label">Revision</div><div class="meta-value">0.3 · draft</div></div>
         <div class="meta-item"><div class="meta-label">Owner</div><div class="meta-value">systems</div></div>
         <div class="meta-item"><div class="meta-label">Classification</div><div class="meta-value">Internal — Draft</div></div>
         <div class="meta-item"><div class="meta-label">Last Updated</div><div class="meta-value">2026-04-20</div></div>
@@ -213,7 +213,7 @@
             <tr><th>Milestone</th><th>Content</th><th>Target</th></tr>
           </thead>
           <tbody>
-            <tr><td><span class="field-name">M1</span></td><td>Rover drives under teleop. RoboClaw + IMU + odometry working.</td><td>2026-05</td></tr>
+            <tr><td><span class="field-name">M1</span></td><td>Rover drives under teleop. BTS7960 PWM + IMU working.</td><td>2026-05</td></tr>
             <tr><td><span class="field-name">M2</span></td><td>Safety monitor + e-stop + person-detect ESTOP gating integrated.</td><td>2026-06</td></tr>
             <tr><td><span class="field-name">M3</span></td><td>Drone flies autonomously and captures an image. ArduCopter + XIAO bridge stable.</td><td>2026-07</td></tr>
             <tr><td><span class="field-name">M4</span></td><td>Georeferenced image delivered to mobile app; polygon drawing works.</td><td>2026-08</td></tr>
@@ -247,22 +247,20 @@
             <tr><th style="width: 140px">Category</th><th>Item</th><th>Status at M1</th></tr>
           </thead>
           <tbody>
-            <tr><td rowspan="3">Nodes</td><td><a href="../nodes/srs-roboclaw-driver.html">roboclaw_driver</a></td><td>Functional — skid-steer kinematics, encoder odometry, battery readback</td></tr>
+            <tr><td rowspan="3">Nodes</td><td><a href="../nodes/srs-motor-driver.html">motor_driver</a></td><td>Functional — skid-steer kinematics, open-loop PWM via BTS7960 pair</td></tr>
             <tr><td><a href="../nodes/srs-imu-driver.html">imu_driver</a></td><td>Functional — gyro + accel at declared rate; magnetometer optional</td></tr>
             <tr><td><a href="../nodes/srs-safety-monitor.html">safety_monitor</a></td><td>Stub — pass-through from <code>cmd_vel_raw</code> to <code>cmd_vel_safe</code></td></tr>
-            <tr><td rowspan="5">ICDs</td><td><a href="../interfaces/icd-hal-cmd-vel-raw.html">/hal/cmd_vel_raw</a></td><td>Functional</td></tr>
+            <tr><td rowspan="3">ICDs</td><td><a href="../interfaces/icd-hal-cmd-vel-raw.html">/hal/cmd_vel_raw</a></td><td>Functional</td></tr>
             <tr><td><a href="../interfaces/icd-hal-cmd-vel-safe.html">/hal/cmd_vel_safe</a></td><td>Functional — gate is pass-through at M1</td></tr>
-            <tr><td><a href="../interfaces/icd-hal-odom.html">/hal/odom</a></td><td>Functional</td></tr>
             <tr><td><a href="../interfaces/icd-hal-imu-data.html">/hal/imu_data</a></td><td>Functional</td></tr>
-            <tr><td><a href="../interfaces/icd-hal-battery.html">/hal/battery</a></td><td>Functional</td></tr>
             <tr><td>Mobile app</td><td>Teleop-only harness</td><td>Minimum viable — WebSocket joystick on any framework. Final framework decision deferred.</td></tr>
             <tr><td>Deploy</td><td>udev rules + systemd units</td><td>In repo under <code>deploy/</code>; rover comes up green after cold boot</td></tr>
-            <tr><td>Gating test</td><td><a href="../verification/test-hal-009.html">TEST-HAL-009</a> + RoboClaw unit tests</td><td>Pass on bench</td></tr>
+            <tr><td>Gating test</td><td><a href="../verification/test-hal-009.html">TEST-HAL-009</a> + motor_driver unit tests (kinematics, command timeout)</td><td>Pass on bench</td></tr>
           </tbody>
         </table>
       </div>
 
-      <p><strong>Exit criterion.</strong> The rover can be driven in a figure-8 from the phone; odometry drift stays within the declared budget over a 10 m loop; a power cycle brings everything back green without manual intervention.</p>
+      <p><strong>Exit criterion.</strong> The rover can be driven in a figure-8 from the phone. A power cycle brings everything back green without manual intervention.</p>
 
       <div class="subsection-title">8.2 M2 — safety integrated</div>
 
@@ -276,7 +274,7 @@
             <tr><td><a href="../nodes/srs-safety-monitor.html">safety_monitor</a></td><td>Upgraded — real gate driven by e-stop, tilt, person-detect, heartbeat</td></tr>
             <tr><td><a href="../nodes/srs-yolo-detector.html">yolo_detector</a></td><td>Functional — detections on OAK-D NPU</td></tr>
             <tr><td><a href="../nodes/srs-living-thing-filter.html">living_thing_filter</a></td><td>Functional — emits <code>/perception/people</code> from detections</td></tr>
-            <tr><td>roboclaw_driver, imu_driver</td><td>(carried)</td></tr>
+            <tr><td>motor_driver, imu_driver</td><td>(carried)</td></tr>
             <tr><td rowspan="5">ICDs</td><td><a href="../interfaces/icd-hal-estop-pressed.html">/hal/estop_pressed</a></td><td>Functional</td></tr>
             <tr><td><a href="../interfaces/icd-safety-state.html">/safety/state</a></td><td>Functional</td></tr>
             <tr><td><a href="../interfaces/icd-safety-reset-srv.html">/safety/reset</a></td><td>Functional</td></tr>
@@ -344,7 +342,7 @@
           </thead>
           <tbody>
             <tr><td rowspan="3">Nodes</td><td><a href="../nodes/srs-geofence-enforcer.html">geofence_enforcer</a></td><td>Functional — compares fused pose with active polygon, publishes state</td></tr>
-            <tr><td>EKF (local + global)</td><td>Configured — odometry + optional GPS fused to filtered odometry and pose</td></tr>
+            <tr><td>EKF (local + global)</td><td>Configured — IMU + visual odometry fused to filtered odometry and pose via <code>/odometry/filtered</code></td></tr>
             <tr><td>safety_monitor</td><td>Upgraded — consumes <code>/geofence/state</code> and forces ESTOP on breach</td></tr>
             <tr><td rowspan="4">ICDs</td><td><a href="../interfaces/icd-geofence-state.html">/geofence/state</a></td><td>Functional</td></tr>
             <tr><td><a href="../interfaces/icd-mapping-current-zone.html">/mapping/current_zone</a></td><td>Functional</td></tr>
@@ -398,6 +396,7 @@
         <tbody>
           <tr><td class="rev">0.1</td><td>2026-04-19</td><td>Louis Roig &amp; Claude Opus 4.7</td><td>Initial draft. Iterations 1–4 defined; scope discipline rules captured.</td></tr>
           <tr><td class="rev">0.2</td><td>2026-04-20</td><td>Louis Roig &amp; Claude Opus 4.7</td><td>Added §8 Build Order — per-milestone node/ICD/test dependency list for iteration 1.</td></tr>
+          <tr><td class="rev">0.3</td><td>2026-04-20</td><td>Louis Roig &amp; Claude Haiku 4.5</td><td>§8.1 M1: roboclaw_driver → motor_driver; /hal/odom and /hal/battery deferred out of M1. Exit criterion revised (no wheel-encoder drift test). §8.5 M5: updated to note /odometry/filtered sourced by EKF (IMU + visual odometry).</td></tr>
         </tbody>
       </table>
     </section>

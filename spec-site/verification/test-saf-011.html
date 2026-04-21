@@ -45,7 +45,7 @@
 
     <section><div class="section-header"><span class="section-num">3.0</span><h2 class="section-title">Preconditions</h2></div>
       <ul class="indent-list">
-        <li>Full safety stack launched: <a href="../nodes/srs-safety-monitor.html">safety_monitor</a>, <a href="../nodes/srs-roboclaw-driver.html">roboclaw_driver</a> (serial mocked), <a href="../nodes/srs-estop-monitor.html">estop_monitor</a> (GPIO mocked), <a href="../nodes/srs-geofence-enforcer.html">geofence_enforcer</a>, <a href="../nodes/srs-living-thing-filter.html">living_thing_filter</a>.</li>
+        <li>Full safety stack launched: <a href="../nodes/srs-safety-monitor.html">safety_monitor</a>, <a href="../nodes/srs-motor-driver.html">motor_driver</a> (serial mocked), <a href="../nodes/srs-estop-monitor.html">estop_monitor</a> (GPIO mocked), <a href="../nodes/srs-geofence-enforcer.html">geofence_enforcer</a>, <a href="../nodes/srs-living-thing-filter.html">living_thing_filter</a>.</li>
         <li>No zone loaded (geofence inactive).</li>
         <li>safety_monitor has completed startup self-test; state = OK.</li>
         <li>A publisher injecting teleop Twist at 0.3 m/s is running to keep cmd_vel_safe non-zero.</li>
@@ -81,7 +81,7 @@
     <section><div class="section-header"><span class="section-num">7.0</span><h2 class="section-title">Test data / fixtures</h2></div>
       <ul class="indent-list">
         <li>Fixture: <code>test/fixtures/mock_person_detection.py</code> — provides the synthetic DetectionArray publisher.</li>
-        <li>Fixture: <code>test/fixtures/mock_serial_roboclaw.py</code> — accepts serial commands and logs them (no hardware).</li>
+        <li>Fixture: <code>test/fixtures/mock_motor_driver.py</code> — captures PWM / DIR GPIO writes and logs the resulting commanded velocities (no hardware).</li>
         <li>Fixture: <code>test/fixtures/mock_gpio.py</code> — emulates libgpiod, e-stop always released.</li>
       </ul>
     </section>

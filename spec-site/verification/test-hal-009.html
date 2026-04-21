@@ -34,17 +34,17 @@
       <ul class="indent-list">
         <li><a href="../requirements/safety.html">SR-005</a> — safety-critical components operate independently.</li>
         <li><a href="../interfaces/icd-hal-cmd-vel-safe.html">REQ-ICD-002-03</a> — subscriber halts within 500 ms of last message.</li>
-        <li><a href="../nodes/srs-roboclaw-driver.html">SRS-HAL-001-F04</a> — command timeout.</li>
+        <li><a href="../nodes/srs-motor-driver.html">SRS-HAL-001-F04</a> — command timeout.</li>
       </ul>
     </section>
 
     <section><div class="section-header"><span class="section-num">2.0</span><h2 class="section-title">Method</h2></div>
-      <p>Integration test. roboclaw_driver runs with a mock serial adapter that records every sent command to an in-memory log. A test harness publishes cmd_vel_safe, then stops publishing. The test verifies that the next motor command sent to the mocked serial is zero within 500 ms of the last published cmd_vel_safe.</p>
+      <p>Integration test. motor_driver runs with a mock serial adapter that records every sent command to an in-memory log. A test harness publishes cmd_vel_safe, then stops publishing. The test verifies that the next motor command sent to the mocked serial is zero within 500 ms of the last published cmd_vel_safe.</p>
     </section>
 
     <section><div class="section-header"><span class="section-num">3.0</span><h2 class="section-title">Preconditions</h2></div>
       <ul class="indent-list">
-        <li>roboclaw_driver launched with <code>cmd_vel_timeout_ms = 500</code>.</li>
+        <li>motor_driver launched with <code>cmd_vel_timeout_ms = 500</code>.</li>
         <li>Mock serial attached; commands logged with microsecond timestamp.</li>
         <li>No other publisher on <code>/hal/cmd_vel_safe</code>.</li>
       </ul>
@@ -75,7 +75,7 @@
     </section>
 
     <section><div class="section-header"><span class="section-num">7.0</span><h2 class="section-title">Fixtures</h2></div>
-      <p><code>test/fixtures/mock_roboclaw_serial.py</code> — implements the RoboClaw binary protocol at serial-packet level and logs commands.</p>
+      <p><code>test/fixtures/mock_motor_driver.py</code> — captures PWM and DIR GPIO writes in software (no hardware) and logs the resulting commanded velocities.</p>
     </section>
 
     <section><div class="section-header"><span class="section-num">8.0</span><h2 class="section-title">Automation status</h2></div>
@@ -86,7 +86,7 @@
       <table class="revision-table"><thead><tr><th>Rev</th><th>Date</th><th>Author</th><th>Change</th></tr></thead><tbody><tr><td class="rev">0.1</td><td>2026-04-19</td><td>Louis Roig &amp; Claude Opus 4.7</td><td>Initial draft.</td></tr></tbody></table>
     </section>
 
-    <div class="footer-nav"><a href="index.html">← Verification Index</a><span>Related: <a href="../nodes/srs-roboclaw-driver.html">SRS-HAL-001</a></span></div>
+    <div class="footer-nav"><a href="index.html">← Verification Index</a><span>Related: <a href="../nodes/srs-motor-driver.html">SRS-HAL-001</a></span></div>
   </main>
 </div>
 <script src="../shared/shared.js"></script>

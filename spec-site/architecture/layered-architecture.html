@@ -119,7 +119,7 @@
           <div class="layer-label"><strong>Layer 2</strong>Control</div>
           <div class="layer-body">
             <div class="layer-title">Arbitration and kinematics for motion commands.</div>
-            twist_mux (priority arbitration) · skid-steer kinematics inside <a href="../nodes/srs-roboclaw-driver.html">roboclaw_driver</a>
+            twist_mux (priority arbitration) · skid-steer kinematics inside <a href="../nodes/srs-motor-driver.html">motor_driver</a>
           </div>
         </div>
 
@@ -127,7 +127,7 @@
           <div class="layer-label"><strong>Layer 1</strong>HAL</div>
           <div class="layer-body">
             <div class="layer-title">Hardware abstraction — vendor boundary.</div>
-            <a href="../nodes/srs-roboclaw-driver.html">roboclaw_driver</a> · <a href="../nodes/srs-imu-driver.html">imu_driver</a> · <a href="../nodes/srs-estop-monitor.html">estop_monitor</a> · depthai_ros_driver · mavros (drone side)
+            <a href="../nodes/srs-motor-driver.html">motor_driver</a> · <a href="../nodes/srs-imu-driver.html">imu_driver</a> · <a href="../nodes/srs-estop-monitor.html">estop_monitor</a> · depthai_ros_driver · mavros (drone side)
           </div>
         </div>
 
@@ -182,10 +182,10 @@
             <tr><th>Node</th><th>Hardware</th><th>Up-interface</th><th>Down-interface</th></tr>
           </thead>
           <tbody>
-            <tr><td><a href="../nodes/srs-roboclaw-driver.html">roboclaw_driver</a></td><td>RoboClaw 2x15A over USB serial</td><td><a href="../interfaces/icd-hal-odom.html"><code>/hal/odom</code></a>, <a href="../interfaces/icd-hal-battery.html"><code>/hal/battery</code></a></td><td>RoboClaw binary protocol</td></tr>
+            <tr><td><a href="../nodes/srs-motor-driver.html">motor_driver</a></td><td>2× BTS7960 H-bridges over GPIO PWM</td><td><a href="../interfaces/icd-hal-odom.html"><code>/hal/odom</code></a>, <a href="../interfaces/icd-hal-battery.html"><code>/hal/battery</code></a></td><td>GPIO PWM + direction pins</td></tr>
             <tr><td><a href="../nodes/srs-imu-driver.html">imu_driver</a></td><td>ISM330DHCX + MMC5983MA on Qwiic I²C</td><td><a href="../interfaces/icd-hal-imu-data.html"><code>/hal/imu/data</code></a>, <a href="../interfaces/icd-hal-imu-mag.html"><code>/hal/imu/mag</code></a></td><td>I²C register reads</td></tr>
             <tr><td><a href="../nodes/srs-estop-monitor.html">estop_monitor</a></td><td>GPIO pin (physical NC switch)</td><td><a href="../interfaces/icd-hal-estop-pressed.html"><code>/hal/estop_pressed</code></a></td><td>libgpiod</td></tr>
-            <tr><td>depthai_ros_driver</td><td>OAK-D Lite over USB3</td><td>RGB/depth streams, NPU inference</td><td>depthai SDK</td></tr>
+            <tr><td>depthai_ros_driver</td><td>OAK-D Lite FF over USB3</td><td>RGB/depth streams, NPU inference</td><td>depthai SDK</td></tr>
             <tr><td>mavros</td><td>drone FC via XIAO Wi-Fi bridge</td><td>standard mavros topics</td><td>MAVLink over TCP</td></tr>
           </tbody>
         </table>
@@ -206,7 +206,7 @@
 
       <ul class="indent-list">
         <li><strong>twist_mux.</strong> Off-the-shelf node. Accepts multiple <code>Twist</code> inputs (teleop, autonomous, recovery) with priorities. Publishes the highest-priority currently-active source on <a href="../interfaces/icd-hal-cmd-vel-raw.html"><code>/hal/cmd_vel_raw</code></a>.</li>
-        <li><strong>skid-steer kinematics.</strong> Lives inside <a href="../nodes/srs-roboclaw-driver.html">roboclaw_driver</a> and converts <code>Twist</code> to per-track velocities. Not a separate node in iteration 1; may become one in iteration 3 if the rover chassis changes.</li>
+        <li><strong>skid-steer kinematics.</strong> Lives inside <a href="../nodes/srs-motor-driver.html">motor_driver</a> and converts <code>Twist</code> to per-track velocities. Not a separate node in iteration 1; may become one in iteration 3 if the rover chassis changes.</li>
       </ul>
 
       <div class="callout rationale">
@@ -224,7 +224,7 @@
       <p><strong>Concern.</strong> Build the world model the rover reasons against. Three sub-concerns:</p>
 
       <ul class="indent-list">
-        <li><strong>Perception.</strong> What objects are where. YOLO on OAK-D Lite produces detections; a filter splits them into living things (safety input) and generic obstacles (navigation input in iter 2+).</li>
+        <li><strong>Perception.</strong> What objects are where. YOLO on OAK-D Lite FF produces detections; a filter splits them into living things (safety input) and generic obstacles (navigation input in iter 2+).</li>
         <li><strong>Localization.</strong> Where is the rover. Local pose from wheel odometry + IMU fused via EKF; global pose from local + SLAM (RTAB-Map) + optional GPS fused via a second EKF.</li>
         <li><strong>Mapping.</strong> What is the yard. Drone-captured aerial image georeferenced into world coordinates; user draws boundary polygons on it; the polygon becomes the active geofence zone.</li>
       </ul>
@@ -312,7 +312,7 @@
       </div>
 
       <ol class="indent-list">
-        <li><strong>OPEN-01</strong> — Should skid-steer kinematics be a separate node for testability, or is inlining it in <code>roboclaw_driver</code> acceptable? Current plan: inline for iteration 1, split if iteration 3 chassis work demands it.</li>
+        <li><strong>OPEN-01</strong> — Should skid-steer kinematics be a separate node for testability, or is inlining it in <code>motor_driver</code> acceptable? Current plan: inline for iteration 1, split if iteration 3 chassis work demands it.</li>
         <li><strong>OPEN-02</strong> — Layer-5 endpoints on the Pi bridging to ROS 2 via rclpy are a single process today. At scale, should REST and telemetry be split into separate processes for isolation? Deferred to post-M6.</li>
         <li><strong>OPEN-03</strong> — The <code>living_thing_filter</code> sits in Layer 3 but is safety-critical. Should safety-critical Layer 3 nodes be mirrored under Layer 0's governance? Currently: no, they emit to Layer 0 topics but run as Layer 3 nodes.</li>
       </ol>

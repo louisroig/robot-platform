@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>SRS-HAL-001 · roboclaw_driver</title>
+<title>SRS-HAL-001 · motor_driver</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=IBM+Plex+Sans:wght@300;400;500;600;700&family=IBM+Plex+Serif:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
@@ -14,8 +14,8 @@
   <a class="doc-bar-crumb" href="../index.html">← HOME</a><span class="doc-bar-sep">·</span>
   <a class="doc-bar-crumb" href="index.html">NODES</a><span class="doc-bar-sep">·</span>
   <span class="doc-bar-id">SRS-HAL-001</span><span class="doc-bar-sep">·</span>
-  <span class="doc-bar-path">roboclaw_driver</span><span class="doc-bar-sep">·</span>
-  <span style="color: var(--ink-dim)">REV 0.1</span>
+  <span class="doc-bar-path">motor_driver</span><span class="doc-bar-sep">·</span>
+  <span style="color: var(--ink-dim)">REV 0.2</span>
   <div class="doc-bar-status"><span class="status-dot"></span><span>DRAFT</span></div>
   <div class="doc-bar-tools">
     <button class="tool-btn" onclick="window.print()">PRINT</button>
@@ -45,25 +45,25 @@
   <main class="prose-serif">
     <div class="doc-header">
       <div class="doc-type">SOFTWARE REQUIREMENTS SPECIFICATION · HAL</div>
-      <h1 class="doc-title">roboclaw_driver</h1>
-      <p class="doc-subtitle">Interface to the RoboClaw 2x15A motor controller. Converts Twist commands to per-track velocities and publishes odometry and battery state.</p>
+      <h1 class="doc-title">motor_driver</h1>
+      <p class="doc-subtitle">Open-loop PWM control of two BTS7960 H-bridge modules for track drive. Converts Twist commands to per-track PWM duty cycles and direction signals. No encoder feedback; no battery telemetry.</p>
       <div class="doc-meta">
         <div class="meta-item"><div class="meta-label">Document ID</div><div class="meta-value">SRS-HAL-001</div></div>
-        <div class="meta-item"><div class="meta-label">Revision</div><div class="meta-value">0.1 · draft</div></div>
+        <div class="meta-item"><div class="meta-label">Revision</div><div class="meta-value">0.2 · draft</div></div>
         <div class="meta-item"><div class="meta-label">Owner</div><div class="meta-value">platform_hal</div></div>
         <div class="meta-item"><div class="meta-label">Language</div><div class="meta-value">Python (rclpy)</div></div>
         <div class="meta-item"><div class="meta-label">Classification</div><div class="meta-value">Actuator driver</div></div>
-        <div class="meta-item"><div class="meta-label">Last Updated</div><div class="meta-value">2026-04-19</div></div>
+        <div class="meta-item"><div class="meta-label">Last Updated</div><div class="meta-value">2026-04-20</div></div>
       </div>
     </div>
 
     <section id="s1"><div class="section-header"><span class="section-num">1.0</span><h2 class="section-title">Purpose</h2></div>
-      <p>The <code>roboclaw_driver</code> is the vendor-boundary node for the RoboClaw 2x15A motor controller. Upstream it exposes ROS-standard Twist and Odometry; downstream it speaks RoboClaw's binary serial protocol over USB. Above it, the system treats the motor controller as generic; below it, the driver handles all vendor specifics.</p>
+      <p>The <code>motor_driver</code> is the vendor-boundary node for two BTS7960 43A H-bridge modules, controlling the left and right aluminum tracks. Upstream it exposes ROS-standard Twist commands; downstream it drives GPIO-based PWM (speed) and direction signals to each H-bridge. This is open-loop control: no encoder feedback. Above it, the system treats motor control as generic; below it, the driver handles all GPIO-level specifics.</p>
     </section>
 
     <section id="s2"><div class="section-header"><span class="section-num">2.0</span><h2 class="section-title">Scope</h2></div>
-      <p><strong>In scope.</strong> Serial communication with RoboClaw; Twist-to-per-track kinematics; encoder read and integration into odometry; battery voltage read and publication; command-timeout safe-halt.</p>
-      <p><strong>Out of scope.</strong> Nav2 costmap, trajectory following, slip compensation (iter 3+), automatic chassis parameter estimation.</p>
+      <p><strong>In scope.</strong> GPIO PWM + direction output to the BTS7960 pair; Twist-to-per-track velocity kinematics; command-timeout safe-halt; basic thermal shutdown detection via stalled-motion cross-check with IMU.</p>
+      <p><strong>Out of scope.</strong> Encoder reading and odometry (deferred to M5 EKF). Battery voltage monitoring (deferred, requires external ADC). Nav2 costmap, trajectory following, slip compensation.</p>
     </section>
 
     <section id="s3"><div class="section-header"><span class="section-num">3.0</span><h2 class="section-title">Interfaces</h2></div>
@@ -73,9 +73,6 @@
       </tbody></table></div>
       <div class="subsection-title">Publishers</div>
       <div class="data-table-wrap"><table class="sig-table"><thead><tr><th>Topic</th><th>Type</th><th>Rate</th></tr></thead><tbody>
-        <tr><td><a href="../interfaces/icd-hal-odom.html" class="topic">/hal/odom</a></td><td class="msg-type">nav_msgs/Odometry</td><td class="rate">50 Hz</td></tr>
-        <tr><td><span class="topic">/hal/odom_status</span></td><td class="msg-type">HalOdomStatus</td><td class="rate">10 Hz</td></tr>
-        <tr><td><a href="../interfaces/icd-hal-battery.html" class="topic">/hal/battery</a></td><td class="msg-type">sensor_msgs/BatteryState</td><td class="rate">1 Hz</td></tr>
         <tr><td><span class="topic">/diagnostics</span></td><td class="msg-type">DiagnosticArray</td><td class="rate">1 Hz</td></tr>
       </tbody></table></div>
     </section>
@@ -84,7 +81,7 @@
       <ul class="req-list">
         <li class="req-item"><div class="req-id">SRS-HAL-001-F01</div><div><div class="req-text">Convert every received Twist into per-track velocities via skid-steer kinematics using configured track width.</div><div class="req-trace">verified by: <code>TEST-HAL-001</code></div></div></li>
         <li class="req-item"><div class="req-id">SRS-HAL-001-F02</div><div><div class="req-text">Clip commanded velocities to configured max_linear_vel and max_angular_vel with sign preservation.</div><div class="req-trace">verified by: <code>TEST-HAL-012</code></div></div></li>
-        <li class="req-item"><div class="req-id">SRS-HAL-001-F03</div><div><div class="req-text">Read encoder counts and battery voltage at 50 Hz and 1 Hz respectively; publish Odometry and BatteryState accordingly.</div><div class="req-trace">verified by: <a href="../interfaces/icd-hal-odom.html">ICD-HAL-003</a> tests</div></div></li>
+        <li class="req-item"><div class="req-id">SRS-HAL-001-F03</div><div><div class="req-text">Drive BTS7960 PWM pins at configured frequency (default 2 kHz) with duty cycle 0–100% and direction pins set per kinematics output.</div><div class="req-trace">verified by: <code>TEST-HAL-002</code></div></div></li>
         <li class="req-item"><div class="req-id">SRS-HAL-001-F04</div><div><div class="req-text">Halt motor commands if no <code>/hal/cmd_vel_safe</code> message has been received within <code>cmd_vel_timeout_ms</code> (default 500 ms).</div><div class="req-trace">verified by: <a href="../verification/test-hal-009.html">TEST-HAL-009</a></div></div></li>
         <li class="req-item"><div class="req-id">SRS-HAL-001-F05</div><div><div class="req-text">Reject Twist messages containing NaN or Inf in any field; emit diagnostic; hold last-known-good command or halt per policy.</div><div class="req-trace">verified by: <code>TEST-HAL-011</code></div></div></li>
       </ul>
@@ -92,8 +89,8 @@
 
     <section id="s5"><div class="section-header"><span class="section-num">5.0</span><h2 class="section-title">Performance Requirements</h2></div>
       <ul class="req-list">
-        <li class="req-item"><div class="req-id">SRS-HAL-001-P01</div><div><div class="req-text">Serial round-trip per cycle ≤ 10 ms.</div><div class="req-trace">verified by: <code>TEST-HAL-013</code></div></div></li>
-        <li class="req-item"><div class="req-id">SRS-HAL-001-P02</div><div><div class="req-text">CPU usage &lt; 8% on Pi 5.</div><div class="req-trace">verified by: <code>TEST-HAL-014</code></div></div></li>
+        <li class="req-item"><div class="req-id">SRS-HAL-001-P01</div><div><div class="req-text">GPIO write cycle per control frame ≤ 5 ms (PWM + DIR × 4 pins).</div><div class="req-trace">verified by: <code>TEST-HAL-013</code></div></div></li>
+        <li class="req-item"><div class="req-id">SRS-HAL-001-P02</div><div><div class="req-text">CPU usage &lt; 3% on Pi 5.</div><div class="req-trace">verified by: <code>TEST-HAL-014</code></div></div></li>
       </ul>
     </section>
 
@@ -106,53 +103,53 @@
 
     <section id="s7"><div class="section-header"><span class="section-num">7.0</span><h2 class="section-title">Dependencies</h2></div>
       <ul class="indent-list">
-        <li>ROS 2 Humble (rclpy).</li>
-        <li>RoboClaw Python library (pyserial-based).</li>
-        <li>udev rule establishing <code>/dev/ttyACM_roboclaw</code>.</li>
-        <li><code>platform_msgs</code> for HalOdomStatus.</li>
+        <li>ROS 2 Jazzy (rclpy).</li>
+        <li><code>lgpio</code> or <code>gpiod</code> for Pi 5 hardware PWM control.</li>
+        <li><code>platform_msgs</code> for diagnostics.</li>
       </ul>
     </section>
 
     <section id="s8"><div class="section-header"><span class="section-num">8.0</span><h2 class="section-title">Configuration</h2></div>
       <div class="data-table-wrap"><table class="data-table"><thead><tr><th>Parameter</th><th>Default</th><th>Notes</th></tr></thead><tbody>
-        <tr><td><span class="field-name">serial_port</span></td><td>/dev/ttyACM_roboclaw</td><td>udev symlink</td></tr>
-        <tr><td><span class="field-name">baud_rate</span></td><td>115200</td><td>RoboClaw default</td></tr>
+        <tr><td><span class="field-name">pwm_left_pin</span></td><td>TBD (BCM)</td><td>GPIO pin for left track PWM</td></tr>
+        <tr><td><span class="field-name">dir_left_pin</span></td><td>TBD (BCM)</td><td>GPIO pin for left track direction</td></tr>
+        <tr><td><span class="field-name">pwm_right_pin</span></td><td>TBD (BCM)</td><td>GPIO pin for right track PWM</td></tr>
+        <tr><td><span class="field-name">dir_right_pin</span></td><td>TBD (BCM)</td><td>GPIO pin for right track direction</td></tr>
+        <tr><td><span class="field-name">pwm_frequency_hz</span></td><td>2000</td><td>PWM frequency in Hz</td></tr>
         <tr><td><span class="field-name">track_width_m</span></td><td>0.28</td><td>Center-to-center of tracks</td></tr>
-        <tr><td><span class="field-name">ticks_per_meter</span></td><td>TBD</td><td>Calibrated on-chassis</td></tr>
         <tr><td><span class="field-name">max_linear_vel</span></td><td>0.7</td><td>m/s</td></tr>
         <tr><td><span class="field-name">max_angular_vel</span></td><td>1.5</td><td>rad/s</td></tr>
         <tr><td><span class="field-name">cmd_vel_timeout_ms</span></td><td>500</td><td>Safe-halt threshold</td></tr>
-        <tr><td><span class="field-name">battery_chemistry</span></td><td>LIPO</td><td>LIPO or LFP; selects SoC curve</td></tr>
       </tbody></table></div>
     </section>
 
     <section id="s9"><div class="section-header"><span class="section-num">9.0</span><h2 class="section-title">Failure Modes</h2></div>
       <div class="data-table-wrap"><table class="data-table"><thead><tr><th>Failure</th><th>Response</th></tr></thead><tbody>
-        <tr><td>USB disconnect</td><td>Driver closes port; attempts reopen every 1 s; emits diagnostic.</td></tr>
-        <tr><td>RoboClaw CRC error</td><td>Retry up to 3×; fail → halt.</td></tr>
-        <tr><td>Encoder freeze</td><td>Detected by cross-check of commanded vs. reported velocity; emits diagnostic; halts if &gt; 1 s.</td></tr>
-        <tr><td>Low battery (&lt; 11 V)</td><td>Publishes health=DEAD; safety_monitor goes CRITICAL.</td></tr>
+        <tr><td>GPIO access failure</td><td>Driver logs error; attempts reconfiguration every 1 s; emits diagnostic WARN.</td></tr>
+        <tr><td>PWM stall (IMU cross-check)</td><td>Commanded nonzero velocity but IMU reports zero acceleration for &gt; 1 s; emit diagnostic WARN; may indicate mechanical jam or thermal shutdown of BTS7960.</td></tr>
+        <tr><td>BTS7960 over-temperature</td><td>H-bridge thermal shutdown cuts PWM; driver detects stalled motion; halts and reports.</td></tr>
       </tbody></table></div>
     </section>
 
     <section id="s10"><div class="section-header"><span class="section-num">10.0</span><h2 class="section-title">Verification</h2></div>
-      <p>Primary: <a href="../verification/test-hal-009.html">TEST-HAL-009</a> (command timeout), and <code>TEST-HAL-001 / 003 / 011 / 012 / 030 / 031 / 032</code>. Full test catalog cross-referenced from <a href="../interfaces/icd-hal-odom.html">ICD-HAL-003</a>, <a href="../interfaces/icd-hal-battery.html">ICD-HAL-006</a>, <a href="../interfaces/icd-hal-cmd-vel-safe.html">ICD-HAL-002</a>.</p>
+      <p>Primary: <a href="../verification/test-hal-009.html">TEST-HAL-009</a> (command timeout), and <code>TEST-HAL-001 / 002 / 011 / 012 / 013 / 014</code>. Full test catalog cross-referenced from <a href="../interfaces/icd-hal-cmd-vel-safe.html">ICD-HAL-002</a>.</p>
     </section>
 
     <section id="s11"><div class="section-header"><span class="section-num">11.0</span><h2 class="section-title">Open Issues</h2></div>
       <ol class="indent-list">
-        <li><strong>OPEN-01</strong> — ticks_per_meter calibration is empirical; calibration wizard in iteration 2.</li>
-        <li><strong>OPEN-02</strong> — PID parameters inside the RoboClaw are set via configuration tool, not via ROS. Consider a "tune" service surface for field troubleshooting.</li>
+        <li><strong>OPEN-01</strong> — PWM duty-to-velocity mapping is empirical (calibrated for track slip at various speeds); calibration wizard in iteration 2.</li>
+        <li><strong>OPEN-02</strong> — IMU-based stall detection is a coarse health check; encoder-less motor current sensing (via shunt resistor on H-bridge) deferred to iteration 2.</li>
       </ol>
     </section>
 
     <section id="s12"><div class="section-header"><span class="section-num">12.0</span><h2 class="section-title">Revision</h2></div>
       <table class="revision-table"><thead><tr><th>Rev</th><th>Date</th><th>Author</th><th>Change</th></tr></thead><tbody>
-        <tr><td class="rev">0.1</td><td>2026-04-19</td><td>Louis Roig &amp; Claude Opus 4.7</td><td>Initial draft.</td></tr>
+        <tr><td class="rev">0.1</td><td>2026-04-19</td><td>Louis Roig &amp; Claude Opus 4.7</td><td>Initial draft (roboclaw_driver).</td></tr>
+        <tr><td class="rev">0.2</td><td>2026-04-20</td><td>Louis Roig &amp; Claude Haiku 4.5</td><td>Node renamed from roboclaw_driver. Switched hardware to 2× BTS7960 H-bridges, open-loop PWM. Removed encoder-based publishers and battery telemetry (deferred to M5 EKF and future ADC, respectively).</td></tr>
       </tbody></table>
     </section>
 
-    <div class="footer-nav"><a href="index.html">← Nodes Index</a><span>Anatomy: <a href="anatomy-roboclaw-driver.html">ANAT-HAL</a></span></div>
+    <div class="footer-nav"><a href="index.html">← Nodes Index</a><span>Anatomy: <a href="anatomy-motor-driver.html">ANAT-HAL</a></span></div>
   </main>
 </div>
 <script src="../shared/shared.js"></script>

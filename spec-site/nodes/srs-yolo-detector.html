@@ -41,7 +41,7 @@
     <div class="doc-header">
       <div class="doc-type">SOFTWARE REQUIREMENTS SPECIFICATION · PERCEPTION</div>
       <h1 class="doc-title">yolo_detector</h1>
-      <p class="doc-subtitle">Runs YOLO object detection on the OAK-D Lite's onboard NPU and publishes spatial detections for downstream consumers.</p>
+      <p class="doc-subtitle">Runs YOLO object detection on the OAK-D Lite FF's onboard NPU and publishes spatial detections for downstream consumers.</p>
       <div class="doc-meta">
         <div class="meta-item"><div class="meta-label">Document ID</div><div class="meta-value">SRS-PER-001</div></div>
         <div class="meta-item"><div class="meta-label">Revision</div><div class="meta-value">0.1 · draft</div></div>
@@ -53,7 +53,7 @@
     </div>
 
     <section id="s1"><div class="section-header"><span class="section-num">1.0</span><h2 class="section-title">Purpose</h2></div>
-      <p>Loads a YOLOv8n model onto the OAK-D Lite's VPU, runs inference on the color image stream, fuses 2D bounding-box centroids with the camera's onboard stereo depth to estimate 3D position in the rover's <code>base_link</code> frame, and publishes a DetectionArray.</p>
+      <p>Loads a YOLOv8n model onto the OAK-D Lite FF's VPU, runs inference on the color image stream, fuses 2D bounding-box centroids with the camera's onboard stereo depth to estimate 3D position in the rover's <code>base_link</code> frame, and publishes a DetectionArray.</p>
     </section>
 
     <section id="s2"><div class="section-header"><span class="section-num">2.0</span><h2 class="section-title">Scope</h2></div>

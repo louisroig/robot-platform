@@ -98,7 +98,7 @@
                       <span class="pub">boundary_ingester → /mapping/current_zone → geofence_enforcer</span>
    <span class="em">▼</span>
 <span class="em">E ─ Teleop with safety</span>  user drives; safety gates every command
-                      <span class="sub">joy_teleop → twist_mux → safety_monitor → roboclaw_driver</span>
+                      <span class="sub">joy_teleop → twist_mux → safety_monitor → motor_driver</span>
                       <span class="safety">geofence_enforcer · yolo_detector · estop_monitor → safety_monitor</span>
    <span class="em">▼</span>
 <span class="em">F ─ Shutdown &amp; audit</span>   operator parks rover, closes app; rosbag flushes
@@ -217,7 +217,7 @@ t+13ms twist_mux republishes (if this is the highest-priority source) on <span c
 t+14ms safety_monitor evaluates safety state:
          OK     → passthrough to <span class="pub">/hal/cmd_vel_safe</span>
          not OK → publishes zero (with decel ramp) to <span class="pub">/hal/cmd_vel_safe</span>
-t+16ms roboclaw_driver converts to per-track velocities; issues serial command
+t+16ms motor_driver converts to per-track velocities; issues serial command
 t+20ms motors reflect commanded velocity</div>
 
       <p><strong>Parallel safety evaluation (continuous):</strong></p>

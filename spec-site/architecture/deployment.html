@@ -20,7 +20,7 @@
   <span class="doc-bar-sep">·</span>
   <span class="doc-bar-path">Deployment</span>
   <span class="doc-bar-sep">·</span>
-  <span style="color: var(--ink-dim)">REV 0.1</span>
+  <span style="color: var(--ink-dim)">REV 0.3</span>
   <div class="doc-bar-status">
     <span class="status-dot"></span>
     <span>DRAFT</span>
@@ -58,10 +58,10 @@
 
       <div class="doc-meta">
         <div class="meta-item"><div class="meta-label">Document ID</div><div class="meta-value">ARCH-004</div></div>
-        <div class="meta-item"><div class="meta-label">Revision</div><div class="meta-value">0.1 · draft</div></div>
+        <div class="meta-item"><div class="meta-label">Revision</div><div class="meta-value">0.3 · draft</div></div>
         <div class="meta-item"><div class="meta-label">Owner</div><div class="meta-value">systems</div></div>
         <div class="meta-item"><div class="meta-label">Classification</div><div class="meta-value">Internal — Draft</div></div>
-        <div class="meta-item"><div class="meta-label">Last Updated</div><div class="meta-value">2026-04-19</div></div>
+        <div class="meta-item"><div class="meta-label">Last Updated</div><div class="meta-value">2026-04-20</div></div>
       </div>
     </div>
 
@@ -89,9 +89,9 @@
           </thead>
           <tbody>
             <tr><td rowspan="8">Rover</td><td>SBC</td><td>Raspberry Pi 5 (4/8 GB)</td><td>Runs all ROS 2 nodes</td></tr>
-            <tr><td>Motor controller</td><td>RoboClaw 2x15A</td><td>Tracked motor drive + encoders</td></tr>
+            <tr><td>Motor driver</td><td>2× BTS7960 43A H-bridge modules</td><td>Open-loop PWM drive for the two tracks</td></tr>
             <tr><td>Motors</td><td>DC geared 12V × 2</td><td>Drive the two aluminum tracks</td></tr>
-            <tr><td>Camera</td><td>OAK-D Lite</td><td>Stereo + onboard YOLO NPU</td></tr>
+            <tr><td>Camera</td><td>OAK-D Lite FF</td><td>Fixed-focus stereo + onboard YOLO NPU</td></tr>
             <tr><td>IMU</td><td>ISM330DHCX + MMC5983MA</td><td>Orientation + magnetometer on Qwiic I²C</td></tr>
             <tr><td>E-stop</td><td>NC bulkhead switch</td><td>Inline with motor power; also read by GPIO</td></tr>
             <tr><td>Battery</td><td>4S LiFePO4 / LiPo, ~5 Ah</td><td>14.8 V nominal</td></tr>
@@ -116,13 +116,13 @@
         <h2 class="section-title">Ground Unit (Rover)</h2>
       </div>
 
-      <p>The rover's compute is a single Raspberry Pi 5 running Ubuntu Server 24.04 and ROS 2 Humble. Every custom ROS node in the corpus — unless marked "drone side" — runs here.</p>
+      <p>The rover's compute is a single Raspberry Pi 5 running Ubuntu Server 24.04 and ROS 2 Jazzy. Every custom ROS node in the corpus — unless marked "drone side" — runs here.</p>
 
       <div class="subsection-title">3.1 Pi 5 software stack</div>
 
       <ul class="indent-list">
         <li><strong>OS:</strong> Ubuntu Server 24.04 LTS (arm64).</li>
-        <li><strong>ROS 2:</strong> Humble Hawksbill. DDS implementation: default Cyclone DDS.</li>
+        <li><strong>ROS 2:</strong> Jazzy Jalisco. DDS implementation: default Cyclone DDS.</li>
         <li><strong>Python:</strong> 3.12 (for the rclpy-based nodes and mission_api).</li>
         <li><strong>C++:</strong> gcc 13 (used by <a href="../nodes/srs-safety-monitor.html">safety_monitor</a>).</li>
         <li><strong>Service supervision:</strong> systemd units per node group (hal, perception, safety, mission, telemetry).</li>
@@ -136,8 +136,8 @@
             <tr><th>Peripheral</th><th>Bus</th><th>Pi endpoint</th><th>Rate</th></tr>
           </thead>
           <tbody>
-            <tr><td>RoboClaw</td><td>USB serial (FTDI)</td><td><code>/dev/ttyACM_roboclaw</code> (udev rule)</td><td>115200 baud</td></tr>
-            <tr><td>OAK-D Lite</td><td>USB3</td><td>depthai SDK auto-detected</td><td>stereo 30 fps · YOLO on NPU</td></tr>
+            <tr><td>2× BTS7960 H-bridge</td><td>GPIO (hardware PWM + DIR)</td><td>BCM pins — see motor_driver config</td><td>PWM 2 kHz</td></tr>
+            <tr><td>OAK-D Lite FF</td><td>USB3</td><td>depthai SDK auto-detected</td><td>stereo 30 fps · YOLO on NPU</td></tr>
             <tr><td>ISM330 + MMC5983</td><td>I²C (Qwiic bus 1)</td><td>/dev/i2c-1</td><td>400 kHz</td></tr>
             <tr><td>E-stop switch</td><td>GPIO (BCM 17, input pull-up)</td><td>libgpiod</td><td>polled at 50 Hz</td></tr>
             <tr><td>HGLRC M80 (optional)</td><td>UART</td><td><code>/dev/ttyAMA0</code></td><td>9600 baud, UBX</td></tr>
@@ -147,8 +147,8 @@
       </div>
 
       <div class="callout note">
-        <div class="callout-label">USB device stability</div>
-        <p>The RoboClaw is addressed by a udev-installed symlink (<code>/dev/ttyACM_roboclaw</code>) rather than the auto-assigned <code>ttyACM0</code>. This ensures stable device naming across reboots and when the OAK-D Lite is connected in a different order. Rule lives in <code>deploy/udev/99-robotplatform.rules</code>.</p>
+        <div class="callout-label">GPIO pin stability</div>
+        <p>GPIO pins for PWM and DIR are configured via the motor_driver node parameters. Ensure pinout diagram is documented in <code>deploy/</code> and that pin assignments do not conflict with other HAL peripherals (IMU, e-stop GPIO). Pi 5 GPIO numbering is BCM; verify against the hardware pinout.</p>
       </div>
     </section>
 
@@ -211,7 +211,7 @@
    │
    ├──► <span class="em">Main power switch (manual rotary)</span>
    │        │
-   │        ├──► <span class="safety">E-stop NC relay</span> ──► RoboClaw motor power (14.8V)
+   │        ├──► <span class="safety">E-stop NC relay</span> ──► BTS7960 H-bridge motor power (14.8V)
    │        │                                    │
    │        │                                    ├──► Left motor
    │        │                                    └──► Right motor
@@ -221,7 +221,7 @@
    │                                                 ├──► OAK-D Lite (USB3 5V 900 mA)
    │                                                 └──► IMU (Qwiic 3.3V)
    │
-   └──► Battery sense tap ──► RoboClaw ADC (voltage reported on <span class="sub">/hal/battery</span>)</div>
+   └──► Battery sense tap ──► (iter-1 deferred; future ADS1115 ADC → <span class="sub">/hal/battery</span>)</div>
 
       <div class="callout safety">
         <div class="callout-label">Hard safety path</div>
@@ -255,7 +255,7 @@
           </thead>
           <tbody>
             <tr><td rowspan="15">Raspberry Pi 5</td><td><a href="../nodes/srs-safety-monitor.html">safety_monitor</a></td><td>ROS 2 C++ node</td></tr>
-            <tr><td><a href="../nodes/srs-roboclaw-driver.html">roboclaw_driver</a></td><td>ROS 2 Python node</td></tr>
+            <tr><td><a href="../nodes/srs-motor-driver.html">motor_driver</a></td><td>ROS 2 Python node</td></tr>
             <tr><td><a href="../nodes/srs-imu-driver.html">imu_driver</a></td><td>ROS 2 Python node</td></tr>
             <tr><td><a href="../nodes/srs-estop-monitor.html">estop_monitor</a></td><td>ROS 2 Python node</td></tr>
             <tr><td><a href="../nodes/srs-yolo-detector.html">yolo_detector</a></td><td>ROS 2 Python node</td></tr>
@@ -331,6 +331,8 @@
         </thead>
         <tbody>
           <tr><td class="rev">0.1</td><td>2026-04-19</td><td>Louis Roig &amp; Claude Opus 4.7</td><td>Initial draft. Hardware inventory, power trees, software allocation, networking.</td></tr>
+          <tr><td class="rev">0.2</td><td>2026-04-20</td><td>Louis Roig &amp; Claude Opus 4.7</td><td>§3.1 Pi 5 software stack: ROS 2 Humble → Jazzy Jalisco, to align with Ubuntu 24.04 LTS support matrix.</td></tr>
+          <tr><td class="rev">0.3</td><td>2026-04-20</td><td>Louis Roig &amp; Claude Haiku 4.5</td><td>§2 and §3.2: RoboClaw → 2× BTS7960 H-bridges (GPIO PWM). OAK-D Lite → OAK-D Lite FF (Fixed Focus). Battery monitoring deferred.</td></tr>
         </tbody>
       </table>
     </section>

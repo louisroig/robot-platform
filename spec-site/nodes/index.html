@@ -95,11 +95,11 @@
 
       <div class="doc-group-header">Platform · HAL</div>
       <ul class="doc-list">
-        <li data-filterable="SRS-HAL-001 roboclaw motor driver">
+        <li data-filterable="SRS-HAL-001 motor driver bts7960 pwm">
           <span class="doc-id">SRS-HAL-001</span>
           <div>
-            <a class="doc-link" href="srs-roboclaw-driver.html">roboclaw_driver</a>
-            <div class="doc-oneliner">Motor controller interface. Converts Twist to per-track velocities; publishes odometry and battery.</div>
+            <a class="doc-link" href="srs-motor-driver.html">motor_driver</a>
+            <div class="doc-oneliner">Motor controller interface. Converts Twist to per-track velocities via open-loop GPIO PWM (BTS7960 H-bridges).</div>
           </div>
           <span class="doc-status">DRAFT</span>
         </li>
@@ -135,7 +135,7 @@
           <span class="doc-id">SRS-PER-001</span>
           <div>
             <a class="doc-link" href="srs-yolo-detector.html">yolo_detector</a>
-            <div class="doc-oneliner">YOLO object detection on OAK-D Lite onboard NPU. Publishes detections at 10 Hz.</div>
+            <div class="doc-oneliner">YOLO object detection on OAK-D Lite FF onboard NPU. Publishes detections at 10 Hz.</div>
           </div>
           <span class="doc-status">DRAFT</span>
         </li>
@@ -278,11 +278,11 @@
           </div>
           <span class="doc-status">DRAFT</span>
         </li>
-        <li data-filterable="anatomy roboclaw motor driver">
+        <li data-filterable="anatomy motor driver bts7960">
           <span class="doc-id">ANAT-HAL</span>
           <div>
-            <a class="doc-link" href="anatomy-roboclaw-driver.html">roboclaw_driver · anatomy</a>
-            <div class="doc-oneliner">Serial interface, kinematics, odometry computation, fault handling.</div>
+            <a class="doc-link" href="anatomy-motor-driver.html">motor_driver · anatomy</a>
+            <div class="doc-oneliner">GPIO PWM control of 2× BTS7960 H-bridges, skid-steer kinematics, safe-halt timeout.</div>
           </div>
           <span class="doc-status">DRAFT</span>
         </li>

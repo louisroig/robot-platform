@@ -51,7 +51,7 @@
     <div class="doc-header">
       <div class="doc-type interface">INTERFACE CONTROL DOCUMENT</div>
       <h1 class="doc-title"><code>/hal/odom</code></h1>
-      <p class="doc-subtitle">Wheel odometry from the RoboClaw motor controller. Pose is integrated from track-side encoders using skid-steer kinematics.</p>
+      <p class="doc-subtitle">Odometry from EKF fusion of IMU and visual odometry. Deferred to M5 in iteration 1.</p>
 
       <div class="doc-meta">
         <div class="meta-item"><div class="meta-label">Document ID</div><div class="meta-value">ICD-HAL-003</div></div>
@@ -62,9 +62,14 @@
       </div>
     </div>
 
+    <div class="callout warning">
+      <div class="callout-label">Deferred to M5</div>
+      <p><code>/hal/odom</code> is deferred from iteration 1 (M1 milestone). The <a href="../nodes/srs-motor-driver.html">motor_driver</a> has no wheel encoders; odometry is produced by EKF fusion of IMU and visual odometry from the OAK-D Lite FF in M5 and exposed via <code>/odometry/filtered</code>. This ICD documents the future contract.</p>
+    </div>
+
     <section id="s1">
       <div class="section-header"><span class="section-num">1.0</span><h2 class="section-title">Purpose</h2></div>
-      <p>The <code>/hal/odom</code> topic carries wheel-encoder-derived odometry for the rover. The <a href="../nodes/srs-roboclaw-driver.html">roboclaw_driver</a> reads encoder counts from the motor controller, applies skid-steer kinematics, and integrates to produce a pose in the <code>odom</code> frame.</p>
+      <p>The <code>/hal/odom</code> topic carries odometry for the rover. In iteration 1 (M1–M4), the rover relies on IMU dead-reckoning. At M5, the EKF fuses IMU, motor_driver commands, and visual odometry from the OAK-D Lite FF to produce a fused pose estimate published on <code>/odometry/filtered</code>. This future topic will carry the fused odometry in the <code>odom</code> frame, replacing direct encoder readout.</p>
       <p>This is the primary proprioceptive sensor for the rover's local-frame EKF. It is fast (50 Hz), low-latency, and drifts over time — exactly the profile the EKF expects.</p>
     </section>
 
@@ -72,12 +77,11 @@
       <div class="section-header"><span class="section-num">2.0</span><h2 class="section-title">Participants</h2></div>
       <div class="participants">
         <div class="participant-card pub">
-          <div class="participant-role">Publisher</div>
-          <div class="participant-name">roboclaw_driver</div>
+          <div class="participant-role">Publisher (deferred in iter 1)</div>
+          <div class="participant-name">EKF fusion node (M5)</div>
           <div class="participant-detail">
-            <strong>Package</strong>platform_hal
-            <strong>SRS</strong><a href="../nodes/srs-roboclaw-driver.html">SRS-HAL-001</a>
-            <strong>Responsibility</strong>Read encoder counts at 50 Hz, compute pose delta via skid-steer kinematics, integrate, publish Odometry in <code>odom</code> frame.
+            <strong>Package</strong>platform_perception / robot_localization
+            <strong>Responsibility</strong>Fuse IMU, visual odometry, and motor commands to produce filtered odometry. Publish Odometry in <code>odom</code> frame at 50 Hz.
           </div>
         </div>
         <div class="participant-card sub">
@@ -98,7 +102,7 @@
         <table class="data-table">
           <thead><tr><th>Field</th><th>Type</th><th>Semantics</th></tr></thead>
           <tbody>
-            <tr><td><span class="field-name">header.stamp</span></td><td><span class="field-type">time</span></td><td>Time encoder counts were sampled on the Pi (not the RoboClaw).</td></tr>
+            <tr><td><span class="field-name">header.stamp</span></td><td><span class="field-type">time</span></td><td>Time the fused pose sample was produced on the Pi.</td></tr>
             <tr><td><span class="field-name">header.frame_id</span></td><td><span class="field-type">string</span></td><td>Always <code>odom</code>.</td></tr>
             <tr><td><span class="field-name">child_frame_id</span></td><td><span class="field-type">string</span></td><td>Always <code>base_link</code>.</td></tr>
             <tr><td><span class="field-name">pose.pose</span></td><td><span class="field-type">Pose</span></td><td>Integrated position + orientation in <code>odom</code> frame. Drifts over time.</td></tr>
@@ -134,8 +138,8 @@ y       <span class="keyword">+=</span> v <span class="keyword">×</span> sin(θ
           <thead><tr><th>Parameter</th><th>Value</th><th>Notes</th></tr></thead>
           <tbody>
             <tr><td>Publication rate</td><td>50 Hz</td><td>Timer-driven; encoders polled at same rate.</td></tr>
-            <tr><td>Encoder read latency</td><td>≤ 10 ms</td><td>USB serial round-trip to RoboClaw.</td></tr>
-            <tr><td>Stamp offset</td><td>Pi clock at read</td><td>RoboClaw is not time-synchronized; Pi stamp used.</td></tr>
+            <tr><td>Fusion cycle latency</td><td>≤ 20 ms</td><td>EKF step time on the Pi.</td></tr>
+            <tr><td>Stamp offset</td><td>Pi clock at fusion step</td><td>All inputs (IMU, VIO) re-stamped on the Pi clock before fusion.</td></tr>
           </tbody>
         </table>
       </div>
@@ -161,7 +165,7 @@ y       <span class="keyword">+=</span> v <span class="keyword">×</span> sin(θ
         <table class="data-table">
           <thead><tr><th>Fault</th><th>Response</th></tr></thead>
           <tbody>
-            <tr><td>RoboClaw unplugged / USB disconnect</td><td>roboclaw_driver enters FAULT; publishes <code>/hal/odom_status.encoders_healthy = false</code>. No <code>/hal/odom</code> messages emitted.</td></tr>
+            <tr><td>IMU or VIO input stale</td><td>EKF fusion node emits degraded pose with inflated covariance; health bit flips in <code>/hal/odom_status</code>.</td></tr>
             <tr><td>Encoder wrap</td><td>Driver uses signed 32-bit delta arithmetic. Single wrap is handled; two missed reads around wrap could corrupt — covered by <code>TEST-HAL-004</code>.</td></tr>
             <tr><td>One encoder fails</td><td>Detected by cross-check of commanded vs sensed velocity. Driver transitions to degraded; reports on <code>/diagnostics</code>; odom publishing continues with increased covariance on yaw.</td></tr>
           </tbody>
