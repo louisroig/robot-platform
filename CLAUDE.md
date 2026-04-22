@@ -104,7 +104,7 @@ ros_ws/src/platform_hal/
 │   ├── __init__.py
 │   ├── motor_driver.py     ← SRS-HAL-001
 │   ├── imu_driver.py       ← SRS-HAL-002
-│   └── safety_monitor.py   ← SRS-HAL-003 (stub at M1)
+│   └── safety_monitor.py   ← SRS-SAF-001 (stub at M1)
 └── test/
     ├── fixtures/
     │   └── mock_motor_driver.py   ← mock GPIO for CI
@@ -139,7 +139,7 @@ ros_ws/src/platform_hal/
   coding the node.
 - **Spec:** `spec-site/nodes/srs-imu-driver.html`
 
-### safety_monitor (SRS-HAL-003) — STUB AT M1
+### safety_monitor (SRS-SAF-001) — STUB AT M1
 - **Sub:** `/hal/cmd_vel_raw` (Twist)
 - **Pub:** `/hal/cmd_vel_safe` (Twist)
 - **M1 behavior:** Unconditional pass-through. No gating.

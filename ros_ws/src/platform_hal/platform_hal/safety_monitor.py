@@ -1,4 +1,4 @@
-"""SRS-HAL-003 safety_monitor — M1 STUB.
+"""SRS-SAF-001 safety_monitor — M1 STUB.
 
 Per CLAUDE.md, M1 behavior is unconditional pass-through:
 /hal/cmd_vel_raw → /hal/cmd_vel_safe with no gating. The full
