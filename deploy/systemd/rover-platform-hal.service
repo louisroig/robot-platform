@@ -1,0 +1,17 @@
+[Unit]
+Description=robot-platform HAL stack (motor_driver + safety_monitor)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=rover
+WorkingDirectory=/home/rover/robot-platform/ros_ws
+# Source ROS 2 Jazzy + the workspace overlay, then launch.
+# Using bash -c because systemd doesn't do shell sourcing.
+ExecStart=/bin/bash -c 'source /opt/ros/jazzy/setup.bash && source install/setup.bash && ros2 launch platform_hal platform_hal.launch.py'
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

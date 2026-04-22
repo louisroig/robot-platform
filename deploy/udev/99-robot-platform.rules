@@ -1,0 +1,7 @@
+# robot-platform udev rules
+# TODO: confirm the actual USB device IDs for IMU breakout and any FTDI adapters
+# once the hardware is final. Current file is a placeholder so the deploy/ tree
+# is non-empty and the M1 bring-up procedure has something to edit.
+
+# Example pattern (inactive — commented out until confirmed):
+# SUBSYSTEM=="tty", ATTRS{idVendor}=="XXXX", ATTRS{idProduct}=="YYYY", SYMLINK+="imu", MODE="0666"
