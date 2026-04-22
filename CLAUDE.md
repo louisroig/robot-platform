@@ -102,6 +102,7 @@ ros_ws/src/platform_hal/
 │   └── platform_hal
 ├── platform_hal/
 │   ├── __init__.py
+│   ├── gpio_backend.py     ← GPIO abstraction (LgpioBackend + MockGpioBackend)
 │   ├── motor_driver.py     ← SRS-HAL-001
 │   ├── imu_driver.py       ← SRS-HAL-002
 │   └── safety_monitor.py   ← SRS-SAF-001 (stub at M1)
@@ -122,6 +123,7 @@ ros_ws/src/platform_hal/
 - **Does:** Twist → skid-steer kinematics → PWM + DIR on 4 GPIO pins via BTS7960
 - **Key params:** `track_width_m` 0.28 m · `max_linear_vel` 0.7 m/s · `max_angular_vel`
   1.5 rad/s · `pwm_frequency_hz` 2000 · `cmd_vel_timeout_ms` 500
+- GPIO backend pluggable via `gpio_backend` param (`lgpio` for hardware, `mock` for tests).
 - **Safety:** Hold zero on startup until first valid message. Safe-halt if no message
   in 500 ms. (satisfies SR-005, SR-008)
 - **Spec:** `spec-site/nodes/srs-motor-driver.html`
