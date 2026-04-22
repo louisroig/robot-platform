@@ -197,7 +197,7 @@ class TestCmdVelTimeout(unittest.TestCase):
                 f'TEST-HAL-009 PASS: {N_TRIALS} trials, '
                 f'latencies (ms): min={min(latencies_ms):.1f} '
                 f'max={max(latencies_ms):.1f} '
-                f'mean={sum(latencies_ms)/len(latencies_ms):.1f}'
+                f'mean={sum(latencies_ms) / len(latencies_ms):.1f}'
             )
         finally:
             self.executor.remove_node(publisher_node)
