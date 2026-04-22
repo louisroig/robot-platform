@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HW-PI5-001 · Rover Pi 5 wiring reference</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=IBM+Plex+Sans:wght@300;400;500;600;700&family=IBM+Plex+Serif:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../shared/shared.css">
+</head>
+<body>
+<div class="doc-bar">
+  <a class="doc-bar-crumb" href="../index.html">← HOME</a><span class="doc-bar-sep">·</span>
+  <a class="doc-bar-crumb" href="index.html">HARDWARE</a><span class="doc-bar-sep">·</span>
+  <span class="doc-bar-id">HW-PI5-001</span><span class="doc-bar-sep">·</span>
+  <span class="doc-bar-path">Rover Pi 5 wiring</span><span class="doc-bar-sep">·</span>
+  <span style="color: var(--ink-dim)">REV 0.1</span>
+  <div class="doc-bar-status"><span class="status-dot"></span><span>DRAFT</span></div>
+  <div class="doc-bar-tools">
+    <button class="tool-btn" onclick="window.print()">PRINT</button>
+    <button class="tool-btn" onclick="copyLink(event)">COPY LINK</button>
+  </div>
+</div>
+
+<div class="container">
+  <nav class="toc">
+    <div class="toc-title">CONTENTS</div>
+    <ul class="toc-list">
+      <li class="toc-item"><a class="toc-link" href="#s1"><span class="toc-num">1.0</span>Purpose</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s2"><span class="toc-num">2.0</span>Hardware Inventory</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s3"><span class="toc-num">3.0</span>GPIO Allocation</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s4"><span class="toc-num">4.0</span>Motor Drive · IBT-2</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s5"><span class="toc-num">5.0</span>E-stop</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s6"><span class="toc-num">6.0</span>IMU · Qwiic</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s7"><span class="toc-num">7.0</span>Power &amp; Grounding</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s8"><span class="toc-num">8.0</span>Bring-up Checklist</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s9"><span class="toc-num">9.0</span>Open Issues</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s10"><span class="toc-num">10.0</span>Revision</a></li>
+    </ul>
+  </nav>
+
+  <main class="prose-serif">
+    <div class="doc-header">
+      <div class="doc-type">HARDWARE REFERENCE · PI 5 ROVER</div>
+      <h1 class="doc-title">Rover Pi 5 wiring reference</h1>
+      <p class="doc-subtitle">Authoritative GPIO allocation, per-device wiring, and bring-up procedure for the iteration-1 rover. Freezes the BCM pin assignments used by <code>motor_driver</code>, <code>estop_monitor</code>, and <code>imu_driver</code>.</p>
+      <div class="doc-meta">
+        <div class="meta-item"><div class="meta-label">Document ID</div><div class="meta-value">HW-PI5-001</div></div>
+        <div class="meta-item"><div class="meta-label">Revision</div><div class="meta-value">0.1 · draft</div></div>
+        <div class="meta-item"><div class="meta-label">Owner</div><div class="meta-value">platform_hal</div></div>
+        <div class="meta-item"><div class="meta-label">Classification</div><div class="meta-value">Hardware reference</div></div>
+        <div class="meta-item"><div class="meta-label">Applies To</div><div class="meta-value">Iteration 1 (M1–M6)</div></div>
+        <div class="meta-item"><div class="meta-label">Last Updated</div><div class="meta-value">2026-04-22</div></div>
+      </div>
+    </div>
+
+    <section id="s1"><div class="section-header"><span class="section-num">1.0</span><h2 class="section-title">Purpose</h2></div>
+      <p>This document is the single source of truth for the Pi 5 rover's physical wiring. It freezes the BCM pin assignments used by the <a href="../nodes/srs-motor-driver.html">motor_driver</a>, <a href="../nodes/srs-estop-monitor.html">estop_monitor</a>, and <a href="../nodes/srs-imu-driver.html">imu_driver</a> SRSes, documents the per-device wiring, and provides a bring-up procedure. It closes OPEN-03 of <a href="../nodes/srs-motor-driver.html">SRS-HAL-001</a>.</p>
+      <p>Downstream: the ROS parameter YAML defaults, the <code>deploy/udev/</code> rules, and the electrical schematic all derive their pin numbers from this document. When pins change here, they change everywhere — do not fork.</p>
+    </section>
+
+    <section id="s2"><div class="section-header"><span class="section-num">2.0</span><h2 class="section-title">Hardware Inventory</h2></div>
+
+      <table class="data-table">
+        <thead><tr><th>Component</th><th>Specifics</th><th>Quantity</th></tr></thead>
+        <tbody>
+          <tr><td>Compute</td><td>Raspberry Pi 5, 8 GB, Ubuntu Server 24.04 LTS</td><td>1</td></tr>
+          <tr><td>Motor controller</td><td>IBT-2 BTS7960B dual half-bridge module</td><td>2 (one per track)</td></tr>
+          <tr><td>Drive motors</td><td>XR25-370 12 V DC geared motor, 1:34.02 ratio</td><td>2</td></tr>
+          <tr><td>IMU</td><td>SparkFun ISM330DHCX 6-DoF, Qwiic</td><td>1</td></tr>
+          <tr><td>Qwiic HAT</td><td>SparkFun Qwiic pHAT v2 (or Qwiic SHIM)</td><td>1</td></tr>
+          <tr><td>E-stop</td><td>22 mm mushroom, DPST-NC, ≥10 A @ 24 VDC</td><td>1</td></tr>
+          <tr><td>Battery</td><td>12 V nominal, ≥10 A continuous, 3S LiPo or equivalent</td><td>1</td></tr>
+          <tr><td>Decoupling cap</td><td>1000 µF electrolytic, ≥25 V</td><td>2 (one per IBT-2)</td></tr>
+          <tr><td>Star-ground terminal</td><td>Screw terminal strip, 4+ positions</td><td>1</td></tr>
+        </tbody>
+      </table>
+
+      <p class="paragraph-note">Motor parameters: 12 V DC, 350 rpm no-load, 200 rpm rated, 1.5 A rated, &lt;5.5 A stall per motor. Two-motor worst case ≈ 11 A peak, well within each IBT-2's 43 A peak / 10 A continuous rating per board.</p>
+    </section>
+
+    <section id="s3"><div class="section-header"><span class="section-num">3.0</span><h2 class="section-title">GPIO Allocation</h2></div>
+
+      <p>Frozen pin assignments for iteration 1. All pins are Pi 5 40-pin header, BCM numbering. Header pin numbers given for physical reference.</p>
+
+      <table class="data-table">
+        <thead><tr><th>Function</th><th>BCM GPIO</th><th>Header pin</th><th>Direction</th><th>Notes</th></tr></thead>
+        <tbody>
+          <tr><td>Left track — RPWM (forward)</td><td>GPIO 12</td><td>32</td><td>out, PWM</td><td>PWM0, hardware</td></tr>
+          <tr><td>Left track — LPWM (reverse)</td><td>GPIO 13</td><td>33</td><td>out, PWM</td><td>PWM1, hardware</td></tr>
+          <tr><td>Right track — RPWM (forward)</td><td>GPIO 18</td><td>12</td><td>out, PWM</td><td>PWM0, hardware (alt)</td></tr>
+          <tr><td>Right track — LPWM (reverse)</td><td>GPIO 19</td><td>35</td><td>out, PWM</td><td>PWM1, hardware (alt)</td></tr>
+          <tr><td>E-stop signal</td><td>GPIO 17</td><td>11</td><td>in, pull-down</td><td>HIGH = normal · LOW = pressed or disconnected</td></tr>
+          <tr><td>I²C SDA (IMU, via Qwiic HAT)</td><td>GPIO 2</td><td>3</td><td>bidir</td><td>I²C bus 1</td></tr>
+          <tr><td>I²C SCL (IMU, via Qwiic HAT)</td><td>GPIO 3</td><td>5</td><td>out</td><td>I²C bus 1</td></tr>
+          <tr><td>3V3 rail (logic supply)</td><td>—</td><td>1, 17</td><td>—</td><td>IBT-2 VCC · R_EN · L_EN · IMU via Qwiic</td></tr>
+          <tr><td>GND (logic)</td><td>—</td><td>6, 9, 14, 20, 25, 30, 34, 39</td><td>—</td><td>Tie to star ground</td></tr>
+        </tbody>
+      </table>
+
+      <div class="callout">
+        <div class="callout-title">Hardware PWM on Pi 5</div>
+        <p>The Pi 5's RP1 chip exposes PWM0 on GPIO 12 or GPIO 18 and PWM1 on GPIO 13 or GPIO 19. This allocation uses all four channels — two per track — so every PWM output is hardware-generated. No software PWM is used anywhere in the motor control path.</p>
+      </div>
+
+      <p class="paragraph-note">GPIO 14/15 are intentionally left unused so the UART console remains available for debugging. The CSI/DSI lanes, SPI flash pins, and PoE pads are untouched.</p>
+    </section>
+
+    <section id="s4"><div class="section-header"><span class="section-num">4.0</span><h2 class="section-title">Motor Drive · IBT-2</h2></div>
+
+      <p>Two IBT-2 boards, one per track. Each IBT-2 has two BTS7960B chips internally wired as a single H-bridge; <em>one IBT-2 = one motor</em>. Driven in dual-PWM mode (not simple PWM+DIR mode) to get proper bidirectional control with regenerative braking at zero.</p>
+
+      <h3 class="subsection-title">4.1 · IBT-2 terminal identification</h3>
+
+      <table class="data-table">
+        <thead><tr><th>Block</th><th>Pin</th><th>Label</th><th>Role</th></tr></thead>
+        <tbody>
+          <tr><td rowspan="4">Green (motor power)</td><td>1</td><td>B+</td><td>Battery positive</td></tr>
+          <tr><td>2</td><td>B−</td><td>Battery negative</td></tr>
+          <tr><td>3</td><td>M+</td><td>Motor wire A</td></tr>
+          <tr><td>4</td><td>M−</td><td>Motor wire B</td></tr>
+          <tr><td rowspan="8">Black (logic header, 8-pin)</td><td>1</td><td>RPWM</td><td>PWM input, forward direction</td></tr>
+          <tr><td>2</td><td>LPWM</td><td>PWM input, reverse direction</td></tr>
+          <tr><td>3</td><td>R_EN</td><td>Right-side enable, tie to 3V3</td></tr>
+          <tr><td>4</td><td>L_EN</td><td>Left-side enable, tie to 3V3</td></tr>
+          <tr><td>5</td><td>R_IS</td><td>Current sense output (unused)</td></tr>
+          <tr><td>6</td><td>L_IS</td><td>Current sense output (unused)</td></tr>
+          <tr><td>7</td><td>VCC</td><td>Logic supply, 3.3 V from Pi</td></tr>
+          <tr><td>8</td><td>GND</td><td>Logic ground, tie to star ground</td></tr>
+        </tbody>
+      </table>
+
+      <h3 class="subsection-title">4.2 · Per-board wiring</h3>
+
+      <p><strong>LEFT track IBT-2:</strong></p>
+      <table class="data-table">
+        <thead><tr><th>IBT-2 terminal</th><th>Connects to</th></tr></thead>
+        <tbody>
+          <tr><td>RPWM</td><td>Pi GPIO 12 (header pin 32)</td></tr>
+          <tr><td>LPWM</td><td>Pi GPIO 13 (header pin 33)</td></tr>
+          <tr><td>R_EN, L_EN</td><td>Pi 3V3 (header pin 17) — both tied high</td></tr>
+          <tr><td>R_IS, L_IS</td><td>leave open (unused)</td></tr>
+          <tr><td>VCC</td><td>Pi 3V3 (header pin 1)</td></tr>
+          <tr><td>GND</td><td>Star ground</td></tr>
+          <tr><td>B+</td><td>Battery + (via e-stop pole 1)</td></tr>
+          <tr><td>B−</td><td>Star ground</td></tr>
+          <tr><td>M+, M−</td><td>Left motor (polarity per §8.4 check)</td></tr>
+        </tbody>
+      </table>
+
+      <p><strong>RIGHT track IBT-2:</strong> identical pattern with GPIO 18 → RPWM and GPIO 19 → LPWM.</p>
+
+      <h3 class="subsection-title">4.3 · Dual-PWM signalling convention</h3>
+
+      <p>The software drives each track with a signed duty value in [−1.0, 1.0]:</p>
+      <table class="data-table">
+        <thead><tr><th>Commanded value</th><th>RPWM output</th><th>LPWM output</th><th>Motor behavior</th></tr></thead>
+        <tbody>
+          <tr><td>0.0</td><td>0 %</td><td>0 %</td><td>Coast / regen brake</td></tr>
+          <tr><td>+v (0&lt;v≤1)</td><td>v × 100 %</td><td>0 %</td><td>Forward at duty v</td></tr>
+          <tr><td>−v</td><td>0 %</td><td>v × 100 %</td><td>Reverse at duty v</td></tr>
+        </tbody>
+      </table>
+
+      <p class="paragraph-note">Driving both RPWM and LPWM non-zero simultaneously would short-circuit the motor through the H-bridge and risks board damage. The <code>LgpioBackend</code> in <code>gpio_backend.py</code> enforces the mutual-exclusion invariant by construction.</p>
+
+      <h3 class="subsection-title">4.4 · Decoupling</h3>
+
+      <p>Install a 1000 µF / 25 V+ electrolytic capacitor across each IBT-2's B+ and B− terminals, as close to the terminal block as practical. This absorbs back-EMF transients from aggressive braking and stabilizes the motor supply rail during stall events.</p>
+    </section>
+
+    <section id="s5"><div class="section-header"><span class="section-num">5.0</span><h2 class="section-title">E-stop</h2></div>
+
+      <p>The e-stop must perform <strong>two independent functions simultaneously</strong>: cut motor power in hardware, and signal the ROS stack. This requires a DPST-NC switch — two normally-closed contacts that open together when the mushroom is pressed.</p>
+
+      <h3 class="subsection-title">5.1 · Switch specification</h3>
+
+      <table class="data-table">
+        <thead><tr><th>Parameter</th><th>Minimum</th><th>Notes</th></tr></thead>
+        <tbody>
+          <tr><td>Form factor</td><td>22 mm mushroom, twist-release</td><td>Panel-mount, threaded bezel</td></tr>
+          <tr><td>Pole configuration</td><td>DPST-NC</td><td>Both contacts normally closed</td></tr>
+          <tr><td>Motor-side rating</td><td>≥ 10 A @ 24 VDC</td><td>Margin over 2× 5.5 A stall worst case</td></tr>
+          <tr><td>Signal-side rating</td><td>Any (logic level)</td><td>Carries &lt; 1 mA at 3.3 V</td></tr>
+        </tbody>
+      </table>
+
+      <h3 class="subsection-title">5.2 · Wiring</h3>
+
+      <p><strong>Pole 1 · motor power cut:</strong></p>
+      <p>Wire the NC contact in series with the battery positive lead, between battery+ and the B+ terminals of both IBT-2 boards. Pressing the mushroom opens this contact and removes motor power at the hardware level, independent of any software.</p>
+
+      <p><strong>Pole 2 · signal to Pi:</strong></p>
+      <p>Wire the NC contact between Pi 3V3 (header pin 17) and GPIO 17 (header pin 11). Enable the internal pull-down on GPIO 17 in the <code>estop_monitor</code> node.</p>
+
+      <table class="data-table">
+        <thead><tr><th>Switch state</th><th>Pole 1</th><th>Pole 2</th><th>GPIO 17</th><th>Interpretation</th></tr></thead>
+        <tbody>
+          <tr><td>Normal</td><td>closed · motor power on</td><td>closed · 3V3 to GPIO 17</td><td>HIGH</td><td>Safe to operate</td></tr>
+          <tr><td>Pressed</td><td>open · motor power cut</td><td>open · pull-down wins</td><td>LOW</td><td>Emergency</td></tr>
+          <tr><td>Wire broken</td><td>—</td><td>open · pull-down wins</td><td>LOW</td><td>Emergency (fail-safe)</td></tr>
+        </tbody>
+      </table>
+
+      <div class="callout">
+        <div class="callout-title">Failsafe polarity</div>
+        <p>The "HIGH = normal, LOW = emergency" convention is deliberate. A broken wire, a disconnected switch, a boot-before-cable-plugged sequence, or a power-glitched input all default to the safe interpretation: stop. The inverse convention would allow any wiring fault to silently defeat the e-stop.</p>
+      </div>
+    </section>
+
+    <section id="s6"><div class="section-header"><span class="section-num">6.0</span><h2 class="section-title">IMU · Qwiic</h2></div>
+
+      <p>The ISM330DHCX breakout connects via a SparkFun Qwiic HAT or SHIM, which routes Pi GPIO 2 (SDA) and GPIO 3 (SCL) plus 3V3 and GND to a JST-SH 4-pin Qwiic connector. A single Qwiic cable from HAT to breakout carries all four signals. No individual pin wiring required.</p>
+
+      <h3 class="subsection-title">6.1 · Configuration</h3>
+
+      <table class="data-table">
+        <thead><tr><th>Parameter</th><th>Value</th><th>Notes</th></tr></thead>
+        <tbody>
+          <tr><td>I²C bus</td><td>1</td><td>Pi default, enabled via <code>raspi-config</code> or <code>/boot/firmware/config.txt</code></td></tr>
+          <tr><td>I²C address</td><td>0x6A or 0x6B</td><td>ISM330DHCX, depending on SA0 solder jumper</td></tr>
+          <tr><td>Clock rate</td><td>400 kHz (fast-mode)</td><td>Standard I²C fast mode; ISM330DHCX supports up to 1 MHz if needed</td></tr>
+          <tr><td>INT1 pin</td><td>unused (M1)</td><td>Polling at 100 Hz in a timer is sufficient. INT1 wiring deferred to M2+ if jitter becomes a concern.</td></tr>
+        </tbody>
+      </table>
+
+      <p class="paragraph-note">Magnetometer (MMC5983MA) omitted from iteration 1 per spec revision. Near-motor iron contamination and absence of an outdoor-heading use case in M1–M6 made the calibration burden disproportionate. Deferred to iteration 2+ when Nav2 requires global heading.</p>
+    </section>
+
+    <section id="s7"><div class="section-header"><span class="section-num">7.0</span><h2 class="section-title">Power &amp; Grounding</h2></div>
+
+      <h3 class="subsection-title">7.1 · Rail separation</h3>
+
+      <p>Three independent power rails on the rover:</p>
+      <ul class="prose-list">
+        <li><strong>Motor bus · 12 V.</strong> Direct from battery, through e-stop pole 1, to both IBT-2 B+ terminals. High current (up to 11 A peak), electrically noisy.</li>
+        <li><strong>Pi 5 V.</strong> Derived from the 12 V bus through a dedicated buck converter (minimum 3 A rated; Pi 5 draws up to 2.5 A at full load). Must be filtered; share only ground with the motor bus, not the 12 V rail directly.</li>
+        <li><strong>Logic 3.3 V.</strong> Generated by the Pi itself, exposed on header pins 1 and 17. Powers IBT-2 logic side, e-stop signal pole, and the Qwiic bus.</li>
+      </ul>
+
+      <h3 class="subsection-title">7.2 · Star ground</h3>
+
+      <p>A single physical tie point — a screw terminal block or ring-lug junction — collects:</p>
+      <ul class="prose-list">
+        <li>Battery negative terminal</li>
+        <li>Both IBT-2 B− terminals</li>
+        <li>Both IBT-2 logic GND terminals</li>
+        <li>Pi 5 V buck converter output negative</li>
+        <li>Pi header GND (any of pins 6, 9, 14, 20, 25, 30, 34, 39 — one is sufficient)</li>
+      </ul>
+      <p>Do not daisy-chain grounds; each component gets its own run back to the star. Daisy-chained grounds introduce resistive voltage offsets that cause spurious GPIO reads and I²C errors under load.</p>
+
+      <h3 class="subsection-title">7.3 · Battery</h3>
+
+      <p>12 V nominal, minimum 10 A continuous discharge, minimum 5 Ah for a 30-minute demo run. A 3S LiPo (11.1 V nominal, 12.6 V full charge) at 3000–5000 mAh with ≥10 C rating meets all three. A 12 V 7 Ah SLA works but adds weight and charges slowly.</p>
+
+      <p class="paragraph-note">The motor supply range for XR25-370 is nominal 12 V; 3S LiPo at full charge (12.6 V) is within tolerance. 4S (14.8 V) exceeds the motor rating and risks premature brush wear; not recommended.</p>
+    </section>
+
+    <section id="s8"><div class="section-header"><span class="section-num">8.0</span><h2 class="section-title">Bring-up Checklist</h2></div>
+
+      <p>Work through these in order. Do not skip. Each step is a gate: if it fails, stop and fix before proceeding.</p>
+
+      <h3 class="subsection-title">8.1 · Pre-power</h3>
+      <ol class="prose-list">
+        <li>Confirm battery is disconnected and e-stop is pressed (open).</li>
+        <li>Visually verify all four motor-side wires are secure in screw terminals (no loose strands bridging terminals).</li>
+        <li>Visually verify star ground has all five connections (battery −, 2× IBT-2 B−, 2× IBT-2 GND, Pi GND, buck converter −).</li>
+        <li>Check continuity from star ground to each end-point with a multimeter; &lt; 0.1 Ω expected.</li>
+        <li>Verify no continuity from battery + to star ground (checks for wiring shorts).</li>
+      </ol>
+
+      <h3 class="subsection-title">8.2 · Logic-only power-on</h3>
+      <ol class="prose-list">
+        <li>Power Pi 5 from USB-C wall supply (not from the buck converter yet). Battery stays disconnected.</li>
+        <li>Boot into Ubuntu Server 24.04. Log in.</li>
+        <li>Enable I²C: <code>sudo raspi-config nonint do_i2c 0</code>. Reboot if prompted.</li>
+        <li>Run <code>i2cdetect -y 1</code>. Expect to see 0x6A or 0x6B for the ISM330DHCX. If empty, check the Qwiic cable seat.</li>
+        <li>Run <code>gpioinfo</code>. Verify GPIO 12, 13, 17, 18, 19 are not claimed by any existing service.</li>
+      </ol>
+
+      <h3 class="subsection-title">8.3 · Motor bench test (tracks off ground)</h3>
+      <ol class="prose-list">
+        <li>Rover on blocks, tracks free to spin without contact.</li>
+        <li>Release e-stop (twist to un-latch).</li>
+        <li>Connect battery.</li>
+        <li>Verify motor supply by checking voltage at each IBT-2 B+ / B−: should read battery voltage (~12 V).</li>
+        <li>From ROS 2: <code>ros2 launch platform_hal platform_hal.launch.py</code></li>
+        <li>Publish a low forward command: <code>ros2 topic pub -r 50 /hal/cmd_vel_raw geometry_msgs/Twist "{linear: {x: 0.1}}"</code></li>
+        <li>Both tracks should spin forward. Note any unexpected behavior before continuing.</li>
+        <li>Press e-stop. Both tracks must stop within &lt; 100 ms of press. If they do not, disconnect battery immediately and recheck pole 1 wiring.</li>
+      </ol>
+
+      <h3 class="subsection-title">8.4 · Direction-polarity check</h3>
+      <ol class="prose-list">
+        <li>With tracks still off the ground, command <code>linear.x: 0.1</code> and confirm both tracks spin in the same direction (both wind the rover forward, not against each other).</li>
+        <li>If the left track spins opposite to the right: swap M+ and M− on the left IBT-2 only. Do not invert signs in software.</li>
+        <li>Command <code>angular.z: 0.5</code> and confirm the rover would skid-turn counter-clockwise (left track backward, right track forward).</li>
+        <li>If turn direction is inverted, swap M+ and M− on both IBT-2 boards. Then redo the previous step.</li>
+      </ol>
+
+      <h3 class="subsection-title">8.5 · On-ground test</h3>
+      <ol class="prose-list">
+        <li>Rover on hard flat ground. Clear space ≥ 3 m in all directions.</li>
+        <li>Operator has e-stop within immediate reach.</li>
+        <li>Publish <code>linear.x: 0.2</code> for 2 seconds. Rover moves forward ~0.4 m.</li>
+        <li>Measure actual distance traveled. Divide by 2 s → actual velocity. If significantly &lt; 0.2 m/s, calibration adjustment needed (see <a href="../nodes/srs-motor-driver.html">SRS-HAL-001</a> OPEN-01).</li>
+        <li>Ramp to <code>linear.x: 0.7</code> (spec max) and measure. This is the empirical max linear velocity; update <code>max_linear_vel</code> parameter to match.</li>
+      </ol>
+    </section>
+
+    <section id="s9"><div class="section-header"><span class="section-num">9.0</span><h2 class="section-title">Open Issues</h2></div>
+
+      <ol class="prose-list">
+        <li><strong>OPEN-01</strong> — Drive sprocket diameter not yet measured; <code>max_linear_vel</code> remains spec-value 0.7 m/s pending §8.5 empirical measurement.</li>
+        <li><strong>OPEN-02</strong> — Specific e-stop part number not selected. Spec requirements documented in §5.1; final selection deferred to procurement.</li>
+        <li><strong>OPEN-03</strong> — Buck converter part selection deferred. Must provide ≥ 3 A at 5 V from 12 V input; common options include Pololu D36V28F5 or DFR0571.</li>
+        <li><strong>OPEN-04</strong> — Chassis mass and terrain coefficient-of-friction not characterized. Affects whether 5.0 kg·cm rated torque provides adequate acceleration on grass. Defer to §8.5 outcome.</li>
+      </ol>
+    </section>
+
+    <section id="s10"><div class="section-header"><span class="section-num">10.0</span><h2 class="section-title">Revision</h2></div>
+
+      <table class="data-table">
+        <thead><tr><th>Rev</th><th>Date</th><th>Author</th><th>Change</th></tr></thead>
+        <tbody>
+          <tr><td>0.1</td><td>2026-04-22</td><td>Louis Roig &amp; Claude Opus 4.7</td><td>Initial draft. Freezes GPIO allocation for iteration 1. Resolves SRS-HAL-001 OPEN-03. Removes magnetometer from IMU subsystem. Documents IBT-2 dual-PWM signalling convention.</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <nav class="doc-nav">
+      <a href="../index.html">← Corpus Home</a>
+      <span>Related: <a href="../nodes/srs-motor-driver.html">SRS-HAL-001</a> · <a href="../nodes/srs-estop-monitor.html">SRS-HAL-003</a> · <a href="../nodes/srs-imu-driver.html">SRS-HAL-002</a></span>
+    </nav>
+  </main>
+</div>
+
+<script src="../shared/shared.js"></script>
+</body>
+</html>

@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hardware · Ground-Air Platform Spec</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=IBM+Plex+Sans:wght@300;400;500;600;700&family=IBM+Plex+Serif:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../shared/shared.css">
+</head>
+<body>
+
+<div class="doc-bar">
+  <a class="doc-bar-crumb" href="../index.html">← HOME</a>
+  <span class="doc-bar-sep">·</span>
+  <span class="doc-bar-id">HARDWARE-INDEX</span>
+  <span class="doc-bar-sep">·</span>
+  <span class="doc-bar-path">/hardware</span>
+  <span class="doc-bar-sep">·</span>
+  <span style="color: var(--ink-dim)">REV 0.1</span>
+  <div class="doc-bar-status">
+    <span class="status-dot"></span>
+    <span>DRAFT</span>
+  </div>
+  <div class="doc-bar-tools">
+    <button class="tool-btn" onclick="window.print()">PRINT</button>
+    <button class="tool-btn" onclick="copyLink(event)">COPY LINK</button>
+  </div>
+</div>
+
+<div class="container single">
+  <main>
+
+    <div class="doc-header">
+      <div class="doc-type" style="color: var(--accent-pub);">§ 07 · PHYSICAL</div>
+      <h1 class="doc-title">Hardware</h1>
+      <p class="doc-subtitle">Authoritative wiring references for each platform: GPIO allocation, per-device wiring, power and grounding, and bring-up procedures. Freezes the physical pin assignments that the SRSes and ROS parameter defaults derive from.</p>
+
+      <div class="doc-meta">
+        <div class="meta-item"><div class="meta-label">Section ID</div><div class="meta-value">HARDWARE</div></div>
+        <div class="meta-item"><div class="meta-label">References</div><div class="meta-value">1</div></div>
+        <div class="meta-item"><div class="meta-label">Status</div><div class="meta-value">Draft · Rev 0.1</div></div>
+      </div>
+    </div>
+
+    <section>
+      <div class="section-header">
+        <span class="section-num">1.0</span>
+        <h2 class="section-title">About this section</h2>
+      </div>
+
+      <p class="prose-serif" style="font-family: var(--font-serif); font-size: 15px;">
+        Hardware references are the single source of truth for physical wiring. When a pin assignment appears
+        in a <a href="../nodes/index.html">node SRS</a>, a ROS parameter default, a <code>deploy/udev/</code>
+        rule, or a schematic, its canonical value lives here. When pins change, they change here first; the
+        downstream artifacts follow. Do not fork.
+      </p>
+    </section>
+
+    <section>
+      <div class="section-header">
+        <span class="section-num">2.0</span>
+        <h2 class="section-title">References</h2>
+      </div>
+
+      <div class="doc-group-header">Rover · Iteration 1</div>
+      <ul class="doc-list">
+        <li data-filterable="HW-PI5-001 pi5 wiring gpio rover">
+          <span class="doc-id">HW-PI5-001</span>
+          <div>
+            <a href="hw-pi5-001-rover-wiring.html" class="doc-title-link">Rover Pi 5 wiring reference</a>
+            <div class="doc-desc">GPIO allocation (frozen), IBT-2 dual-PWM wiring, e-stop, IMU Qwiic, power &amp; grounding, bring-up checklist.</div>
+          </div>
+        </li>
+      </ul>
+    </section>
+
+    <div class="footer-nav"><a href="../index.html">← Corpus Home</a></div>
+  </main>
+</div>
+
+<script src="../shared/shared.js"></script>
+</body>
+</html>
