@@ -139,6 +139,7 @@
       <ol class="indent-list">
         <li><strong>OPEN-01</strong> — PWM duty-to-velocity mapping is empirical (calibrated for track slip at various speeds); calibration wizard in iteration 2.</li>
         <li><strong>OPEN-02</strong> — IMU-based stall detection is a coarse health check; encoder-less motor current sensing (via shunt resistor on H-bridge) deferred to iteration 2.</li>
+        <li><strong>OPEN-03</strong> — BCM pin assignments in §8 remain TBD pending the wiring diagram. The M1 scaffold runs against a mock GPIO backend, so any value compiles. For reference the scaffold defaults to <code>pwm_left_pin=12</code>, <code>pwm_right_pin=13</code> (Pi 5 hardware-PWM channels PWM0_0 / PWM0_1), <code>dir_left_pin=23</code>, <code>dir_right_pin=24</code> — candidates if the wiring permits, not committed defaults.</li>
       </ol>
     </section>
 
@@ -146,6 +147,7 @@
       <table class="revision-table"><thead><tr><th>Rev</th><th>Date</th><th>Author</th><th>Change</th></tr></thead><tbody>
         <tr><td class="rev">0.1</td><td>2026-04-19</td><td>Louis Roig &amp; Claude Opus 4.7</td><td>Initial draft (roboclaw_driver).</td></tr>
         <tr><td class="rev">0.2</td><td>2026-04-20</td><td>Louis Roig &amp; Claude Haiku 4.5</td><td>Node renamed from roboclaw_driver. Switched hardware to 2× BTS7960 H-bridges, open-loop PWM. Removed encoder-based publishers and battery telemetry (deferred to M5 EKF and future ADC, respectively).</td></tr>
+        <tr><td class="rev">0.3</td><td>2026-04-21</td><td>Louis Roig &amp; Claude Opus 4.7</td><td>Added OPEN-03 recording the candidate BCM pin assignments (12/13/23/24) used by the M1 scaffold for reference when finalizing the wiring diagram.</td></tr>
       </tbody></table>
     </section>
 
