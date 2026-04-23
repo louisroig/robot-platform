@@ -57,8 +57,8 @@ def _skid_steer(v: float, w: float, track_width: float) -> tuple[float, float]:
 
 
 class MotorDriver(Node):
-    def __init__(self) -> None:
-        super().__init__('motor_driver')
+    def __init__(self, **kwargs) -> None:
+        super().__init__('motor_driver', **kwargs)
 
         # BCM pin defaults frozen in HW-PI5-001 §3: left track RPWM/LPWM on
         # GPIO 12/13, right track on GPIO 18/19 (Pi 5 hardware-PWM channels).
