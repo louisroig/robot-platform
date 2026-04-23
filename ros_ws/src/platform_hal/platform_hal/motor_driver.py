@@ -1,14 +1,17 @@
-"""SRS-HAL-001 motor_driver.
+"""SRS-HAL-001 motor_driver (rev 0.4 — dual-PWM).
 
 Subscribes /hal/cmd_vel_safe (Twist), converts to skid-steer per-track
-velocities, and drives the BTS7960 H-bridges via a pluggable GPIO backend.
-Implements the M1 safety rules:
+velocities, and drives two IBT-2 (BTS7960B) H-bridges via a pluggable GPIO
+backend. Signalling is dual-PWM per SRS-HAL-001 rev 0.4 / HW-PI5-001:
+each track exposes an RPWM (forward) and LPWM (reverse) channel,
+mutually exclusive at every instant. Implements the M1 safety rules:
 
   - SR-008 / SRS-HAL-001-S02: hold zero until first valid command.
   - SR-005 / SRS-HAL-001-F04: halt within cmd_vel_timeout_ms (default 500 ms)
     of last received command. Independent of the upstream safety_monitor.
   - REQ-ICD-002-04 / SRS-HAL-001-F05: reject NaN/Inf in any Twist field.
   - SRS-HAL-001-F02: clip linear and angular velocity to configured maxima.
+  - SRS-HAL-001-F03: mutual-exclusion of RPWM/LPWM per track (backend).
 """
 
 from __future__ import annotations
@@ -47,16 +50,22 @@ def _clip(value: float, limit: float) -> float:
     return value
 
 
+def _skid_steer(v: float, w: float, track_width: float) -> tuple[float, float]:
+    """Twist (linear v, angular w) → (left, right) per-track velocity in m/s."""
+    half_track = track_width / 2.0
+    return v - w * half_track, v + w * half_track
+
+
 class MotorDriver(Node):
     def __init__(self) -> None:
         super().__init__('motor_driver')
 
-        # GPIO pin defaults are placeholders — confirm against wiring diagram
-        # before fielding (CLAUDE.md: BCM pin assignments TBD).
-        self.declare_parameter('pwm_left_pin', 12)
-        self.declare_parameter('dir_left_pin', 23)
-        self.declare_parameter('pwm_right_pin', 13)
-        self.declare_parameter('dir_right_pin', 24)
+        # BCM pin defaults frozen in HW-PI5-001 §3: left track RPWM/LPWM on
+        # GPIO 12/13, right track on GPIO 18/19 (Pi 5 hardware-PWM channels).
+        self.declare_parameter('rpwm_left_pin', 12)
+        self.declare_parameter('lpwm_left_pin', 13)
+        self.declare_parameter('rpwm_right_pin', 18)
+        self.declare_parameter('lpwm_right_pin', 19)
         self.declare_parameter('pwm_frequency_hz', 2000)
         self.declare_parameter('track_width_m', 0.28)
         self.declare_parameter('max_linear_vel', 0.7)
@@ -75,10 +84,10 @@ class MotorDriver(Node):
 
         self._backend = make_backend(backend_name, self)
         self._backend.setup(
-            pwm_left_pin=int(self.get_parameter('pwm_left_pin').value),
-            dir_left_pin=int(self.get_parameter('dir_left_pin').value),
-            pwm_right_pin=int(self.get_parameter('pwm_right_pin').value),
-            dir_right_pin=int(self.get_parameter('dir_right_pin').value),
+            rpwm_left_pin=int(self.get_parameter('rpwm_left_pin').value),
+            lpwm_left_pin=int(self.get_parameter('lpwm_left_pin').value),
+            rpwm_right_pin=int(self.get_parameter('rpwm_right_pin').value),
+            lpwm_right_pin=int(self.get_parameter('lpwm_right_pin').value),
             pwm_frequency_hz=int(self.get_parameter('pwm_frequency_hz').value),
         )
 
@@ -137,10 +146,7 @@ class MotorDriver(Node):
         v = _clip(v, self._max_lin)
         w = _clip(w, self._max_ang)
 
-        # Skid-steer kinematics: v_left/right = v ∓ ω · L/2.
-        half_track = self._track_width / 2.0
-        self._target_left = v - w * half_track
-        self._target_right = v + w * half_track
+        self._target_left, self._target_right = _skid_steer(v, w, self._track_width)
         self._last_cmd_time = self.get_clock().now()
         self._n_cmds_received += 1
 
@@ -166,7 +172,7 @@ class MotorDriver(Node):
     def _publish_diagnostics(self) -> None:
         status = DiagnosticStatus()
         status.name = 'platform_hal: motor_driver'
-        status.hardware_id = 'bts7960_x2'
+        status.hardware_id = 'ibt2_x2'
         if self._last_cmd_time is None:
             status.level = DiagnosticStatus.WARN
             status.message = 'no recent cmd_vel_safe (held at zero)'

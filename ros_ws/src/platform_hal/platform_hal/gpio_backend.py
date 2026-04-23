@@ -4,6 +4,13 @@ Two implementations: LgpioBackend (Pi 5 hardware via the `lgpio` library)
 and MockGpioBackend (publishes per-track signed PWM to /test/motor_pwm
 for integration tests). The motor_driver selects via the `gpio_backend`
 parameter so unit and launch tests can run without hardware.
+
+Signalling convention is IBT-2 dual-PWM per SRS-HAL-001 rev 0.4 / HW-PI5-001:
+each track has an RPWM (forward) and LPWM (reverse) channel, mutually
+exclusive at every instant. The `write(left_signed, right_signed)`
+interface takes duty in [-1.0, 1.0] — sign selects the channel, magnitude
+sets the duty — and the LgpioBackend enforces the mutual-exclusion
+invariant by zeroing the opposite channel before activating the new one.
 """
 
 from __future__ import annotations
@@ -13,8 +20,8 @@ from abc import ABC, abstractmethod
 
 class GpioBackend(ABC):
     @abstractmethod
-    def setup(self, pwm_left_pin: int, dir_left_pin: int,
-              pwm_right_pin: int, dir_right_pin: int,
+    def setup(self, rpwm_left_pin: int, lpwm_left_pin: int,
+              rpwm_right_pin: int, lpwm_right_pin: int,
               pwm_frequency_hz: int) -> None:
         ...
 
@@ -29,50 +36,60 @@ class GpioBackend(ABC):
 
 
 class LgpioBackend(GpioBackend):
-    """Drives BTS7960 via the `lgpio` library on Raspberry Pi 5."""
+    """Drives IBT-2 (BTS7960B) pairs via dual hardware PWM on Raspberry Pi 5."""
 
     def __init__(self) -> None:
         import lgpio  # lazy import — package must build without lgpio installed
         self._lgpio = lgpio
         self._handle: int | None = None
-        self._pwm_left: int | None = None
-        self._pwm_right: int | None = None
-        self._dir_left: int | None = None
-        self._dir_right: int | None = None
+        self._rpwm_left: int | None = None
+        self._lpwm_left: int | None = None
+        self._rpwm_right: int | None = None
+        self._lpwm_right: int | None = None
         self._frequency: int = 0
 
-    def setup(self, pwm_left_pin, dir_left_pin, pwm_right_pin, dir_right_pin,
+    def setup(self, rpwm_left_pin, lpwm_left_pin, rpwm_right_pin, lpwm_right_pin,
               pwm_frequency_hz) -> None:
         self._handle = self._lgpio.gpiochip_open(0)
-        self._pwm_left = pwm_left_pin
-        self._pwm_right = pwm_right_pin
-        self._dir_left = dir_left_pin
-        self._dir_right = dir_right_pin
+        self._rpwm_left = rpwm_left_pin
+        self._lpwm_left = lpwm_left_pin
+        self._rpwm_right = rpwm_right_pin
+        self._lpwm_right = lpwm_right_pin
         self._frequency = pwm_frequency_hz
-        for pin in (dir_left_pin, dir_right_pin):
-            self._lgpio.gpio_claim_output(self._handle, pin, 0)
-        for pin in (pwm_left_pin, pwm_right_pin):
+        for pin in (rpwm_left_pin, lpwm_left_pin, rpwm_right_pin, lpwm_right_pin):
             self._lgpio.tx_pwm(self._handle, pin, pwm_frequency_hz, 0)
 
     def write(self, left_signed: float, right_signed: float) -> None:
         if self._handle is None:
             return
-        self._lgpio.gpio_write(self._handle, self._dir_left, 1 if left_signed >= 0 else 0)
-        self._lgpio.gpio_write(self._handle, self._dir_right, 1 if right_signed >= 0 else 0)
-        self._lgpio.tx_pwm(self._handle, self._pwm_left, self._frequency,
-                           min(100.0, abs(left_signed) * 100.0))
-        self._lgpio.tx_pwm(self._handle, self._pwm_right, self._frequency,
-                           min(100.0, abs(right_signed) * 100.0))
+        self._write_track(self._rpwm_left, self._lpwm_left, left_signed)
+        self._write_track(self._rpwm_right, self._lpwm_right, right_signed)
+
+    def _write_track(self, rpwm_pin: int | None, lpwm_pin: int | None,
+                     signed_duty: float) -> None:
+        if rpwm_pin is None or lpwm_pin is None:
+            return
+        duty_pct = min(100.0, abs(signed_duty) * 100.0)
+        # SRS-HAL-001-F03 mutual exclusion: zero the opposite channel BEFORE
+        # activating the new one. The reverse order would briefly drive both
+        # RPWM and LPWM non-zero, shorting the H-bridge.
+        if signed_duty > 0:
+            self._lgpio.tx_pwm(self._handle, lpwm_pin, self._frequency, 0)
+            self._lgpio.tx_pwm(self._handle, rpwm_pin, self._frequency, duty_pct)
+        elif signed_duty < 0:
+            self._lgpio.tx_pwm(self._handle, rpwm_pin, self._frequency, 0)
+            self._lgpio.tx_pwm(self._handle, lpwm_pin, self._frequency, duty_pct)
+        else:
+            self._lgpio.tx_pwm(self._handle, rpwm_pin, self._frequency, 0)
+            self._lgpio.tx_pwm(self._handle, lpwm_pin, self._frequency, 0)
 
     def cleanup(self) -> None:
         if self._handle is None:
             return
-        for pin in (self._pwm_left, self._pwm_right):
+        for pin in (self._rpwm_left, self._lpwm_left,
+                    self._rpwm_right, self._lpwm_right):
             if pin is not None:
                 self._lgpio.tx_pwm(self._handle, pin, self._frequency, 0)
-        for pin in (self._dir_left, self._dir_right):
-            if pin is not None:
-                self._lgpio.gpio_write(self._handle, pin, 0)
         self._lgpio.gpiochip_close(self._handle)
         self._handle = None
 
@@ -84,7 +101,7 @@ class MockGpioBackend(GpioBackend):
 
     def __init__(self, node) -> None:
         from geometry_msgs.msg import Vector3Stamped
-        from rclpy.qos import QoSProfile, ReliabilityPolicy, HistoryPolicy
+        from rclpy.qos import HistoryPolicy, QoSProfile, ReliabilityPolicy
 
         self._node = node
         self._Vector3Stamped = Vector3Stamped
