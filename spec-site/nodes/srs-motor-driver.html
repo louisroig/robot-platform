@@ -15,7 +15,7 @@
   <a class="doc-bar-crumb" href="index.html">NODES</a><span class="doc-bar-sep">·</span>
   <span class="doc-bar-id">SRS-HAL-001</span><span class="doc-bar-sep">·</span>
   <span class="doc-bar-path">motor_driver</span><span class="doc-bar-sep">·</span>
-  <span style="color: var(--ink-dim)">REV 0.2</span>
+  <span style="color: var(--ink-dim)">REV 0.4</span>
   <div class="doc-bar-status"><span class="status-dot"></span><span>DRAFT</span></div>
   <div class="doc-bar-tools">
     <button class="tool-btn" onclick="window.print()">PRINT</button>
@@ -46,23 +46,23 @@
     <div class="doc-header">
       <div class="doc-type">SOFTWARE REQUIREMENTS SPECIFICATION · HAL</div>
       <h1 class="doc-title">motor_driver</h1>
-      <p class="doc-subtitle">Open-loop PWM control of two BTS7960 H-bridge modules for track drive. Converts Twist commands to per-track PWM duty cycles and direction signals. No encoder feedback; no battery telemetry.</p>
+      <p class="doc-subtitle">Open-loop dual-PWM control of two IBT-2 (BTS7960B) H-bridge modules for track drive. Converts Twist commands into per-track signed duty on RPWM/LPWM channel pairs. No encoder feedback; no battery telemetry.</p>
       <div class="doc-meta">
         <div class="meta-item"><div class="meta-label">Document ID</div><div class="meta-value">SRS-HAL-001</div></div>
-        <div class="meta-item"><div class="meta-label">Revision</div><div class="meta-value">0.2 · draft</div></div>
+        <div class="meta-item"><div class="meta-label">Revision</div><div class="meta-value">0.4 · draft</div></div>
         <div class="meta-item"><div class="meta-label">Owner</div><div class="meta-value">platform_hal</div></div>
         <div class="meta-item"><div class="meta-label">Language</div><div class="meta-value">Python (rclpy)</div></div>
         <div class="meta-item"><div class="meta-label">Classification</div><div class="meta-value">Actuator driver</div></div>
-        <div class="meta-item"><div class="meta-label">Last Updated</div><div class="meta-value">2026-04-20</div></div>
+        <div class="meta-item"><div class="meta-label">Last Updated</div><div class="meta-value">2026-04-22</div></div>
       </div>
     </div>
 
     <section id="s1"><div class="section-header"><span class="section-num">1.0</span><h2 class="section-title">Purpose</h2></div>
-      <p>The <code>motor_driver</code> is the vendor-boundary node for two BTS7960 43A H-bridge modules, controlling the left and right aluminum tracks. Upstream it exposes ROS-standard Twist commands; downstream it drives GPIO-based PWM (speed) and direction signals to each H-bridge. This is open-loop control: no encoder feedback. Above it, the system treats motor control as generic; below it, the driver handles all GPIO-level specifics.</p>
+      <p>The <code>motor_driver</code> is the vendor-boundary node for two IBT-2 (BTS7960B) 43 A H-bridge modules, controlling the left and right aluminum tracks. Upstream it exposes ROS-standard Twist commands; downstream it drives each H-bridge via a pair of hardware PWM channels (RPWM for forward, LPWM for reverse) on Pi 5 GPIO, per <a href="../hardware/hw-pi5-001-rover-wiring.html">HW-PI5-001</a>. This is open-loop control: no encoder feedback. Above it, the system treats motor control as generic; below it, the driver handles all GPIO-level specifics.</p>
     </section>
 
     <section id="s2"><div class="section-header"><span class="section-num">2.0</span><h2 class="section-title">Scope</h2></div>
-      <p><strong>In scope.</strong> GPIO PWM + direction output to the BTS7960 pair; Twist-to-per-track velocity kinematics; command-timeout safe-halt; basic thermal shutdown detection via stalled-motion cross-check with IMU.</p>
+      <p><strong>In scope.</strong> Dual-PWM (RPWM/LPWM) output to the IBT-2 pair; Twist-to-per-track velocity kinematics; command-timeout safe-halt; basic thermal shutdown detection via stalled-motion cross-check with IMU.</p>
       <p><strong>Out of scope.</strong> Encoder reading and odometry (deferred to M5 EKF). Battery voltage monitoring (deferred, requires external ADC). Nav2 costmap, trajectory following, slip compensation.</p>
     </section>
 
@@ -81,7 +81,7 @@
       <ul class="req-list">
         <li class="req-item"><div class="req-id">SRS-HAL-001-F01</div><div><div class="req-text">Convert every received Twist into per-track velocities via skid-steer kinematics using configured track width.</div><div class="req-trace">verified by: <code>TEST-HAL-001</code></div></div></li>
         <li class="req-item"><div class="req-id">SRS-HAL-001-F02</div><div><div class="req-text">Clip commanded velocities to configured max_linear_vel and max_angular_vel with sign preservation.</div><div class="req-trace">verified by: <code>TEST-HAL-012</code></div></div></li>
-        <li class="req-item"><div class="req-id">SRS-HAL-001-F03</div><div><div class="req-text">Drive BTS7960 PWM pins at configured frequency (default 2 kHz) with duty cycle 0–100% and direction pins set per kinematics output.</div><div class="req-trace">verified by: <code>TEST-HAL-002</code></div></div></li>
+        <li class="req-item"><div class="req-id">SRS-HAL-001-F03</div><div><div class="req-text">Drive each IBT-2 with two hardware PWM channels (RPWM, LPWM) at configured frequency (default 2 kHz). At any instant at most one of the two channels per track shall be non-zero, yielding a signed duty on [−1, 1]: RPWM = duty when commanding forward, LPWM = |duty| when commanding reverse, both zero for coast/regen-brake. Simultaneous non-zero RPWM and LPWM is prohibited (H-bridge short).</div><div class="req-trace">verified by: <code>TEST-HAL-002</code></div></div></li>
         <li class="req-item"><div class="req-id">SRS-HAL-001-F04</div><div><div class="req-text">Halt motor commands if no <code>/hal/cmd_vel_safe</code> message has been received within <code>cmd_vel_timeout_ms</code> (default 500 ms).</div><div class="req-trace">verified by: <a href="../verification/test-hal-009.html">TEST-HAL-009</a></div></div></li>
         <li class="req-item"><div class="req-id">SRS-HAL-001-F05</div><div><div class="req-text">Reject Twist messages containing NaN or Inf in any field; emit diagnostic; hold last-known-good command or halt per policy.</div><div class="req-trace">verified by: <code>TEST-HAL-011</code></div></div></li>
       </ul>
@@ -89,7 +89,7 @@
 
     <section id="s5"><div class="section-header"><span class="section-num">5.0</span><h2 class="section-title">Performance Requirements</h2></div>
       <ul class="req-list">
-        <li class="req-item"><div class="req-id">SRS-HAL-001-P01</div><div><div class="req-text">GPIO write cycle per control frame ≤ 5 ms (PWM + DIR × 4 pins).</div><div class="req-trace">verified by: <code>TEST-HAL-013</code></div></div></li>
+        <li class="req-item"><div class="req-id">SRS-HAL-001-P01</div><div><div class="req-text">GPIO write cycle per control frame ≤ 5 ms (4 hardware PWM channels).</div><div class="req-trace">verified by: <code>TEST-HAL-013</code></div></div></li>
         <li class="req-item"><div class="req-id">SRS-HAL-001-P02</div><div><div class="req-text">CPU usage &lt; 3% on Pi 5.</div><div class="req-trace">verified by: <code>TEST-HAL-014</code></div></div></li>
       </ul>
     </section>
@@ -104,22 +104,24 @@
     <section id="s7"><div class="section-header"><span class="section-num">7.0</span><h2 class="section-title">Dependencies</h2></div>
       <ul class="indent-list">
         <li>ROS 2 Jazzy (rclpy).</li>
-        <li><code>lgpio</code> or <code>gpiod</code> for Pi 5 hardware PWM control.</li>
+        <li><code>lgpio</code> for Pi 5 RP1 hardware PWM (channels PWM0/PWM1 on GPIO 12/13 and 18/19).</li>
         <li><code>platform_msgs</code> for diagnostics.</li>
+        <li><a href="../hardware/hw-pi5-001-rover-wiring.html">HW-PI5-001</a> — pin assignments and wiring.</li>
       </ul>
     </section>
 
     <section id="s8"><div class="section-header"><span class="section-num">8.0</span><h2 class="section-title">Configuration</h2></div>
       <div class="data-table-wrap"><table class="data-table"><thead><tr><th>Parameter</th><th>Default</th><th>Notes</th></tr></thead><tbody>
-        <tr><td><span class="field-name">pwm_left_pin</span></td><td>TBD (BCM)</td><td>GPIO pin for left track PWM</td></tr>
-        <tr><td><span class="field-name">dir_left_pin</span></td><td>TBD (BCM)</td><td>GPIO pin for left track direction</td></tr>
-        <tr><td><span class="field-name">pwm_right_pin</span></td><td>TBD (BCM)</td><td>GPIO pin for right track PWM</td></tr>
-        <tr><td><span class="field-name">dir_right_pin</span></td><td>TBD (BCM)</td><td>GPIO pin for right track direction</td></tr>
+        <tr><td><span class="field-name">rpwm_left_pin</span></td><td>12 (BCM)</td><td>Left track forward PWM · HW-PI5-001 §3</td></tr>
+        <tr><td><span class="field-name">lpwm_left_pin</span></td><td>13 (BCM)</td><td>Left track reverse PWM · HW-PI5-001 §3</td></tr>
+        <tr><td><span class="field-name">rpwm_right_pin</span></td><td>18 (BCM)</td><td>Right track forward PWM · HW-PI5-001 §3</td></tr>
+        <tr><td><span class="field-name">lpwm_right_pin</span></td><td>19 (BCM)</td><td>Right track reverse PWM · HW-PI5-001 §3</td></tr>
         <tr><td><span class="field-name">pwm_frequency_hz</span></td><td>2000</td><td>PWM frequency in Hz</td></tr>
         <tr><td><span class="field-name">track_width_m</span></td><td>0.28</td><td>Center-to-center of tracks</td></tr>
-        <tr><td><span class="field-name">max_linear_vel</span></td><td>0.7</td><td>m/s</td></tr>
+        <tr><td><span class="field-name">max_linear_vel</span></td><td>0.7</td><td>m/s · provisional pending HW-PI5-001 §8.5</td></tr>
         <tr><td><span class="field-name">max_angular_vel</span></td><td>1.5</td><td>rad/s</td></tr>
         <tr><td><span class="field-name">cmd_vel_timeout_ms</span></td><td>500</td><td>Safe-halt threshold</td></tr>
+        <tr><td><span class="field-name">gpio_backend</span></td><td>lgpio</td><td>'lgpio' on hardware, 'mock' for tests/CI</td></tr>
       </tbody></table></div>
     </section>
 
@@ -127,7 +129,7 @@
       <div class="data-table-wrap"><table class="data-table"><thead><tr><th>Failure</th><th>Response</th></tr></thead><tbody>
         <tr><td>GPIO access failure</td><td>Driver logs error; attempts reconfiguration every 1 s; emits diagnostic WARN.</td></tr>
         <tr><td>PWM stall (IMU cross-check)</td><td>Commanded nonzero velocity but IMU reports zero acceleration for &gt; 1 s; emit diagnostic WARN; may indicate mechanical jam or thermal shutdown of BTS7960.</td></tr>
-        <tr><td>BTS7960 over-temperature</td><td>H-bridge thermal shutdown cuts PWM; driver detects stalled motion; halts and reports.</td></tr>
+        <tr><td>IBT-2 over-temperature</td><td>H-bridge thermal shutdown cuts PWM; driver detects stalled motion; halts and reports.</td></tr>
       </tbody></table></div>
     </section>
 
@@ -139,7 +141,7 @@
       <ol class="indent-list">
         <li><strong>OPEN-01</strong> — PWM duty-to-velocity mapping is empirical (calibrated for track slip at various speeds); calibration wizard in iteration 2.</li>
         <li><strong>OPEN-02</strong> — IMU-based stall detection is a coarse health check; encoder-less motor current sensing (via shunt resistor on H-bridge) deferred to iteration 2.</li>
-        <li><strong>OPEN-03</strong> — BCM pin assignments in §8 remain TBD pending the wiring diagram. The M1 scaffold runs against a mock GPIO backend, so any value compiles. For reference the scaffold defaults to <code>pwm_left_pin=12</code>, <code>pwm_right_pin=13</code> (Pi 5 hardware-PWM channels PWM0_0 / PWM0_1), <code>dir_left_pin=23</code>, <code>dir_right_pin=24</code> — candidates if the wiring permits, not committed defaults.</li>
+        <li><strong>OPEN-03</strong> — <em>Closed (rev 0.4).</em> BCM pin assignments frozen in <a href="../hardware/hw-pi5-001-rover-wiring.html">HW-PI5-001</a> §3; dual-PWM channels on GPIO 12/13 (left track RPWM/LPWM) and 18/19 (right track RPWM/LPWM).</li>
       </ol>
     </section>
 
@@ -148,6 +150,7 @@
         <tr><td class="rev">0.1</td><td>2026-04-19</td><td>Louis Roig &amp; Claude Opus 4.7</td><td>Initial draft (roboclaw_driver).</td></tr>
         <tr><td class="rev">0.2</td><td>2026-04-20</td><td>Louis Roig &amp; Claude Haiku 4.5</td><td>Node renamed from roboclaw_driver. Switched hardware to 2× BTS7960 H-bridges, open-loop PWM. Removed encoder-based publishers and battery telemetry (deferred to M5 EKF and future ADC, respectively).</td></tr>
         <tr><td class="rev">0.3</td><td>2026-04-21</td><td>Louis Roig &amp; Claude Opus 4.7</td><td>Added OPEN-03 recording the candidate BCM pin assignments (12/13/23/24) used by the M1 scaffold for reference when finalizing the wiring diagram.</td></tr>
+        <tr><td class="rev">0.4</td><td>2026-04-22</td><td>Louis Roig &amp; Claude Opus 4.7</td><td>Switched signalling convention from PWM+DIR to dual-PWM (RPWM/LPWM per track) per HW-PI5-001. Renamed pin params (rpwm/lpwm_{left,right}_pin); added gpio_backend param. Rewrote F03 to describe signed-duty semantics and prohibit simultaneous RPWM/LPWM. Closed OPEN-03 — pins frozen at GPIO 12/13/18/19.</td></tr>
       </tbody></table>
     </section>
 
