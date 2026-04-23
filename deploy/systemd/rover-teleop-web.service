@@ -1,0 +1,15 @@
+[Unit]
+Description=robot-platform teleop (rosbridge WebSocket + joystick HTTP server)
+After=network-online.target rover-platform-hal.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=rover
+WorkingDirectory=/home/rover/robot-platform/ros_ws
+ExecStart=/bin/bash -c 'source /opt/ros/jazzy/setup.bash && source install/setup.bash && ros2 launch teleop_web teleop_web.launch.py'
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
