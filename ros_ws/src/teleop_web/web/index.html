@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#0f1115">
+<title>Rover Teleop</title>
+<style>
+  :root {
+    --bg: #0f1115;
+    --panel: #181c24;
+    --panel-border: #252a35;
+    --ink: #e7eaf0;
+    --ink-dim: #8a93a3;
+    --accent: #4db6ff;
+    --ok: #4caf50;
+    --warn: #ff9800;
+    --bad: #f44336;
+    --stop: #b71c1c;
+    --stop-hi: #e53935;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body {
+    height: 100%; margin: 0; padding: 0;
+    background: var(--bg); color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+    overflow: hidden; touch-action: none; user-select: none;
+  }
+  header {
+    position: fixed; top: 0; left: 0; right: 0;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: env(safe-area-inset-top, 8px) 16px 8px 16px;
+    background: var(--panel); border-bottom: 1px solid var(--panel-border);
+    font-size: 13px; font-weight: 500;
+    z-index: 10;
+  }
+  .status-pill {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 4px 10px; border-radius: 999px;
+    background: #0a0c11; border: 1px solid var(--panel-border);
+  }
+  .status-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--bad); transition: background 200ms;
+  }
+  .status-dot.connected { background: var(--ok); }
+  .status-dot.connecting { background: var(--warn); }
+  .telemetry {
+    font-family: ui-monospace, "SF Mono", "Cascadia Code", Menlo, monospace;
+    font-size: 12px; color: var(--ink-dim);
+    text-align: right;
+  }
+  .telemetry span { color: var(--ink); }
+  main {
+    position: fixed; top: 54px; bottom: 100px; left: 0; right: 0;
+    display: grid; place-items: center;
+  }
+  .joystick-wrap {
+    position: relative;
+    width: min(80vw, 80vh, 420px);
+    height: min(80vw, 80vh, 420px);
+  }
+  .joystick-base {
+    position: absolute; inset: 0;
+    border-radius: 50%;
+    background: radial-gradient(circle, var(--panel) 60%, #0a0c11 100%);
+    border: 2px solid var(--panel-border);
+    box-shadow: inset 0 0 40px rgba(0,0,0,0.6);
+  }
+  .joystick-base::before, .joystick-base::after {
+    content: ''; position: absolute; background: var(--panel-border);
+  }
+  .joystick-base::before { left: 50%; top: 8%; bottom: 8%; width: 1px; transform: translateX(-0.5px); }
+  .joystick-base::after { top: 50%; left: 8%; right: 8%; height: 1px; transform: translateY(-0.5px); }
+  .joystick-knob {
+    position: absolute;
+    width: 30%; height: 30%;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 30%, #5a6579 0%, #2a2f3a 100%);
+    border: 2px solid var(--accent);
+    box-shadow: 0 4px 14px rgba(0,0,0,0.6);
+    transition: transform 80ms ease-out;
+    pointer-events: none;
+  }
+  .joystick-knob.active { transition: none; }
+  .help {
+    position: absolute; top: -28px; left: 0; right: 0;
+    text-align: center; font-size: 12px; color: var(--ink-dim);
+  }
+  footer {
+    position: fixed; bottom: 0; left: 0; right: 0;
+    display: flex; justify-content: center; align-items: center;
+    padding: 16px 16px calc(16px + env(safe-area-inset-bottom, 0px));
+    background: var(--panel); border-top: 1px solid var(--panel-border);
+    z-index: 10;
+  }
+  .estop {
+    flex: 1; max-width: 420px; height: 60px;
+    border: none; border-radius: 12px;
+    background: var(--stop); color: white;
+    font-size: 18px; font-weight: 700; letter-spacing: 0.12em;
+    box-shadow: 0 4px 0 #6b0000, 0 6px 16px rgba(0,0,0,0.4);
+    cursor: pointer;
+  }
+  .estop:active { transform: translateY(2px); box-shadow: 0 2px 0 #6b0000; }
+  .estop.armed { background: var(--stop-hi); }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="status-pill">
+    <span class="status-dot" id="dot"></span>
+    <span id="status">disconnected</span>
+  </div>
+  <div class="telemetry">
+    v: <span id="vout">+0.00</span> m/s &nbsp; ω: <span id="wout">+0.00</span> rad/s
+  </div>
+</header>
+
+<main>
+  <div class="joystick-wrap" id="joystick">
+    <div class="help">drag to drive · release to stop</div>
+    <div class="joystick-base"></div>
+    <div class="joystick-knob" id="knob"></div>
+  </div>
+</main>
+
+<footer>
+  <button class="estop" id="estop">EMERGENCY STOP</button>
+</footer>
+
+<script>
+(() => {
+  const MAX_LINEAR_VEL = 0.7;     // SRS-HAL-001 default
+  const MAX_ANGULAR_VEL = 1.5;
+  const PUBLISH_HZ = 50;          // ICD-HAL-002 rate
+  const DEAD_ZONE = 0.08;         // fraction of full deflection
+  const TOPIC = '/hal/cmd_vel_raw';
+  const TYPE = 'geometry_msgs/msg/Twist';
+
+  const dot = document.getElementById('dot');
+  const statusEl = document.getElementById('status');
+  const joystick = document.getElementById('joystick');
+  const knob = document.getElementById('knob');
+  const vout = document.getElementById('vout');
+  const wout = document.getElementById('wout');
+  const estop = document.getElementById('estop');
+
+  const wsUrl = `ws://${location.hostname}:9090`;
+  let ws = null;
+  let reconnectTimer = null;
+  let publishTimer = null;
+  let advertised = false;
+  let estopArmed = false;
+
+  // Current joystick deflection, each in [-1, 1]. (nx → angular.z, ny → linear.x)
+  let nx = 0, ny = 0;
+  let pointerActive = false;
+  let activePointerId = null;
+
+  function setStatus(cls, text) {
+    dot.classList.remove('connected', 'connecting');
+    if (cls) dot.classList.add(cls);
+    statusEl.textContent = text;
+  }
+
+  function connect() {
+    setStatus('connecting', 'connecting…');
+    try {
+      ws = new WebSocket(wsUrl);
+    } catch (e) {
+      scheduleReconnect();
+      return;
+    }
+    ws.onopen = () => {
+      setStatus('connected', 'connected');
+      ws.send(JSON.stringify({ op: 'advertise', topic: TOPIC, type: TYPE }));
+      advertised = true;
+      if (!publishTimer) {
+        publishTimer = setInterval(publishCmdVel, 1000 / PUBLISH_HZ);
+      }
+    };
+    ws.onclose = () => {
+      setStatus(null, 'disconnected');
+      advertised = false;
+      if (publishTimer) { clearInterval(publishTimer); publishTimer = null; }
+      scheduleReconnect();
+    };
+    ws.onerror = () => { /* onclose follows */ };
+  }
+
+  function scheduleReconnect() {
+    if (reconnectTimer) return;
+    reconnectTimer = setTimeout(() => {
+      reconnectTimer = null;
+      connect();
+    }, 1000);
+  }
+
+  function publishCmdVel() {
+    if (!ws || ws.readyState !== WebSocket.OPEN || !advertised) return;
+    const mag = Math.hypot(nx, ny);
+    let vx = 0, wz = 0;
+    if (!estopArmed && mag > DEAD_ZONE) {
+      vx = ny * MAX_LINEAR_VEL;
+      wz = -nx * MAX_ANGULAR_VEL;
+    }
+    vout.textContent = (vx >= 0 ? '+' : '') + vx.toFixed(2);
+    wout.textContent = (wz >= 0 ? '+' : '') + wz.toFixed(2);
+    ws.send(JSON.stringify({
+      op: 'publish',
+      topic: TOPIC,
+      msg: {
+        linear:  { x: vx, y: 0, z: 0 },
+        angular: { x: 0,  y: 0, z: wz },
+      },
+    }));
+  }
+
+  function updateKnob() {
+    const wrap = joystick.getBoundingClientRect();
+    const maxOffset = wrap.width * 0.5 * 0.7;  // knob travel = 70% of radius
+    const tx = nx * maxOffset;
+    const ty = -ny * maxOffset;                // screen Y grows downward
+    knob.style.transform = `translate(calc(-50% + ${tx}px), calc(-50% + ${ty}px))`;
+  }
+
+  function pointerToDeflection(clientX, clientY) {
+    const rect = joystick.getBoundingClientRect();
+    const cx = rect.left + rect.width / 2;
+    const cy = rect.top + rect.height / 2;
+    const r = Math.min(rect.width, rect.height) / 2;
+    let dx = (clientX - cx) / r;
+    let dy = (cy - clientY) / r;
+    const mag = Math.hypot(dx, dy);
+    if (mag > 1) { dx /= mag; dy /= mag; }
+    return { dx, dy };
+  }
+
+  function onPointerDown(e) {
+    if (pointerActive) return;
+    pointerActive = true;
+    activePointerId = e.pointerId;
+    joystick.setPointerCapture(e.pointerId);
+    knob.classList.add('active');
+    onPointerMove(e);
+    e.preventDefault();
+  }
+  function onPointerMove(e) {
+    if (!pointerActive || e.pointerId !== activePointerId) return;
+    const { dx, dy } = pointerToDeflection(e.clientX, e.clientY);
+    nx = dx; ny = dy;
+    updateKnob();
+  }
+  function onPointerUp(e) {
+    if (!pointerActive || e.pointerId !== activePointerId) return;
+    pointerActive = false;
+    activePointerId = null;
+    nx = 0; ny = 0;
+    knob.classList.remove('active');
+    updateKnob();
+  }
+
+  joystick.addEventListener('pointerdown', onPointerDown);
+  joystick.addEventListener('pointermove', onPointerMove);
+  joystick.addEventListener('pointerup', onPointerUp);
+  joystick.addEventListener('pointercancel', onPointerUp);
+  window.addEventListener('resize', updateKnob);
+
+  estop.addEventListener('click', () => {
+    estopArmed = !estopArmed;
+    estop.classList.toggle('armed', estopArmed);
+    estop.textContent = estopArmed ? 'STOPPED — TAP TO RESUME' : 'EMERGENCY STOP';
+    nx = 0; ny = 0; updateKnob();
+  });
+
+  connect();
+})();
+</script>
+
+</body>
+</html>

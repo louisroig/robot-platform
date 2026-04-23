@@ -19,8 +19,9 @@ robot-platform/
 ├── CLAUDE.md                  ← you are here
 ├── README.md
 ├── ros_ws/                    ← ROS 2 colcon workspace
-│   └── src/                   ← ROS 2 packages go here
-│       └── platform_hal/      ← HAL nodes (motor_driver, imu_driver, safety_monitor) — TO BUILD
+│   └── src/                   ← ROS 2 packages
+│       ├── platform_hal/      ← HAL nodes (motor_driver, imu_driver, safety_monitor)
+│       └── teleop_web/        ← M1 browser joystick + rosbridge launch
 ├── firmware/
 │   └── xiao-bridge/           ← XIAO MAVLink bridge firmware (M3+)
 ├── deploy/
