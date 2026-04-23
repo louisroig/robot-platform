@@ -71,7 +71,7 @@ everything back green without manual intervention.
 | Compute | Raspberry Pi 5 |
 | Motor controller | 2× BTS7960 43A H-bridge modules |
 | Drive | Aluminum tracks, skid-steer kinematics |
-| IMU | ISM330DHCX (6-DoF) + MMC5983MA magnetometer — I²C bus 1 |
+| IMU | ISM330DHCX (6-DoF) — I²C bus 1 |
 | GPIO library | `lgpio` or `gpiod` (Pi 5 compatible) |
 | Vision (M2+) | OAK-D on NPU |
 | Drone (M3+) | ArduCopter + XIAO bridge (see `firmware/xiao-bridge/`) |
@@ -129,11 +129,10 @@ ros_ws/src/platform_hal/
 - **Spec:** `spec-site/nodes/srs-motor-driver.html`
 
 ### imu_driver (SRS-HAL-002)
-- **Pub:** `/hal/imu/data` (Imu, 100 Hz) · `/hal/imu/mag` (MagneticField, 50 Hz) ·
-  `/diagnostics`
-- **Does:** Reads ISM330DHCX + MMC5983MA over I²C, Madgwick filter (gyro+accel only
-  at M1), publishes orientation in REP-103 convention
-- **Key params:** `i2c_bus` 1 · `imu_rate_hz` 100 · `mag_rate_hz` 50 ·
+- **Pub:** `/hal/imu/data` (Imu, 100 Hz) · `/diagnostics`
+- **Does:** Reads ISM330DHCX (6-DoF) over I²C, Madgwick filter (gyro+accel),
+  publishes orientation in REP-103 convention
+- **Key params:** `i2c_bus` 1 · `imu_rate_hz` 100 ·
   `calibration_file` `~/.config/platform/imu_calibration.yaml` · `madgwick_beta` 0.1
 - **Safety:** Refuses to start without calibration file. On I²C fault, stops publishing
   (never emits stale values — triggers safety_monitor staleness at M2).

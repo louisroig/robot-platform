@@ -13,7 +13,7 @@
   <a class="doc-bar-crumb" href="index.html">NODES</a><span class="doc-bar-sep">·</span>
   <span class="doc-bar-id">SRS-HAL-002</span><span class="doc-bar-sep">·</span>
   <span class="doc-bar-path">imu_driver</span><span class="doc-bar-sep">·</span>
-  <span style="color: var(--ink-dim)">REV 0.1</span>
+  <span style="color: var(--ink-dim)">REV 0.2</span>
   <div class="doc-bar-status"><span class="status-dot"></span><span>DRAFT</span></div>
   <div class="doc-bar-tools"><button class="tool-btn" onclick="window.print()">PRINT</button><button class="tool-btn" onclick="copyLink(event)">COPY LINK</button></div>
 </div>
@@ -41,19 +41,19 @@
     <div class="doc-header">
       <div class="doc-type">SOFTWARE REQUIREMENTS SPECIFICATION · HAL</div>
       <h1 class="doc-title">imu_driver</h1>
-      <p class="doc-subtitle">Driver for the ISM330DHCX 6-DoF IMU plus the MMC5983MA magnetometer. Produces fused orientation and raw inertial/magnetic readings.</p>
+      <p class="doc-subtitle">Driver for the ISM330DHCX 6-DoF IMU (accelerometer + gyroscope). Produces fused orientation and raw inertial readings.</p>
       <div class="doc-meta">
         <div class="meta-item"><div class="meta-label">Document ID</div><div class="meta-value">SRS-HAL-002</div></div>
-        <div class="meta-item"><div class="meta-label">Revision</div><div class="meta-value">0.1 · draft</div></div>
+        <div class="meta-item"><div class="meta-label">Revision</div><div class="meta-value">0.2 · draft</div></div>
         <div class="meta-item"><div class="meta-label">Owner</div><div class="meta-value">platform_hal</div></div>
         <div class="meta-item"><div class="meta-label">Language</div><div class="meta-value">Python (rclpy)</div></div>
         <div class="meta-item"><div class="meta-label">Classification</div><div class="meta-value">Sensor driver · safety input</div></div>
-        <div class="meta-item"><div class="meta-label">Last Updated</div><div class="meta-value">2026-04-19</div></div>
+        <div class="meta-item"><div class="meta-label">Last Updated</div><div class="meta-value">2026-04-22</div></div>
       </div>
     </div>
 
     <section id="s1"><div class="section-header"><span class="section-num">1.0</span><h2 class="section-title">Purpose</h2></div>
-      <p>Reads the ISM330DHCX accelerometer + gyroscope at 100 Hz and the MMC5983MA magnetometer at 50 Hz over I²C. Applies bias correction, hard/soft-iron calibration, and an on-board complementary Madgwick filter to produce orientation. Publishes both to <a href="../interfaces/icd-hal-imu-data.html">/hal/imu/data</a> and <a href="../interfaces/icd-hal-imu-mag.html">/hal/imu/mag</a>.</p>
+      <p>Reads the ISM330DHCX accelerometer + gyroscope at 100 Hz over I²C. Applies bias correction and an on-board complementary Madgwick filter over gyro + accel to produce orientation. Publishes to <a href="../interfaces/icd-hal-imu-data.html">/hal/imu/data</a>. Magnetometer integration is removed from iteration 1 — see §11 OPEN-02.</p>
     </section>
 
     <section id="s2"><div class="section-header"><span class="section-num">2.0</span><h2 class="section-title">Scope</h2></div>
@@ -61,12 +61,12 @@
     </section>
 
     <section id="s3"><div class="section-header"><span class="section-num">3.0</span><h2 class="section-title">Interfaces</h2></div>
-      <p>Publishers: <a href="../interfaces/icd-hal-imu-data.html">/hal/imu/data</a> (100 Hz), <a href="../interfaces/icd-hal-imu-mag.html">/hal/imu/mag</a> (50 Hz), <code>/diagnostics</code>. No subscribers. No services in iteration 1 (a <code>/imu/recalibrate</code> service is deferred).</p>
+      <p>Publishers: <a href="../interfaces/icd-hal-imu-data.html">/hal/imu/data</a> (100 Hz), <code>/diagnostics</code>. No subscribers. No services in iteration 1 (a <code>/imu/recalibrate</code> service is deferred). <a href="../interfaces/icd-hal-imu-mag.html">/hal/imu/mag</a> is not published in iteration 1.</p>
     </section>
 
     <section id="s4"><div class="section-header"><span class="section-num">4.0</span><h2 class="section-title">Functional Requirements</h2></div>
       <ul class="req-list">
-        <li class="req-item"><div class="req-id">SRS-HAL-002-F01</div><div><div class="req-text">Sample the IMU at 100 Hz, the magnetometer at 50 Hz, each on its own timer; publish in REP-103 axis convention.</div><div class="req-trace">verified by: <code>TEST-HAL-020</code></div></div></li>
+        <li class="req-item"><div class="req-id">SRS-HAL-002-F01</div><div><div class="req-text">Sample the IMU at 100 Hz on its own timer; publish in REP-103 axis convention.</div><div class="req-trace">verified by: <code>TEST-HAL-020</code></div></div></li>
         <li class="req-item"><div class="req-id">SRS-HAL-002-F02</div><div><div class="req-text">Apply calibration matrices from <code>imu_calibration.yaml</code>; cease publication if the file is missing rather than emit raw values.</div><div class="req-trace">verified by: <code>TEST-HAL-026</code></div></div></li>
         <li class="req-item"><div class="req-id">SRS-HAL-002-F03</div><div><div class="req-text">Run a Madgwick fusion filter over gyro + accel; populate orientation and orientation_covariance.</div><div class="req-trace">verified by: <code>TEST-HAL-021</code></div></div></li>
       </ul>
@@ -93,7 +93,6 @@
       <div class="data-table-wrap"><table class="data-table"><thead><tr><th>Parameter</th><th>Default</th></tr></thead><tbody>
         <tr><td><span class="field-name">i2c_bus</span></td><td>1</td></tr>
         <tr><td><span class="field-name">imu_rate_hz</span></td><td>100</td></tr>
-        <tr><td><span class="field-name">mag_rate_hz</span></td><td>50</td></tr>
         <tr><td><span class="field-name">calibration_file</span></td><td>$HOME/.config/platform/imu_calibration.yaml</td></tr>
         <tr><td><span class="field-name">madgwick_beta</span></td><td>0.1</td></tr>
       </tbody></table></div>
@@ -103,27 +102,29 @@
       <ul class="indent-list">
         <li>Sensor NAK: retry 3× → halt.</li>
         <li>Calibration missing: refuse to start, emit error log.</li>
-        <li>Implausible magnetic field (&gt; 200 µT): warning diagnostic; continue publishing (down-weighted by EKF).</li>
       </ul>
     </section>
 
     <section id="s10"><div class="section-header"><span class="section-num">10.0</span><h2 class="section-title">Verification</h2></div>
-      <p>TEST-HAL-020 (rate), TEST-HAL-021 (orientation), TEST-HAL-022 (I²C fault), TEST-HAL-025 (mag rate), TEST-HAL-026 (calibration discipline).</p>
+      <p>TEST-HAL-020 (rate), TEST-HAL-021 (orientation), TEST-HAL-022 (I²C fault), TEST-HAL-026 (calibration discipline).</p>
     </section>
 
     <section id="s11"><div class="section-header"><span class="section-num">11.0</span><h2 class="section-title">Open Issues</h2></div>
       <ol class="indent-list">
         <li><strong>OPEN-01</strong> — Madgwick β tuning pending field data.</li>
-        <li><strong>OPEN-02</strong> — Magnetometer integration into orientation filter (currently gyro+accel only). Iteration 2.</li>
+        <li><strong>OPEN-02</strong> — Magnetometer removed from iteration 1 hardware per <a href="../hardware/hw-pi5-001-rover-wiring.html">HW-PI5-001</a> §6. MMC5983MA part removed from BOM; <code>/hal/imu/mag</code> not published; orientation is gyro+accel only. Reconsider (heading drift compensation) in iteration 2 if field data shows gyro bias is material.</li>
       </ol>
     </section>
 
     <section id="s12"><div class="section-header"><span class="section-num">12.0</span><h2 class="section-title">Revision</h2></div>
       <table class="revision-table"><thead><tr><th>Rev</th><th>Date</th><th>Author</th><th>Change</th></tr></thead>
-        <tbody><tr><td class="rev">0.1</td><td>2026-04-19</td><td>Louis Roig &amp; Claude Opus 4.7</td><td>Initial draft.</td></tr></tbody></table>
+        <tbody>
+          <tr><td class="rev">0.1</td><td>2026-04-19</td><td>Louis Roig &amp; Claude Opus 4.7</td><td>Initial draft.</td></tr>
+          <tr><td class="rev">0.2</td><td>2026-04-22</td><td>Louis Roig &amp; Claude Opus 4.7</td><td>Magnetometer removed from iteration 1 per HW-PI5-001 §6. Subtitle and §1 rewritten as 6-DoF only; §3 drops <code>/hal/imu/mag</code> publisher; F01 no longer covers mag sampling; <code>mag_rate_hz</code> param removed; failure mode for implausible magnetic field removed; verification list no longer cites TEST-HAL-025; OPEN-02 restated as an iteration-2 reconsideration.</td></tr>
+        </tbody></table>
     </section>
 
-    <div class="footer-nav"><a href="index.html">← Nodes Index</a><span>Related: <a href="../interfaces/icd-hal-imu-data.html">ICD-HAL-004</a></span></div>
+    <div class="footer-nav"><a href="index.html">← Nodes Index</a><span>Related: <a href="../interfaces/icd-hal-imu-data.html">ICD-HAL-004</a> · <a href="../hardware/hw-pi5-001-rover-wiring.html">HW-PI5-001</a></span></div>
   </main>
 </div>
 <script src="../shared/shared.js"></script>
