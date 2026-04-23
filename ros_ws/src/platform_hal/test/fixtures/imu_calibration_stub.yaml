@@ -1,0 +1,9 @@
+# Test-only IMU calibration stub — identity calibration (no bias correction,
+# unit scale). The real calibration lives at the path in SRS-HAL-002 §8
+# (default $HOME/.config/platform/imu_calibration.yaml) and is produced by
+# the separate IMU calibration tool (deferred OPEN issue). This stub exists
+# so unit tests can exercise the calibration-load and publish paths without
+# requiring a populated $HOME.
+gyro_bias:   [0.0, 0.0, 0.0]
+accel_bias:  [0.0, 0.0, 0.0]
+accel_scale: [1.0, 1.0, 1.0]

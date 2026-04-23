@@ -134,13 +134,15 @@ class TestCmdVelCallback:
 
     def test_nan_twist_rejected_and_state_reset(self, mock_driver):
         # Prime with a valid command so _last_cmd_time is non-None.
-        good = Twist(); good.linear.x = 0.2
+        good = Twist()
+        good.linear.x = 0.2
         mock_driver._on_cmd_vel(good)
         assert mock_driver._last_cmd_time is not None
 
         # TEST-HAL-011: NaN Twist rejected → targets zeroed, last_cmd_time
         # reset to startup-equivalent (None), rejection counter incremented.
-        bad = Twist(); bad.linear.x = math.nan
+        bad = Twist()
+        bad.linear.x = math.nan
         mock_driver._on_cmd_vel(bad)
         assert mock_driver._target_left == 0.0
         assert mock_driver._target_right == 0.0
@@ -148,7 +150,8 @@ class TestCmdVelCallback:
         assert mock_driver._n_cmds_rejected_nonfinite == 1
 
     def test_inf_twist_rejected(self, mock_driver):
-        bad = Twist(); bad.angular.z = math.inf
+        bad = Twist()
+        bad.angular.z = math.inf
         mock_driver._on_cmd_vel(bad)
         assert mock_driver._n_cmds_rejected_nonfinite == 1
         assert mock_driver._target_left == 0.0
@@ -156,7 +159,8 @@ class TestCmdVelCallback:
 
     def test_linear_velocity_clipped_to_max(self, mock_driver):
         # TEST-HAL-012: request v > max_linear_vel (default 0.7 m/s).
-        msg = Twist(); msg.linear.x = 5.0
+        msg = Twist()
+        msg.linear.x = 5.0
         mock_driver._on_cmd_vel(msg)
         # Targets are skid-steer of clipped (v=0.7, ω=0) → (0.7, 0.7).
         assert mock_driver._target_left == pytest.approx(0.7)
@@ -164,7 +168,8 @@ class TestCmdVelCallback:
         assert mock_driver._n_cmds_clipped == 1
 
     def test_negative_linear_velocity_clipped(self, mock_driver):
-        msg = Twist(); msg.linear.x = -5.0
+        msg = Twist()
+        msg.linear.x = -5.0
         mock_driver._on_cmd_vel(msg)
         assert mock_driver._target_left == pytest.approx(-0.7)
         assert mock_driver._target_right == pytest.approx(-0.7)
@@ -172,7 +177,8 @@ class TestCmdVelCallback:
 
     def test_angular_velocity_clipped_to_max(self, mock_driver):
         # max_angular_vel default 1.5 rad/s.
-        msg = Twist(); msg.angular.z = 10.0
+        msg = Twist()
+        msg.angular.z = 10.0
         mock_driver._on_cmd_vel(msg)
         # Clipped ω=1.5, v=0 → (-0.21, 0.21).
         assert mock_driver._target_left == pytest.approx(-1.5 * 0.14)
@@ -180,6 +186,8 @@ class TestCmdVelCallback:
         assert mock_driver._n_cmds_clipped == 1
 
     def test_within_limits_does_not_increment_clip_counter(self, mock_driver):
-        msg = Twist(); msg.linear.x = 0.5; msg.angular.z = 1.0
+        msg = Twist()
+        msg.linear.x = 0.5
+        msg.angular.z = 1.0
         mock_driver._on_cmd_vel(msg)
         assert mock_driver._n_cmds_clipped == 0

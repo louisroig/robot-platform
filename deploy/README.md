@@ -23,3 +23,19 @@ Install (once populated):
 sudo cp deploy/udev/99-robot-platform.rules /etc/udev/rules.d/
 sudo udevadm control --reload-rules && sudo udevadm trigger
 ```
+
+## IMU calibration bootstrap
+
+Per SRS-HAL-002 §9 the `imu_driver` refuses to start if
+`~/.config/platform/imu_calibration.yaml` is missing. Until the real calibration
+tool is written (deferred OPEN-issue), seed it with an identity file so the HAL
+stack comes up green on cold boot:
+
+```bash
+mkdir -p ~/.config/platform
+cp ros_ws/src/platform_hal/test/fixtures/imu_calibration_stub.yaml \
+   ~/.config/platform/imu_calibration.yaml
+```
+
+Replace with real per-axis biases (gyro especially) before relying on
+orientation for anything consequential.
