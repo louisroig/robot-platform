@@ -248,7 +248,7 @@
           </thead>
           <tbody>
             <tr><td rowspan="3">Nodes</td><td><a href="../nodes/srs-motor-driver.html">motor_driver</a></td><td>Functional — skid-steer kinematics, open-loop PWM via BTS7960 pair</td></tr>
-            <tr><td><a href="../nodes/srs-imu-driver.html">imu_driver</a></td><td>Functional — gyro + accel at declared rate; magnetometer optional</td></tr>
+            <tr><td><a href="../nodes/srs-imu-driver.html">imu_driver</a></td><td>Functional — gyro + accel at declared rate. Magnetometer deferred to iteration 2 (HW-PI5-001 §6)</td></tr>
             <tr><td><a href="../nodes/srs-safety-monitor.html">safety_monitor</a></td><td>Stub — pass-through from <code>cmd_vel_raw</code> to <code>cmd_vel_safe</code></td></tr>
             <tr><td rowspan="3">ICDs</td><td><a href="../interfaces/icd-hal-cmd-vel-raw.html">/hal/cmd_vel_raw</a></td><td>Functional</td></tr>
             <tr><td><a href="../interfaces/icd-hal-cmd-vel-safe.html">/hal/cmd_vel_safe</a></td><td>Functional — gate is pass-through at M1</td></tr>
@@ -367,7 +367,7 @@
             <tr><td rowspan="3">Nodes</td><td><a href="../nodes/srs-system-monitor.html">system_monitor</a></td><td>Functional — health, CPU, temps, link state published</td></tr>
             <tr><td>mission_api, telemetry_publisher</td><td>Polished — fault branches, reconnection, degraded-mode reporting</td></tr>
             <tr><td>All prior nodes</td><td>(carried) — no regressions</td></tr>
-            <tr><td rowspan="2">ICDs</td><td>Remaining ICDs not yet touched</td><td>Functional — notably <a href="../interfaces/icd-perception-obstacles.html">/perception/obstacles</a> (published, consumers are iter-2), <a href="../interfaces/icd-hal-gps-fix.html">/hal/gps_fix</a>, <a href="../interfaces/icd-hal-imu-mag.html">/hal/imu_mag</a></td></tr>
+            <tr><td rowspan="2">ICDs</td><td>Remaining ICDs not yet touched</td><td>Functional — notably <a href="../interfaces/icd-perception-obstacles.html">/perception/obstacles</a> (published, consumers are iter-2) and <a href="../interfaces/icd-hal-gps-fix.html">/hal/gps_fix</a>. <a href="../interfaces/icd-hal-imu-mag.html">/hal/imu/mag</a> is deferred to iteration 2 (HW-PI5-001 §6).</td></tr>
             <tr><td>All prior ICDs</td><td>(carried)</td></tr>
             <tr><td>State machine</td><td><a href="../state-machines/sm-mission-executor.html">mission executor state machine</a></td><td>Implemented to spec</td></tr>
             <tr><td>Gating test</td><td><a href="../verification/field-test-protocol.html">Field test protocol</a></td><td>Pass on five consecutive trial days</td></tr>

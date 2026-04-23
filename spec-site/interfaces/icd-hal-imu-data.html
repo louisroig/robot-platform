@@ -175,7 +175,7 @@
       <div class="section-header"><span class="section-num">10.0</span><h2 class="section-title">Open Issues</h2></div>
       <ol class="indent-list">
         <li><strong>OPEN-01</strong> — Madgwick filter tuning (β parameter) for the rover's motion regime pending field data.</li>
-        <li><strong>OPEN-02</strong> — Magnetometer (<a href="icd-hal-imu-mag.html">/hal/imu/mag</a>) integration into orientation estimate — currently gyro+accel only; mag added at iter-2 for yaw drift correction.</li>
+        <li><strong>OPEN-02</strong> — Magnetometer (<a href="icd-hal-imu-mag.html">/hal/imu/mag</a>) removed from iteration 1 hardware per <a href="../hardware/hw-pi5-001-rover-wiring.html">HW-PI5-001</a> §6 and <a href="../nodes/srs-imu-driver.html">SRS-HAL-002</a> §11 OPEN-02. Orientation is gyro+accel only through M6. Reconsider at iteration 2 if field data shows yaw drift is material.</li>
       </ol>
     </section>
 

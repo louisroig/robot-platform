@@ -15,8 +15,8 @@
   <a class="doc-bar-crumb" href="index.html">INTERFACES</a><span class="doc-bar-sep">·</span>
   <span class="doc-bar-id">ICD-HAL-005</span><span class="doc-bar-sep">·</span>
   <span class="doc-bar-path">/hal/imu/mag</span><span class="doc-bar-sep">·</span>
-  <span style="color: var(--ink-dim)">REV 0.1</span>
-  <div class="doc-bar-status"><span class="status-dot"></span><span>DRAFT</span></div>
+  <span style="color: var(--ink-dim)">REV 0.2</span>
+  <div class="doc-bar-status"><span class="status-dot"></span><span>DEFERRED · ITER-2</span></div>
   <div class="doc-bar-tools">
     <button class="tool-btn" onclick="window.print()">PRINT</button>
     <button class="tool-btn" onclick="copyLink(event)">COPY LINK</button>
@@ -48,11 +48,16 @@
       <p class="doc-subtitle">Magnetic field vector from the MMC5983MA magnetometer. Used for yaw-drift correction in the global EKF.</p>
       <div class="doc-meta">
         <div class="meta-item"><div class="meta-label">Document ID</div><div class="meta-value">ICD-HAL-005</div></div>
-        <div class="meta-item"><div class="meta-label">Revision</div><div class="meta-value">0.1 · draft</div></div>
+        <div class="meta-item"><div class="meta-label">Revision</div><div class="meta-value">0.2 · deferred</div></div>
         <div class="meta-item"><div class="meta-label">Owner</div><div class="meta-value">platform_hal</div></div>
         <div class="meta-item"><div class="meta-label">Classification</div><div class="meta-value">Sensing</div></div>
-        <div class="meta-item"><div class="meta-label">Last Updated</div><div class="meta-value">2026-04-19</div></div>
+        <div class="meta-item"><div class="meta-label">Last Updated</div><div class="meta-value">2026-04-22</div></div>
       </div>
+    </div>
+
+    <div class="callout warning">
+      <div class="callout-title">Deferred to iteration 2</div>
+      <p>The MMC5983MA is not fitted in iteration 1 per <a href="../hardware/hw-pi5-001-rover-wiring.html">HW-PI5-001</a> §6 and <a href="../nodes/srs-imu-driver.html">SRS-HAL-002</a> §11 OPEN-02. <code>/hal/imu/mag</code> is therefore not published during iterations M1–M6. This ICD is retained as a reference so that the iteration-2 reintroduction does not require re-drafting. Sections below describe the intended behavior <em>at the time of reintroduction</em> — they are not in force during iteration 1.</p>
     </div>
 
     <section id="s1"><div class="section-header"><span class="section-num">1.0</span><h2 class="section-title">Purpose</h2></div>
@@ -123,7 +128,10 @@
 
     <section id="s11"><div class="section-header"><span class="section-num">11.0</span><h2 class="section-title">Revision</h2></div>
       <table class="revision-table"><thead><tr><th>Rev</th><th>Date</th><th>Author</th><th>Change</th></tr></thead>
-        <tbody><tr><td class="rev">0.1</td><td>2026-04-19</td><td>Louis Roig &amp; Claude Opus 4.7</td><td>Initial draft.</td></tr></tbody></table>
+        <tbody>
+          <tr><td class="rev">0.1</td><td>2026-04-19</td><td>Louis Roig &amp; Claude Opus 4.7</td><td>Initial draft.</td></tr>
+          <tr><td class="rev">0.2</td><td>2026-04-22</td><td>Louis Roig &amp; Claude Opus 4.7</td><td>Status changed to DEFERRED · ITER-2. MMC5983MA removed from iteration 1 hardware per HW-PI5-001 §6 and SRS-HAL-002 §11 OPEN-02; <code>/hal/imu/mag</code> not published during iterations M1–M6. Document retained in place for iteration-2 reintroduction.</td></tr>
+        </tbody></table>
     </section>
 
     <div class="footer-nav"><a href="index.html">← Interfaces Index</a><span>Related: <a href="icd-hal-imu-data.html">/hal/imu/data</a></span></div>

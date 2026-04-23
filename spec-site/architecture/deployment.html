@@ -92,7 +92,7 @@
             <tr><td>Motor driver</td><td>2× BTS7960 43A H-bridge modules</td><td>Open-loop PWM drive for the two tracks</td></tr>
             <tr><td>Motors</td><td>DC geared 12V × 2</td><td>Drive the two aluminum tracks</td></tr>
             <tr><td>Camera</td><td>OAK-D Lite FF</td><td>Fixed-focus stereo + onboard YOLO NPU</td></tr>
-            <tr><td>IMU</td><td>ISM330DHCX + MMC5983MA</td><td>Orientation + magnetometer on Qwiic I²C</td></tr>
+            <tr><td>IMU</td><td>ISM330DHCX (6-DoF)</td><td>Orientation on Qwiic I²C. Magnetometer deferred to iteration 2 — see <a href="../hardware/hw-pi5-001-rover-wiring.html">HW-PI5-001</a> §6.</td></tr>
             <tr><td>E-stop</td><td>NC bulkhead switch</td><td>Inline with motor power; also read by GPIO</td></tr>
             <tr><td>Battery</td><td>4S LiFePO4 / LiPo, ~5 Ah</td><td>14.8 V nominal</td></tr>
             <tr><td>GPS (optional)</td><td>HGLRC M80</td><td>UART to Pi</td></tr>
@@ -138,7 +138,7 @@
           <tbody>
             <tr><td>2× BTS7960 H-bridge</td><td>GPIO (hardware PWM + DIR)</td><td>BCM pins — see motor_driver config</td><td>PWM 2 kHz</td></tr>
             <tr><td>OAK-D Lite FF</td><td>USB3</td><td>depthai SDK auto-detected</td><td>stereo 30 fps · YOLO on NPU</td></tr>
-            <tr><td>ISM330 + MMC5983</td><td>I²C (Qwiic bus 1)</td><td>/dev/i2c-1</td><td>400 kHz</td></tr>
+            <tr><td>ISM330DHCX</td><td>I²C (Qwiic bus 1)</td><td>/dev/i2c-1</td><td>400 kHz</td></tr>
             <tr><td>E-stop switch</td><td>GPIO (BCM 17, input pull-up)</td><td>libgpiod</td><td>polled at 50 Hz</td></tr>
             <tr><td>HGLRC M80 (optional)</td><td>UART</td><td><code>/dev/ttyAMA0</code></td><td>9600 baud, UBX</td></tr>
             <tr><td>Wi-Fi</td><td>Pi built-in</td><td>wlan0</td><td>home AP</td></tr>
