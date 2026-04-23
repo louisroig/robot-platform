@@ -117,7 +117,7 @@
             <strong>SRS</strong>
             <a href="../nodes/srs-motor-driver.html">SRS-HAL-001</a>
             <strong>Responsibility</strong>
-            Converts incoming Twist to per-side track velocities via skid-steer kinematics. Drives PWM and direction signals via GPIO to the BTS7960 H-bridges.
+            Converts incoming Twist to per-side track velocities via skid-steer kinematics. Drives dual-PWM (RPWM/LPWM per track) via GPIO to the IBT-2 (BTS7960B) H-bridges, per <a href="../hardware/hw-pi5-001-rover-wiring.html">HW-PI5-001</a>.
             <strong>Failure behavior</strong>
             Implements <code>cmd_vel_timeout_ms</code> (default 500 ms). If no message received within timeout, commands zero velocity. Provides a second independent safety layer against communication loss.
           </div>

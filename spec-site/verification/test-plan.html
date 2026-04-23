@@ -62,7 +62,7 @@
       <div class="data-table-wrap"><table class="data-table"><thead><tr><th>Method</th><th>Scope</th><th>Where it runs</th><th>When</th></tr></thead><tbody>
         <tr><td><span class="field-name">Unit</span></td><td>Single class/function, mocked dependencies.</td><td>pytest (Python) / gtest (C++).</td><td>On every PR.</td></tr>
         <tr><td><span class="field-name">Integration</span></td><td>Multiple nodes over real DDS, no physical hardware.</td><td>launch_testing with mocked serial/GPIO.</td><td>On every PR to main.</td></tr>
-        <tr><td><span class="field-name">System (HIL)</span></td><td>Full software stack with real BTS7960 H-bridges + IMU on bench.</td><td>Pi 5 + sensor breakout board.</td><td>Pre-release, manually.</td></tr>
+        <tr><td><span class="field-name">System (HIL)</span></td><td>Full software stack with real IBT-2 (BTS7960B) H-bridges + IMU on bench.</td><td>Pi 5 + sensor breakout board.</td><td>Pre-release, manually.</td></tr>
         <tr><td><span class="field-name">Field</span></td><td>Full stack, real hardware, real yard.</td><td>Author's yard / test site.</td><td>M-milestone gates.</td></tr>
         <tr><td><span class="field-name">Chaos / fault-inject</span></td><td>Simulate failures (kill nodes, spoof topics).</td><td>launch_testing extensions.</td><td>Pre-M6.</td></tr>
       </tbody></table></div>

@@ -89,7 +89,7 @@
           </thead>
           <tbody>
             <tr><td rowspan="8">Rover</td><td>SBC</td><td>Raspberry Pi 5 (4/8 GB)</td><td>Runs all ROS 2 nodes</td></tr>
-            <tr><td>Motor driver</td><td>2× BTS7960 43A H-bridge modules</td><td>Open-loop PWM drive for the two tracks</td></tr>
+            <tr><td>Motor driver</td><td>2× IBT-2 (BTS7960B) 43 A H-bridge modules</td><td>Open-loop dual-PWM drive for the two tracks</td></tr>
             <tr><td>Motors</td><td>DC geared 12V × 2</td><td>Drive the two aluminum tracks</td></tr>
             <tr><td>Camera</td><td>OAK-D Lite FF</td><td>Fixed-focus stereo + onboard YOLO NPU</td></tr>
             <tr><td>IMU</td><td>ISM330DHCX (6-DoF)</td><td>Orientation on Qwiic I²C. Magnetometer deferred to iteration 2 — see <a href="../hardware/hw-pi5-001-rover-wiring.html">HW-PI5-001</a> §6.</td></tr>
@@ -136,7 +136,7 @@
             <tr><th>Peripheral</th><th>Bus</th><th>Pi endpoint</th><th>Rate</th></tr>
           </thead>
           <tbody>
-            <tr><td>2× BTS7960 H-bridge</td><td>GPIO (hardware PWM + DIR)</td><td>BCM pins — see motor_driver config</td><td>PWM 2 kHz</td></tr>
+            <tr><td>2× IBT-2 (BTS7960B) H-bridge</td><td>GPIO (4× hardware PWM · RPWM/LPWM per track)</td><td>BCM 12/13 (L), 18/19 (R) · see <a href="../hardware/hw-pi5-001-rover-wiring.html">HW-PI5-001</a> §3</td><td>PWM 2 kHz</td></tr>
             <tr><td>OAK-D Lite FF</td><td>USB3</td><td>depthai SDK auto-detected</td><td>stereo 30 fps · YOLO on NPU</td></tr>
             <tr><td>ISM330DHCX</td><td>I²C (Qwiic bus 1)</td><td>/dev/i2c-1</td><td>400 kHz</td></tr>
             <tr><td>E-stop switch</td><td>GPIO (BCM 17, input pull-up)</td><td>libgpiod</td><td>polled at 50 Hz</td></tr>
@@ -211,7 +211,7 @@
    │
    ├──► <span class="em">Main power switch (manual rotary)</span>
    │        │
-   │        ├──► <span class="safety">E-stop NC relay</span> ──► BTS7960 H-bridge motor power (14.8V)
+   │        ├──► <span class="safety">E-stop NC relay</span> ──► IBT-2 H-bridge motor power (14.8V)
    │        │                                    │
    │        │                                    ├──► Left motor
    │        │                                    └──► Right motor

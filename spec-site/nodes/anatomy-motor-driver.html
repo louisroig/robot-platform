@@ -30,7 +30,7 @@
       <div class="reticle tl"></div><div class="reticle tr"></div><div class="reticle bl"></div><div class="reticle br"></div>
       <div class="center-label">ROS 2 NODE · HAL</div>
       <div class="center-name">motor_driver</div>
-      <div class="center-desc">Vendor-boundary node for two BTS7960 43A H-bridges driving the left and right tracks. Translates Twist commands into open-loop PWM duty cycle and direction via GPIO. No encoder feedback; no battery telemetry. Above this layer the motor control is generic; below it, GPIO-level.</div>
+      <div class="center-desc">Vendor-boundary node for two IBT-2 (BTS7960B) 43 A H-bridge modules driving the left and right tracks. Translates Twist commands into per-track signed duty on dual-PWM (RPWM/LPWM) channel pairs via GPIO, per <a href="../hardware/hw-pi5-001-rover-wiring.html">HW-PI5-001</a>. No encoder feedback; no battery telemetry. Above this layer the motor control is generic; below it, GPIO-level.</div>
       <div class="center-meta">
         <span>LANG · <strong>Python</strong></span>
         <span>PKG · <strong>platform_hal</strong></span>
@@ -64,9 +64,10 @@
       </div>
 
       <div class="leaf"><div class="leaf-header"><span class="leaf-name">Velocity to PWM mapping</span><span class="leaf-type">open-loop</span></div>
-        <div class="leaf-desc">Map track velocity → duty cycle 0–100%; sign determines direction.</div>
+        <div class="leaf-desc">Map signed track velocity → signed duty in [−1, 1]; sign selects RPWM (forward) or LPWM (reverse) channel, magnitude sets duty.</div>
         <div class="leaf-details"><div class="leaf-details-inner">
           <span class="label">Calibration</span>Per-speed empirical mapping; accounts for track slip.
+          <span class="label">Mutual-excl.</span>At most one of RPWM/LPWM per track is non-zero — enforced in the GPIO backend to prevent H-bridge short.
           <span class="label">Update rate</span>50 Hz.
         </div></div>
       </div>
@@ -88,7 +89,7 @@
       <div class="leaf"><div class="leaf-header"><span class="leaf-name">Stall detection (IMU cross-check)</span><span class="leaf-type">health</span></div>
         <div class="leaf-desc">Compare commanded nonzero velocity vs. IMU acceleration.</div>
         <div class="leaf-details"><div class="leaf-details-inner">
-          <span class="label">Use</span>Detect motor stall or BTS7960 thermal shutdown; publish degraded diagnostic.
+          <span class="label">Use</span>Detect motor stall or IBT-2 thermal shutdown; publish degraded diagnostic.
         </div></div>
       </div>
     </div>
@@ -96,16 +97,21 @@
     <div class="branch param" style="left: 3200px; top: 200px;">
       <div class="branch-header"><span class="branch-letter">C</span><span class="branch-title">Parameters</span><span class="branch-count">config</span></div>
 
-      <div class="leaf"><div class="leaf-header"><span class="leaf-name">pwm_left_pin</span><span class="leaf-type">int (BCM)</span></div>
-        <div class="leaf-desc">GPIO pin for left track PWM.</div></div>
-      <div class="leaf"><div class="leaf-header"><span class="leaf-name">dir_left_pin</span><span class="leaf-type">int (BCM)</span></div></div>
-      <div class="leaf"><div class="leaf-header"><span class="leaf-name">pwm_right_pin</span><span class="leaf-type">int (BCM)</span></div></div>
-      <div class="leaf"><div class="leaf-header"><span class="leaf-name">dir_right_pin</span><span class="leaf-type">int (BCM)</span></div></div>
+      <div class="leaf"><div class="leaf-header"><span class="leaf-name">rpwm_left_pin</span><span class="leaf-type">int (BCM) · 12</span></div>
+        <div class="leaf-desc">Left track forward PWM.</div></div>
+      <div class="leaf"><div class="leaf-header"><span class="leaf-name">lpwm_left_pin</span><span class="leaf-type">int (BCM) · 13</span></div>
+        <div class="leaf-desc">Left track reverse PWM.</div></div>
+      <div class="leaf"><div class="leaf-header"><span class="leaf-name">rpwm_right_pin</span><span class="leaf-type">int (BCM) · 18</span></div>
+        <div class="leaf-desc">Right track forward PWM.</div></div>
+      <div class="leaf"><div class="leaf-header"><span class="leaf-name">lpwm_right_pin</span><span class="leaf-type">int (BCM) · 19</span></div>
+        <div class="leaf-desc">Right track reverse PWM.</div></div>
       <div class="leaf"><div class="leaf-header"><span class="leaf-name">pwm_frequency_hz</span><span class="leaf-type">int · 2000</span></div></div>
       <div class="leaf"><div class="leaf-header"><span class="leaf-name">track_width_m</span><span class="leaf-type">double · 0.28</span></div></div>
       <div class="leaf"><div class="leaf-header"><span class="leaf-name">max_linear_vel</span><span class="leaf-type">double · 0.7</span></div></div>
       <div class="leaf"><div class="leaf-header"><span class="leaf-name">max_angular_vel</span><span class="leaf-type">double · 1.5</span></div></div>
       <div class="leaf"><div class="leaf-header"><span class="leaf-name">cmd_vel_timeout_ms</span><span class="leaf-type">int · 500</span></div></div>
+      <div class="leaf"><div class="leaf-header"><span class="leaf-name">gpio_backend</span><span class="leaf-type">str · 'lgpio'</span></div>
+        <div class="leaf-desc">'lgpio' on hardware, 'mock' for tests/CI.</div></div>
     </div>
 
     <div class="branch pub" style="left: 3200px; top: 1100px;">
@@ -118,17 +124,17 @@
     <div class="branch hw" style="left: 1630px; top: 1800px; width: 400px;">
       <div class="branch-header"><span class="branch-letter">E</span><span class="branch-title">Hardware Interactions</span><span class="branch-count">GPIO</span></div>
 
-      <div class="leaf"><div class="leaf-header"><span class="leaf-name">BTS7960 L PWM + DIR</span><span class="leaf-type">hardware PWM</span></div>
-        <div class="leaf-desc">GPIO pins to left H-bridge.</div>
+      <div class="leaf"><div class="leaf-header"><span class="leaf-name">IBT-2 L · RPWM + LPWM</span><span class="leaf-type">dual hardware PWM</span></div>
+        <div class="leaf-desc">GPIO 12 (RPWM, forward) + GPIO 13 (LPWM, reverse) to left IBT-2.</div>
         <div class="leaf-details"><div class="leaf-details-inner">
           <span class="label">Frequency</span>2 kHz (configurable)
-          <span class="label">Duty cycle</span>0–100% proportional to track speed
-          <span class="label">Direction</span>DIR pin logic: 1 = forward, 0 = reverse (or vice versa per wiring)
+          <span class="label">Duty cycle</span>0–100% on exactly one channel; the other is held at 0 during that control tick
+          <span class="label">Safety</span>Simultaneous non-zero RPWM + LPWM is prohibited (H-bridge short); backend enforces by zeroing the opposite channel before activating the new one
         </div></div>
       </div>
 
-      <div class="leaf"><div class="leaf-header"><span class="leaf-name">BTS7960 R PWM + DIR</span><span class="leaf-type">hardware PWM</span></div>
-        <div class="leaf-desc">GPIO pins to right H-bridge.</div></div>
+      <div class="leaf"><div class="leaf-header"><span class="leaf-name">IBT-2 R · RPWM + LPWM</span><span class="leaf-type">dual hardware PWM</span></div>
+        <div class="leaf-desc">GPIO 18 (RPWM) + GPIO 19 (LPWM) to right IBT-2.</div></div>
     </div>
 
     <div class="branch safety" style="left: 60px; top: 1500px;">

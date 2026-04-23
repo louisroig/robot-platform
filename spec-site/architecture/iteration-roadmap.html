@@ -213,7 +213,7 @@
             <tr><th>Milestone</th><th>Content</th><th>Target</th></tr>
           </thead>
           <tbody>
-            <tr><td><span class="field-name">M1</span></td><td>Rover drives under teleop. BTS7960 PWM + IMU working.</td><td>2026-05</td></tr>
+            <tr><td><span class="field-name">M1</span></td><td>Rover drives under teleop. IBT-2 dual-PWM + IMU working.</td><td>2026-05</td></tr>
             <tr><td><span class="field-name">M2</span></td><td>Safety monitor + e-stop + person-detect ESTOP gating integrated.</td><td>2026-06</td></tr>
             <tr><td><span class="field-name">M3</span></td><td>Drone flies autonomously and captures an image. ArduCopter + XIAO bridge stable.</td><td>2026-07</td></tr>
             <tr><td><span class="field-name">M4</span></td><td>Georeferenced image delivered to mobile app; polygon drawing works.</td><td>2026-08</td></tr>
@@ -247,7 +247,7 @@
             <tr><th style="width: 140px">Category</th><th>Item</th><th>Status at M1</th></tr>
           </thead>
           <tbody>
-            <tr><td rowspan="3">Nodes</td><td><a href="../nodes/srs-motor-driver.html">motor_driver</a></td><td>Functional — skid-steer kinematics, open-loop PWM via BTS7960 pair</td></tr>
+            <tr><td rowspan="3">Nodes</td><td><a href="../nodes/srs-motor-driver.html">motor_driver</a></td><td>Functional — skid-steer kinematics, open-loop dual-PWM via 2× IBT-2 (BTS7960B)</td></tr>
             <tr><td><a href="../nodes/srs-imu-driver.html">imu_driver</a></td><td>Functional — gyro + accel at declared rate. Magnetometer deferred to iteration 2 (HW-PI5-001 §6)</td></tr>
             <tr><td><a href="../nodes/srs-safety-monitor.html">safety_monitor</a></td><td>Stub — pass-through from <code>cmd_vel_raw</code> to <code>cmd_vel_safe</code></td></tr>
             <tr><td rowspan="3">ICDs</td><td><a href="../interfaces/icd-hal-cmd-vel-raw.html">/hal/cmd_vel_raw</a></td><td>Functional</td></tr>

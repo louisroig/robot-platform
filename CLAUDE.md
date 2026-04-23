@@ -46,7 +46,7 @@ everything back green without manual intervention.
 | Item | Notes |
 |---|---|
 | `ros_ws/src/platform_hal/` package | Create — see structure below |
-| `motor_driver` node | Skid-steer PWM via BTS7960 |
+| `motor_driver` node | Skid-steer dual-PWM via 2× IBT-2 (BTS7960B) |
 | `imu_driver` node | ISM330DHCX + Madgwick filter |
 | `safety_monitor` node (stub) | Pass-through only at M1 |
 | `deploy/udev/` rules | USB/GPIO device permissions |
@@ -69,15 +69,15 @@ everything back green without manual intervention.
 | Component | Details |
 |---|---|
 | Compute | Raspberry Pi 5 |
-| Motor controller | 2× BTS7960 43A H-bridge modules |
+| Motor controller | 2× IBT-2 43 A H-bridge modules (BTS7960B internal) |
 | Drive | Aluminum tracks, skid-steer kinematics |
 | IMU | ISM330DHCX (6-DoF) — I²C bus 1 |
 | GPIO library | `lgpio` or `gpiod` (Pi 5 compatible) |
 | Vision (M2+) | OAK-D on NPU |
 | Drone (M3+) | ArduCopter + XIAO bridge (see `firmware/xiao-bridge/`) |
 
-**GPIO BCM pin assignments for BTS7960 are TBD — confirm from wiring diagram before
-writing motor_driver.**
+**GPIO BCM pin assignments frozen in `spec-site/hardware/hw-pi5-001-rover-wiring.html` §3:
+left track RPWM/LPWM on GPIO 12/13, right track on GPIO 18/19 (all hardware-PWM channels).**
 
 ---
 
@@ -120,7 +120,9 @@ ros_ws/src/platform_hal/
 ### motor_driver (SRS-HAL-001)
 - **Sub:** `/hal/cmd_vel_safe` (Twist, 50 Hz)
 - **Pub:** `/diagnostics` (DiagnosticArray, 1 Hz)
-- **Does:** Twist → skid-steer kinematics → PWM + DIR on 4 GPIO pins via BTS7960
+- **Does:** Twist → skid-steer kinematics → dual-PWM (RPWM + LPWM per track) on
+  4 GPIO pins via 2× IBT-2 (BTS7960B). RPWM = forward duty, LPWM = reverse duty,
+  mutually exclusive (H-bridge short prohibited).
 - **Key params:** `track_width_m` 0.28 m · `max_linear_vel` 0.7 m/s · `max_angular_vel`
   1.5 rad/s · `pwm_frequency_hz` 2000 · `cmd_vel_timeout_ms` 500
 - GPIO backend pluggable via `gpio_backend` param (`lgpio` for hardware, `mock` for tests).

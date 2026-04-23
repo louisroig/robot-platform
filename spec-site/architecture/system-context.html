@@ -94,7 +94,7 @@
         <li>The <strong>aerial unit</strong> — a sub-250 g mapping drone carrying an ArduCopter-flashed flight controller, a Wi-Fi MAVLink bridge, and a payload camera.</li>
         <li>The <strong>operator mobile application</strong> — the human interface for boundary drawing, teleoperation, mission triggering, and live telemetry. Runs on the operator's personal device.</li>
         <li>All <strong>software nodes</strong> running on the ground unit (ROS 2 Jazzy), the drone (ArduCopter + XIAO firmware), and the mobile device (client app).</li>
-        <li>All <strong>communications</strong> linking the above — Wi-Fi between the operator and the rover, Wi-Fi between the XIAO bridge and the ground station, MAVLink over UART between XIAO and flight controller, GPIO PWM + DIR between Pi and the BTS7960 H-bridges, and I²C between Pi and IMU.</li>
+        <li>All <strong>communications</strong> linking the above — Wi-Fi between the operator and the rover, Wi-Fi between the XIAO bridge and the ground station, MAVLink over UART between XIAO and flight controller, 4× GPIO hardware PWM (RPWM/LPWM per track) between Pi and the IBT-2 H-bridges, and I²C between Pi and IMU.</li>
       </ul>
 
       <p>Not part of the platform:</p>
