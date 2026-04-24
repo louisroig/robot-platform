@@ -28,11 +28,13 @@
   }
   header {
     position: fixed; top: 0; left: 0; right: 0;
-    display: flex; align-items: center; justify-content: space-between;
     padding: env(safe-area-inset-top, 8px) 16px 8px 16px;
     background: var(--panel); border-bottom: 1px solid var(--panel-border);
     font-size: 13px; font-weight: 500;
     z-index: 10;
+  }
+  .header-row {
+    display: flex; align-items: center; justify-content: space-between;
   }
   .status-pill {
     display: inline-flex; align-items: center; gap: 8px;
@@ -45,14 +47,47 @@
   }
   .status-dot.connected { background: var(--ok); }
   .status-dot.connecting { background: var(--warn); }
+  .status-dot.stale { background: var(--warn); }
   .telemetry {
     font-family: ui-monospace, "SF Mono", "Cascadia Code", Menlo, monospace;
     font-size: 12px; color: var(--ink-dim);
     text-align: right;
   }
   .telemetry span { color: var(--ink); }
+  .imu-strip {
+    margin-top: 6px;
+    font-family: ui-monospace, "SF Mono", "Cascadia Code", Menlo, monospace;
+    font-size: 11px;
+    color: var(--ink-dim);
+    display: flex; gap: 14px;
+  }
+  .imu-strip .label { color: var(--ink-dim); }
+  .imu-strip .val { color: var(--ink); }
+  .imu-strip.stale .val { color: var(--warn); }
+  .diag-banner {
+    position: fixed; left: 0; right: 0;
+    padding: 6px 16px;
+    font-family: ui-monospace, "SF Mono", "Cascadia Code", Menlo, monospace;
+    font-size: 11px;
+    line-height: 1.4;
+    background: rgba(255, 152, 0, 0.12);
+    border-bottom: 1px solid var(--warn);
+    color: var(--warn);
+    z-index: 9;
+    max-height: 30vh; overflow-y: auto;
+  }
+  .diag-banner.error {
+    background: rgba(244, 67, 54, 0.18);
+    border-bottom-color: var(--bad);
+    color: var(--bad);
+  }
+  .diag-banner[hidden] { display: none; }
+  .diag-banner .diag-row + .diag-row { margin-top: 2px; }
+  .diag-banner .diag-name { font-weight: 600; color: inherit; }
+  .diag-banner .diag-msg { color: var(--ink-dim); }
+  .diag-banner.error .diag-msg { color: var(--ink); }
   main {
-    position: fixed; top: 54px; bottom: 100px; left: 0; right: 0;
+    position: fixed; top: 80px; bottom: 100px; left: 0; right: 0;
     display: grid; place-items: center;
   }
   .joystick-wrap {
@@ -110,15 +145,24 @@
 </head>
 <body>
 
-<header>
-  <div class="status-pill">
-    <span class="status-dot" id="dot"></span>
-    <span id="status">disconnected</span>
+<header id="header">
+  <div class="header-row">
+    <div class="status-pill">
+      <span class="status-dot" id="dot"></span>
+      <span id="status">disconnected</span>
+    </div>
+    <div class="telemetry">
+      v: <span id="vout">+0.00</span> m/s &nbsp; ω: <span id="wout">+0.00</span> rad/s
+    </div>
   </div>
-  <div class="telemetry">
-    v: <span id="vout">+0.00</span> m/s &nbsp; ω: <span id="wout">+0.00</span> rad/s
+  <div class="imu-strip" id="imu">
+    <span><span class="label">r</span> <span class="val" id="r">---</span>°</span>
+    <span><span class="label">p</span> <span class="val" id="p">---</span>°</span>
+    <span><span class="label">y</span> <span class="val" id="y">---</span>°</span>
   </div>
 </header>
+
+<div class="diag-banner" id="diag" hidden></div>
 
 <main>
   <div class="joystick-wrap" id="joystick">
@@ -137,9 +181,15 @@
   const MAX_LINEAR_VEL = 0.7;     // SRS-HAL-001 default
   const MAX_ANGULAR_VEL = 1.5;
   const PUBLISH_HZ = 50;          // ICD-HAL-002 rate
-  const DEAD_ZONE = 0.08;         // fraction of full deflection
-  const TOPIC = '/hal/cmd_vel_raw';
-  const TYPE = 'geometry_msgs/msg/Twist';
+  const DEAD_ZONE = 0.08;
+  const CMD_TOPIC = '/hal/cmd_vel_raw';
+  const CMD_TYPE = 'geometry_msgs/msg/Twist';
+  const IMU_TOPIC = '/hal/imu/data';
+  const IMU_TYPE = 'sensor_msgs/msg/Imu';
+  const DIAG_TOPIC = '/diagnostics';
+  const DIAG_TYPE = 'diagnostic_msgs/msg/DiagnosticArray';
+  // IMU publishes at 100 Hz; flag the link stale if no inbound traffic for this long.
+  const STALE_MS = 1000;
 
   const dot = document.getElementById('dot');
   const statusEl = document.getElementById('status');
@@ -148,6 +198,12 @@
   const vout = document.getElementById('vout');
   const wout = document.getElementById('wout');
   const estop = document.getElementById('estop');
+  const imuStrip = document.getElementById('imu');
+  const rEl = document.getElementById('r');
+  const pEl = document.getElementById('p');
+  const yEl = document.getElementById('y');
+  const headerEl = document.getElementById('header');
+  const diagBanner = document.getElementById('diag');
 
   const wsUrl = `ws://${location.hostname}:9090`;
   let ws = null;
@@ -155,14 +211,18 @@
   let publishTimer = null;
   let advertised = false;
   let estopArmed = false;
+  let lastInboundAt = 0;
+  let stale = false;
 
-  // Current joystick deflection, each in [-1, 1]. (nx → angular.z, ny → linear.x)
   let nx = 0, ny = 0;
   let pointerActive = false;
   let activePointerId = null;
 
+  // Latest-per-node diagnostic state; cleared on OK, dropped on reconnect.
+  const diagState = new Map();
+
   function setStatus(cls, text) {
-    dot.classList.remove('connected', 'connecting');
+    dot.classList.remove('connected', 'connecting', 'stale');
     if (cls) dot.classList.add(cls);
     statusEl.textContent = text;
   }
@@ -177,15 +237,28 @@
     }
     ws.onopen = () => {
       setStatus('connected', 'connected');
-      ws.send(JSON.stringify({ op: 'advertise', topic: TOPIC, type: TYPE }));
+      stale = false;
+      imuStrip.classList.remove('stale');
+      lastInboundAt = Date.now();
+      ws.send(JSON.stringify({ op: 'advertise', topic: CMD_TOPIC, type: CMD_TYPE }));
+      ws.send(JSON.stringify({
+        op: 'subscribe', topic: IMU_TOPIC, type: IMU_TYPE, throttle_rate: 100,
+      }));
+      ws.send(JSON.stringify({
+        op: 'subscribe', topic: DIAG_TOPIC, type: DIAG_TYPE,
+      }));
       advertised = true;
       if (!publishTimer) {
         publishTimer = setInterval(publishCmdVel, 1000 / PUBLISH_HZ);
       }
     };
+    ws.onmessage = onWsMessage;
     ws.onclose = () => {
       setStatus(null, 'disconnected');
       advertised = false;
+      diagState.clear();
+      renderDiagnostics();
+      rEl.textContent = pEl.textContent = yEl.textContent = '---';
       if (publishTimer) { clearInterval(publishTimer); publishTimer = null; }
       scheduleReconnect();
     };
@@ -200,11 +273,98 @@
     }, 1000);
   }
 
+  function onWsMessage(event) {
+    lastInboundAt = Date.now();
+    if (stale) {
+      stale = false;
+      imuStrip.classList.remove('stale');
+      setStatus('connected', 'connected');
+    }
+    let data;
+    try { data = JSON.parse(event.data); } catch (e) { return; }
+    if (data.op !== 'publish') return;
+    if (data.topic === IMU_TOPIC) onImu(data.msg);
+    else if (data.topic === DIAG_TOPIC) onDiagnostics(data.msg);
+  }
+
+  function onImu(msg) {
+    const q = msg.orientation;
+    const { roll, pitch, yaw } = quatToEuler(q.w, q.x, q.y, q.z);
+    rEl.textContent = fmtDeg(roll);
+    pEl.textContent = fmtDeg(pitch);
+    yEl.textContent = fmtDeg(yaw);
+  }
+
+  function onDiagnostics(msg) {
+    for (const s of msg.status || []) {
+      if (s.level === 0) diagState.delete(s.name);
+      else diagState.set(s.name, { level: s.level, message: s.message });
+    }
+    renderDiagnostics();
+  }
+
+  function renderDiagnostics() {
+    if (diagState.size === 0) {
+      diagBanner.hidden = true;
+      diagBanner.innerHTML = '';
+      return;
+    }
+    let hasError = false;
+    const rows = [];
+    for (const [name, s] of diagState) {
+      if (s.level === 2 || s.level === 3) hasError = true;
+      const tag = s.level === 2 ? 'ERR' : s.level === 3 ? 'STALE' : 'WARN';
+      rows.push(
+        `<div class="diag-row"><span class="diag-name">[${tag}] ${escapeHtml(name)}</span> ` +
+        `<span class="diag-msg">${escapeHtml(s.message || '')}</span></div>`
+      );
+    }
+    diagBanner.classList.toggle('error', hasError);
+    diagBanner.innerHTML = rows.join('');
+    diagBanner.hidden = false;
+    positionDiagBanner();
+  }
+
+  function positionDiagBanner() {
+    diagBanner.style.top = headerEl.getBoundingClientRect().bottom + 'px';
+  }
+
+  function escapeHtml(s) {
+    return String(s).replace(/[&<>"]/g, c =>
+      ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  }
+
+  function quatToEuler(w, x, y, z) {
+    // REP-103 ZYX intrinsic: roll=X, pitch=Y, yaw=Z.
+    const sinr = 2 * (w * x + y * z);
+    const cosr = 1 - 2 * (x * x + y * y);
+    const roll = Math.atan2(sinr, cosr);
+    let sinp = 2 * (w * y - z * x);
+    if (sinp > 1) sinp = 1; else if (sinp < -1) sinp = -1;
+    const pitch = Math.asin(sinp);
+    const siny = 2 * (w * z + x * y);
+    const cosy = 1 - 2 * (y * y + z * z);
+    const yaw = Math.atan2(siny, cosy);
+    return { roll, pitch, yaw };
+  }
+
+  function fmtDeg(rad) {
+    const d = rad * 180 / Math.PI;
+    return (d >= 0 ? '+' : '') + d.toFixed(1);
+  }
+
   function publishCmdVel() {
+    // Stale-link guard: socket open but no inbound traffic for STALE_MS ⇒ zero commands.
+    if (ws && ws.readyState === WebSocket.OPEN && !stale &&
+        Date.now() - lastInboundAt > STALE_MS) {
+      stale = true;
+      imuStrip.classList.add('stale');
+      setStatus('stale', 'stale');
+    }
     if (!ws || ws.readyState !== WebSocket.OPEN || !advertised) return;
     const mag = Math.hypot(nx, ny);
     let vx = 0, wz = 0;
-    if (!estopArmed && mag > DEAD_ZONE) {
+    if (!estopArmed && !stale && mag > DEAD_ZONE) {
       vx = ny * MAX_LINEAR_VEL;
       wz = -nx * MAX_ANGULAR_VEL;
     }
@@ -212,7 +372,7 @@
     wout.textContent = (wz >= 0 ? '+' : '') + wz.toFixed(2);
     ws.send(JSON.stringify({
       op: 'publish',
-      topic: TOPIC,
+      topic: CMD_TOPIC,
       msg: {
         linear:  { x: vx, y: 0, z: 0 },
         angular: { x: 0,  y: 0, z: wz },
@@ -222,9 +382,9 @@
 
   function updateKnob() {
     const wrap = joystick.getBoundingClientRect();
-    const maxOffset = wrap.width * 0.5 * 0.7;  // knob travel = 70% of radius
+    const maxOffset = wrap.width * 0.5 * 0.7;
     const tx = nx * maxOffset;
-    const ty = -ny * maxOffset;                // screen Y grows downward
+    const ty = -ny * maxOffset;
     knob.style.transform = `translate(calc(-50% + ${tx}px), calc(-50% + ${ty}px))`;
   }
 
@@ -268,7 +428,10 @@
   joystick.addEventListener('pointermove', onPointerMove);
   joystick.addEventListener('pointerup', onPointerUp);
   joystick.addEventListener('pointercancel', onPointerUp);
-  window.addEventListener('resize', updateKnob);
+  window.addEventListener('resize', () => {
+    updateKnob();
+    positionDiagBanner();
+  });
 
   estop.addEventListener('click', () => {
     estopArmed = !estopArmed;
