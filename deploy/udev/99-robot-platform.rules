@@ -1,7 +1,11 @@
 # robot-platform udev rules
-# TODO: confirm the actual USB device IDs for IMU breakout and any FTDI adapters
-# once the hardware is final. Current file is a placeholder so the deploy/ tree
-# is non-empty and the M1 bring-up procedure has something to edit.
+#
+# Grants non-root access to GPIO and I²C character devices for the ROS 2 HAL
+# nodes (motor_driver, imu_driver). User must be a member of the `gpio` and
+# `i2c` groups (default on Ubuntu 24.04; verify with `groups`).
+#
+# Install: sudo cp 99-robot-platform.rules /etc/udev/rules.d/
+#          sudo udevadm control --reload-rules && sudo udevadm trigger
 
-# Example pattern (inactive — commented out until confirmed):
-# SUBSYSTEM=="tty", ATTRS{idVendor}=="XXXX", ATTRS{idProduct}=="YYYY", SYMLINK+="imu", MODE="0666"
+SUBSYSTEM=="gpio", KERNEL=="gpiochip*", GROUP="gpio", MODE="0660"
+KERNEL=="i2c-[0-9]*", GROUP="i2c", MODE="0660"

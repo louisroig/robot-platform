@@ -73,6 +73,8 @@ class MotorDriver(Node):
         self.declare_parameter('cmd_vel_timeout_ms', 500)
         self.declare_parameter('control_loop_hz', 50.0)
         self.declare_parameter('gpio_backend', 'lgpio')
+        # Pi 5: header GPIOs live on /dev/gpiochip4 (RP1). Pi 4: gpiochip0.
+        self.declare_parameter('gpio_chip', 4)
 
         self._track_width = float(self.get_parameter('track_width_m').value)
         self._max_lin = float(self.get_parameter('max_linear_vel').value)
@@ -89,6 +91,7 @@ class MotorDriver(Node):
             rpwm_right_pin=int(self.get_parameter('rpwm_right_pin').value),
             lpwm_right_pin=int(self.get_parameter('lpwm_right_pin').value),
             pwm_frequency_hz=int(self.get_parameter('pwm_frequency_hz').value),
+            gpio_chip=int(self.get_parameter('gpio_chip').value),
         )
 
         # Last-known-good target velocity (track-frame, in m/s).

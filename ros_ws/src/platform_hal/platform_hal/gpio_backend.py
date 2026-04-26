@@ -22,7 +22,7 @@ class GpioBackend(ABC):
     @abstractmethod
     def setup(self, rpwm_left_pin: int, lpwm_left_pin: int,
               rpwm_right_pin: int, lpwm_right_pin: int,
-              pwm_frequency_hz: int) -> None:
+              pwm_frequency_hz: int, gpio_chip: int) -> None:
         ...
 
     @abstractmethod
@@ -49,8 +49,8 @@ class LgpioBackend(GpioBackend):
         self._frequency: int = 0
 
     def setup(self, rpwm_left_pin, lpwm_left_pin, rpwm_right_pin, lpwm_right_pin,
-              pwm_frequency_hz) -> None:
-        self._handle = self._lgpio.gpiochip_open(0)
+              pwm_frequency_hz, gpio_chip) -> None:
+        self._handle = self._lgpio.gpiochip_open(gpio_chip)
         self._rpwm_left = rpwm_left_pin
         self._lpwm_left = lpwm_left_pin
         self._rpwm_right = rpwm_right_pin

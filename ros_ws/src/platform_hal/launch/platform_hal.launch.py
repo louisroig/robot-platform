@@ -26,6 +26,9 @@ def _motor_driver_action(context, *args, **kwargs):
 
 
 def _imu_driver_action(context, *args, **kwargs):
+    if LaunchConfiguration('enable_imu').perform(context).lower() != 'true':
+        return []
+
     imu_backend = LaunchConfiguration('imu_backend').perform(context)
     params_file = LaunchConfiguration('params_file').perform(context)
 
@@ -55,6 +58,11 @@ def generate_launch_description() -> LaunchDescription:
             'imu_backend',
             default_value='ism330',
             description="imu_driver backend: 'ism330' on hardware, 'mock' on dev",
+        ),
+        DeclareLaunchArgument(
+            'enable_imu',
+            default_value='true',
+            description='Set false to skip imu_driver (e.g. before IMU calibration exists).',
         ),
         DeclareLaunchArgument(
             'params_file',
