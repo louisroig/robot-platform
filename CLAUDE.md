@@ -6,9 +6,9 @@ Autonomous lawn mower robot platform. Two-vehicle system: a tracked rover (teleo
 iteration 1) and a drone that maps the yard. Built on ROS 2 Jazzy, Python/rclpy, running on
 a Raspberry Pi 5.
 
-The full specification lives at: https://louisroig.github.io/mower-spec/
-A local copy is at `spec-site/` in this repo. When in doubt about a requirement or interface
-contract, read the spec.
+The specification lives at `spec-site/` in this repo — this is the single source of truth.
+Browseable copy (auto-published via GitHub Pages): https://louisroig.github.io/robot-platform/
+When in doubt about a requirement or interface contract, read the spec in `spec-site/`.
 
 ---
 
@@ -160,7 +160,7 @@ ros_ws/src/platform_hal/
 | `/hal/cmd_vel_safe` | geometry_msgs/Twist | 50 Hz | Pass-through at M1 |
 | `/hal/imu/data` | sensor_msgs/Imu | 100 Hz | Orientation + accel + gyro |
 
-Full ICDs: `spec-site/interfaces/` or https://louisroig.github.io/mower-spec/interfaces/
+Full ICDs: `spec-site/interfaces/` or https://louisroig.github.io/robot-platform/interfaces/
 
 ---
 
