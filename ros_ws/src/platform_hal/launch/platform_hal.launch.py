@@ -1,7 +1,7 @@
 """M1 HAL stack launch: safety_monitor + motor_driver + imu_driver."""
 
 from launch import LaunchDescription
-from launch.actions import DeclareLaunchArgument, OpaqueFunction
+from launch.actions import DeclareLaunchArgument, OpaqueFunction, Shutdown
 from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
 
@@ -21,6 +21,7 @@ def _motor_driver_action(context, *args, **kwargs):
             name='motor_driver',
             output='screen',
             parameters=parameters,
+            on_exit=Shutdown(reason='motor_driver exited'),
         ),
     ]
 
@@ -43,6 +44,7 @@ def _imu_driver_action(context, *args, **kwargs):
             name='imu_driver',
             output='screen',
             parameters=parameters,
+            on_exit=Shutdown(reason='imu_driver exited'),
         ),
     ]
 
@@ -78,6 +80,7 @@ def generate_launch_description() -> LaunchDescription:
             executable='safety_monitor',
             name='safety_monitor',
             output='screen',
+            on_exit=Shutdown(reason='safety_monitor exited'),
         ),
         OpaqueFunction(function=_motor_driver_action),
         OpaqueFunction(function=_imu_driver_action),
