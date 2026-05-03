@@ -1,0 +1,11 @@
+# PlatformIO build artifacts
+.pio/
+.pioenvs/
+.piolibdeps/
+
+# IDE crud
+.vscode/
+.idea/
+
+# Local Wi-Fi credentials — must NOT be committed.
+include/config.h

@@ -25,7 +25,7 @@ robot-platform/
 │       ├── drone_mission/     ← drone_mission_coordinator (M3 scaffold)
 │       └── teleop_web/        ← M1 browser joystick + rosbridge launch
 ├── firmware/
-│   └── xiao-bridge/           ← XIAO MAVLink bridge firmware (M3+)
+│   └── xiao-bridge/           ← XIAO MAVLink bridge + camera HTTP firmware (M3 scaffold)
 ├── deploy/
 │   ├── config/                ← production + bench params YAMLs
 │   ├── scripts/               ← switch-platform-config.sh helper
