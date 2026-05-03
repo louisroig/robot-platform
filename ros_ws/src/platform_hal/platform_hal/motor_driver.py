@@ -60,20 +60,30 @@ class MotorDriver(Node):
     def __init__(self, **kwargs) -> None:
         super().__init__('motor_driver', **kwargs)
 
-        # BCM pin defaults frozen in HW-PI5-001 §3: left track RPWM/LPWM on
-        # GPIO 12/13, right track on GPIO 18/19 (Pi 5 hardware-PWM channels).
-        self.declare_parameter('rpwm_left_pin', 12)
-        self.declare_parameter('lpwm_left_pin', 13)
-        self.declare_parameter('rpwm_right_pin', 18)
-        self.declare_parameter('lpwm_right_pin', 19)
-        self.declare_parameter('pwm_frequency_hz', 2000)
+        # Pin/channel defaults match the PCA9685 backend (production path on
+        # this stack; RP1 hardware PWM is broken). For gpio_backend='pca9685'
+        # the four `*_pin` values are PCA9685 channel indices in [0, 15].
+        # For gpio_backend='lgpio' override via YAML to the BCM GPIOs frozen
+        # in HW-PI5-001 §3 (12/13/18/19) — but note lgpio.tx_pwm currently
+        # no-ops on Ubuntu 24.04 / RP1.
+        self.declare_parameter('rpwm_left_pin', 0)
+        self.declare_parameter('lpwm_left_pin', 1)
+        self.declare_parameter('rpwm_right_pin', 2)
+        self.declare_parameter('lpwm_right_pin', 3)
+        # PCA9685 PWM range is 24-1526 Hz; IBT-2 tolerates 0.5-25 kHz.
+        self.declare_parameter('pwm_frequency_hz', 1000)
         self.declare_parameter('track_width_m', 0.28)
         self.declare_parameter('max_linear_vel', 0.7)
         self.declare_parameter('max_angular_vel', 1.5)
         self.declare_parameter('cmd_vel_timeout_ms', 500)
         self.declare_parameter('control_loop_hz', 50.0)
-        self.declare_parameter('gpio_backend', 'lgpio')
+        self.declare_parameter('gpio_backend', 'pca9685')
+        # I²C bus + address for the pca9685 backend (shared with IMU on bus 1;
+        # PCA9685 default address 0x40 doesn't collide with ISM330DHCX 0x6A/B).
+        self.declare_parameter('i2c_bus', 1)
+        self.declare_parameter('i2c_address', 0x40)
         # Pi 5: header GPIOs live on /dev/gpiochip4 (RP1). Pi 4: gpiochip0.
+        # Used only by the lgpio backend.
         self.declare_parameter('gpio_chip', 4)
 
         self._track_width = float(self.get_parameter('track_width_m').value)

@@ -15,7 +15,7 @@
   <a class="doc-bar-crumb" href="index.html">HARDWARE</a><span class="doc-bar-sep">·</span>
   <span class="doc-bar-id">HW-PI5-001</span><span class="doc-bar-sep">·</span>
   <span class="doc-bar-path">Rover Pi 5 wiring</span><span class="doc-bar-sep">·</span>
-  <span style="color: var(--ink-dim)">REV 0.1</span>
+  <span style="color: var(--ink-dim)">REV 0.2</span>
   <div class="doc-bar-status"><span class="status-dot"></span><span>DRAFT</span></div>
   <div class="doc-bar-tools">
     <button class="tool-btn" onclick="window.print()">PRINT</button>
@@ -29,7 +29,7 @@
     <ul class="toc-list">
       <li class="toc-item"><a class="toc-link" href="#s1"><span class="toc-num">1.0</span>Purpose</a></li>
       <li class="toc-item"><a class="toc-link" href="#s2"><span class="toc-num">2.0</span>Hardware Inventory</a></li>
-      <li class="toc-item"><a class="toc-link" href="#s3"><span class="toc-num">3.0</span>GPIO Allocation</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s3"><span class="toc-num">3.0</span>GPIO &amp; PWM Allocation</a></li>
       <li class="toc-item"><a class="toc-link" href="#s4"><span class="toc-num">4.0</span>Motor Drive · IBT-2</a></li>
       <li class="toc-item"><a class="toc-link" href="#s5"><span class="toc-num">5.0</span>E-stop</a></li>
       <li class="toc-item"><a class="toc-link" href="#s6"><span class="toc-num">6.0</span>IMU · Qwiic</a></li>
@@ -47,11 +47,11 @@
       <p class="doc-subtitle">Authoritative GPIO allocation, per-device wiring, and bring-up procedure for the iteration-1 rover. Freezes the BCM pin assignments used by <code>motor_driver</code>, <code>estop_monitor</code>, and <code>imu_driver</code>.</p>
       <div class="doc-meta">
         <div class="meta-item"><div class="meta-label">Document ID</div><div class="meta-value">HW-PI5-001</div></div>
-        <div class="meta-item"><div class="meta-label">Revision</div><div class="meta-value">0.1 · draft</div></div>
+        <div class="meta-item"><div class="meta-label">Revision</div><div class="meta-value">0.2 · draft</div></div>
         <div class="meta-item"><div class="meta-label">Owner</div><div class="meta-value">platform_hal</div></div>
         <div class="meta-item"><div class="meta-label">Classification</div><div class="meta-value">Hardware reference</div></div>
         <div class="meta-item"><div class="meta-label">Applies To</div><div class="meta-value">Iteration 1 (M1–M6)</div></div>
-        <div class="meta-item"><div class="meta-label">Last Updated</div><div class="meta-value">2026-04-22</div></div>
+        <div class="meta-item"><div class="meta-label">Last Updated</div><div class="meta-value">2026-05-02</div></div>
       </div>
     </div>
 
@@ -67,6 +67,7 @@
         <tbody>
           <tr><td>Compute</td><td>Raspberry Pi 5, 8 GB, Ubuntu Server 24.04 LTS</td><td>1</td></tr>
           <tr><td>Motor controller</td><td>IBT-2 BTS7960B dual half-bridge module</td><td>2 (one per track)</td></tr>
+          <tr><td>PWM controller</td><td>PCA9685 16-channel I²C PWM (Adafruit/SparkFun STEMMA QT preferred)</td><td>1</td></tr>
           <tr><td>Drive motors</td><td>XR25-370 12 V DC geared motor, 1:34.02 ratio</td><td>2</td></tr>
           <tr><td>IMU</td><td>SparkFun ISM330DHCX 6-DoF, Qwiic</td><td>1</td></tr>
           <tr><td>Qwiic HAT</td><td>SparkFun Qwiic pHAT v2 (or Qwiic SHIM)</td><td>1</td></tr>
@@ -80,31 +81,52 @@
       <p class="paragraph-note">Motor parameters: 12 V DC, 350 rpm no-load, 200 rpm rated, 1.5 A rated, &lt;5.5 A stall per motor. Two-motor worst case ≈ 11 A peak, well within each IBT-2's 43 A peak / 10 A continuous rating per board.</p>
     </section>
 
-    <section id="s3"><div class="section-header"><span class="section-num">3.0</span><h2 class="section-title">GPIO Allocation</h2></div>
+    <section id="s3"><div class="section-header"><span class="section-num">3.0</span><h2 class="section-title">GPIO &amp; PWM Allocation</h2></div>
 
-      <p>Frozen pin assignments for iteration 1. All pins are Pi 5 40-pin header, BCM numbering. Header pin numbers given for physical reference.</p>
+      <h3 class="subsection-title">3.1 · Pi 5 header pins in use</h3>
+
+      <p>All pins are Pi 5 40-pin header, BCM numbering. Header pin numbers given for physical reference.</p>
 
       <table class="data-table">
         <thead><tr><th>Function</th><th>BCM GPIO</th><th>Header pin</th><th>Direction</th><th>Notes</th></tr></thead>
         <tbody>
-          <tr><td>Left track — RPWM (forward)</td><td>GPIO 12</td><td>32</td><td>out, PWM</td><td>PWM0, hardware</td></tr>
-          <tr><td>Left track — LPWM (reverse)</td><td>GPIO 13</td><td>33</td><td>out, PWM</td><td>PWM1, hardware</td></tr>
-          <tr><td>Right track — RPWM (forward)</td><td>GPIO 18</td><td>12</td><td>out, PWM</td><td>PWM0, hardware (alt)</td></tr>
-          <tr><td>Right track — LPWM (reverse)</td><td>GPIO 19</td><td>35</td><td>out, PWM</td><td>PWM1, hardware (alt)</td></tr>
           <tr><td>E-stop signal</td><td>GPIO 17</td><td>11</td><td>in, pull-down</td><td>HIGH = normal · LOW = pressed or disconnected</td></tr>
-          <tr><td>I²C SDA (IMU, via Qwiic HAT)</td><td>GPIO 2</td><td>3</td><td>bidir</td><td>I²C bus 1</td></tr>
-          <tr><td>I²C SCL (IMU, via Qwiic HAT)</td><td>GPIO 3</td><td>5</td><td>out</td><td>I²C bus 1</td></tr>
-          <tr><td>3V3 rail (logic supply)</td><td>—</td><td>1, 17</td><td>—</td><td>IBT-2 VCC · R_EN · L_EN · IMU via Qwiic</td></tr>
+          <tr><td>I²C SDA</td><td>GPIO 2</td><td>3</td><td>bidir</td><td>I²C bus 1 — shared by IMU + PCA9685</td></tr>
+          <tr><td>I²C SCL</td><td>GPIO 3</td><td>5</td><td>out</td><td>I²C bus 1 — shared by IMU + PCA9685</td></tr>
+          <tr><td>3V3 rail (logic supply)</td><td>—</td><td>1, 17</td><td>—</td><td>IBT-2 VCC · R_EN · L_EN · IMU + PCA9685 logic via Qwiic</td></tr>
           <tr><td>GND (logic)</td><td>—</td><td>6, 9, 14, 20, 25, 30, 34, 39</td><td>—</td><td>Tie to star ground</td></tr>
         </tbody>
       </table>
 
-      <div class="callout">
-        <div class="callout-title">Hardware PWM on Pi 5</div>
-        <p>The Pi 5's RP1 chip exposes PWM0 on GPIO 12 or GPIO 18 and PWM1 on GPIO 13 or GPIO 19. This allocation uses all four channels — two per track — so every PWM output is hardware-generated. No software PWM is used anywhere in the motor control path.</p>
-      </div>
+      <p class="paragraph-note">GPIO 12, 13, 18, 19 (the Pi 5 hardware-PWM-capable pads) are intentionally <em>unused</em> in this revision — see §3.3. GPIO 14/15 are intentionally left unused so the UART console remains available for debugging. The CSI/DSI lanes, SPI flash pins, and PoE pads are untouched.</p>
 
-      <p class="paragraph-note">GPIO 14/15 are intentionally left unused so the UART console remains available for debugging. The CSI/DSI lanes, SPI flash pins, and PoE pads are untouched.</p>
+      <h3 class="subsection-title">3.2 · PCA9685 channel allocation</h3>
+
+      <p>The four IBT-2 PWM inputs are driven by a PCA9685 16-channel I²C PWM controller, not by Pi GPIOs. Channel numbers below are the indices used by the <code>motor_driver</code> ROS parameters (<code>rpwm_left_pin</code>, etc.) — the parameter name retains the legacy <code>_pin</code> suffix; for the <code>pca9685</code> backend the value is a PCA9685 channel index in <code>[0, 15]</code>, not a BCM GPIO.</p>
+
+      <table class="data-table">
+        <thead><tr><th>Function</th><th>PCA9685 channel</th><th>Connects to</th></tr></thead>
+        <tbody>
+          <tr><td>Left track — RPWM (forward)</td><td>0</td><td>Left IBT-2 RPWM input</td></tr>
+          <tr><td>Left track — LPWM (reverse)</td><td>1</td><td>Left IBT-2 LPWM input</td></tr>
+          <tr><td>Right track — RPWM (forward)</td><td>2</td><td>Right IBT-2 RPWM input</td></tr>
+          <tr><td>Right track — LPWM (reverse)</td><td>3</td><td>Right IBT-2 LPWM input</td></tr>
+        </tbody>
+      </table>
+
+      <p class="paragraph-note">PCA9685 I²C bus 1, default address 0x40 (no jumpers shorted). Channels 4–15 are unused and may be reserved for M2+ peripherals (e.g. servo-actuated mower deck, status LED). Frequency is global across all 16 channels and is set to 1 kHz in the default <code>motor_driver</code> params (within the IBT-2's 0.5–25 kHz tolerance and the PCA9685's 24–1526 Hz hardware range).</p>
+
+      <h3 class="subsection-title">3.3 · Why off-board PWM</h3>
+
+      <div class="callout">
+        <div class="callout-title">RP1 PWM is unusable on this stack</div>
+        <p>This revision moves PWM generation off the Pi entirely. On the rover's Pi 5 / Ubuntu 24.04 / RP1 stack, two on-Pi PWM paths were tried and both failed:</p>
+        <ul class="prose-list">
+          <li><code>lgpio.tx_pwm</code> returns a non-negative wave-id (looks like success) but the pad stays at 0 V. Discovered 2026-05-02 during M1 motor bringup.</li>
+          <li>sysfs hardware PWM via the <code>pwm-2chan</code> overlay exposes <code>npwm=4</code> on <code>/sys/class/pwmchip0</code>, but enabling any channel returns <code>EINVAL</code> — the <code>rpi-pwm</code> driver cannot resolve its clock rate on RP1.</li>
+        </ul>
+        <p>Static <code>gpio_write</code> via <code>lgpio</code> works (a Python bit-bang loop at ~1 kHz successfully spun both motors on the bench), but it is too jittery and CPU-hungry to ship inside the <code>motor_driver</code> ROS node. The PCA9685 sidesteps the entire RP1 PWM stack: PWM is generated by a dedicated chip clocked off its own 25 MHz internal oscillator, and the Pi just sends I²C register writes when the duty changes.</p>
+      </div>
     </section>
 
     <section id="s4"><div class="section-header"><span class="section-num">4.0</span><h2 class="section-title">Motor Drive · IBT-2</h2></div>
@@ -137,8 +159,8 @@
       <table class="data-table">
         <thead><tr><th>IBT-2 terminal</th><th>Connects to</th></tr></thead>
         <tbody>
-          <tr><td>RPWM</td><td>Pi GPIO 12 (header pin 32)</td></tr>
-          <tr><td>LPWM</td><td>Pi GPIO 13 (header pin 33)</td></tr>
+          <tr><td>RPWM</td><td>PCA9685 channel 0 (PWM pin)</td></tr>
+          <tr><td>LPWM</td><td>PCA9685 channel 1 (PWM pin)</td></tr>
           <tr><td>R_EN, L_EN</td><td>Pi 3V3 (header pin 17) — both tied high</td></tr>
           <tr><td>R_IS, L_IS</td><td>leave open (unused)</td></tr>
           <tr><td>VCC</td><td>Pi 3V3 (header pin 1)</td></tr>
@@ -149,9 +171,27 @@
         </tbody>
       </table>
 
-      <p><strong>RIGHT track IBT-2:</strong> identical pattern with GPIO 18 → RPWM and GPIO 19 → LPWM.</p>
+      <p><strong>RIGHT track IBT-2:</strong> identical pattern with PCA9685 channel 2 → RPWM and channel 3 → LPWM.</p>
 
-      <h3 class="subsection-title">4.3 · Dual-PWM signalling convention</h3>
+      <h3 class="subsection-title">4.3 · PCA9685 wiring</h3>
+
+      <table class="data-table">
+        <thead><tr><th>PCA9685 terminal</th><th>Connects to</th></tr></thead>
+        <tbody>
+          <tr><td>VCC (logic)</td><td>Pi 3V3 (via Qwiic / STEMMA QT or jumper)</td></tr>
+          <tr><td>GND</td><td>Star ground</td></tr>
+          <tr><td>SDA</td><td>Pi GPIO 2 / I²C bus 1 (via Qwiic)</td></tr>
+          <tr><td>SCL</td><td>Pi GPIO 3 / I²C bus 1 (via Qwiic)</td></tr>
+          <tr><td>V+ (servo rail)</td><td>leave open — IBT-2 inputs are driven by the digital PWM pin, not the servo rail</td></tr>
+          <tr><td>OE (output enable)</td><td>tie to GND or leave floating with onboard pull-down (active-low; never assert)</td></tr>
+          <tr><td>Channels 0–3 (PWM pin)</td><td>IBT-2 RPWM/LPWM inputs per §4.2</td></tr>
+          <tr><td>Channels 4–15</td><td>unused (reserved for M2+ peripherals)</td></tr>
+        </tbody>
+      </table>
+
+      <p class="paragraph-note">Address selection: leave A0–A5 jumpers all unshorted for the default <code>0x40</code>. If a second PCA9685 is added later, short A0 to bias the new board to <code>0x41</code>.</p>
+
+      <h3 class="subsection-title">4.4 · Dual-PWM signalling convention</h3>
 
       <p>The software drives each track with a signed duty value in [−1.0, 1.0]:</p>
       <table class="data-table">
@@ -163,9 +203,9 @@
         </tbody>
       </table>
 
-      <p class="paragraph-note">Driving both RPWM and LPWM non-zero simultaneously would short-circuit the motor through the H-bridge and risks board damage. The <code>LgpioBackend</code> in <code>gpio_backend.py</code> enforces the mutual-exclusion invariant by construction.</p>
+      <p class="paragraph-note">Driving both RPWM and LPWM non-zero simultaneously would short-circuit the motor through the H-bridge and risks board damage. Every backend in <code>gpio_backend.py</code> (<code>Pca9685Backend</code>, <code>LgpioBackend</code>, <code>MockGpioBackend</code>) enforces the mutual-exclusion invariant by construction — the opposite channel is zeroed <em>before</em> the new direction is activated.</p>
 
-      <h3 class="subsection-title">4.4 · Decoupling</h3>
+      <h3 class="subsection-title">4.5 · Decoupling</h3>
 
       <p>Install a 1000 µF / 25 V+ electrolytic capacitor across each IBT-2's B+ and B− terminals, as close to the terminal block as practical. This absorbs back-EMF transients from aggressive braking and stabilizes the motor supply rail during stall events.</p>
     </section>
@@ -213,6 +253,8 @@
 
       <p>The ISM330DHCX breakout connects via a SparkFun Qwiic HAT or SHIM, which routes Pi GPIO 2 (SDA) and GPIO 3 (SCL) plus 3V3 and GND to a JST-SH 4-pin Qwiic connector. A single Qwiic cable from HAT to breakout carries all four signals. No individual pin wiring required.</p>
 
+      <p>The PCA9685 (§3.2) shares this same I²C bus 1 — daisy-chain the second Qwiic port on the IMU breakout (or chain through the HAT) to the PCA9685's STEMMA QT input. Addresses do not collide (IMU 0x6A/0x6B, PCA9685 0x40).</p>
+
       <h3 class="subsection-title">6.1 · Configuration</h3>
 
       <table class="data-table">
@@ -236,7 +278,7 @@
       <ul class="prose-list">
         <li><strong>Motor bus · 12 V.</strong> Direct from battery, through e-stop pole 1, to both IBT-2 B+ terminals. High current (up to 11 A peak), electrically noisy.</li>
         <li><strong>Pi 5 V.</strong> Derived from the 12 V bus through a dedicated buck converter (minimum 3 A rated; Pi 5 draws up to 2.5 A at full load). Must be filtered; share only ground with the motor bus, not the 12 V rail directly.</li>
-        <li><strong>Logic 3.3 V.</strong> Generated by the Pi itself, exposed on header pins 1 and 17. Powers IBT-2 logic side, e-stop signal pole, and the Qwiic bus.</li>
+        <li><strong>Logic 3.3 V.</strong> Generated by the Pi itself, exposed on header pins 1 and 17. Powers IBT-2 logic side, e-stop signal pole, and the Qwiic bus (IMU and PCA9685). The PCA9685's V+ servo rail is unused — leave it open; the IBT-2 inputs are driven by the chip's digital PWM pins.</li>
       </ul>
 
       <h3 class="subsection-title">7.2 · Star ground</h3>
@@ -246,6 +288,7 @@
         <li>Battery negative terminal</li>
         <li>Both IBT-2 B− terminals</li>
         <li>Both IBT-2 logic GND terminals</li>
+        <li>PCA9685 GND (typically through the Qwiic chain to the Pi, but a dedicated star return is preferred for switching-noise isolation)</li>
         <li>Pi 5 V buck converter output negative</li>
         <li>Pi header GND (any of pins 6, 9, 14, 20, 25, 30, 34, 39 — one is sufficient)</li>
       </ul>
@@ -266,7 +309,7 @@
       <ol class="prose-list">
         <li>Confirm battery is disconnected and e-stop is pressed (open).</li>
         <li>Visually verify all four motor-side wires are secure in screw terminals (no loose strands bridging terminals).</li>
-        <li>Visually verify star ground has all five connections (battery −, 2× IBT-2 B−, 2× IBT-2 GND, Pi GND, buck converter −).</li>
+        <li>Visually verify star ground has every connection listed in §7.2 (battery −, 2× IBT-2 B−, 2× IBT-2 GND, PCA9685 GND, Pi GND, buck converter −).</li>
         <li>Check continuity from star ground to each end-point with a multimeter; &lt; 0.1 Ω expected.</li>
         <li>Verify no continuity from battery + to star ground (checks for wiring shorts).</li>
       </ol>
@@ -276,8 +319,8 @@
         <li>Power Pi 5 from USB-C wall supply (not from the buck converter yet). Battery stays disconnected.</li>
         <li>Boot into Ubuntu Server 24.04. Log in.</li>
         <li>Enable I²C: <code>sudo raspi-config nonint do_i2c 0</code>. Reboot if prompted.</li>
-        <li>Run <code>i2cdetect -y 1</code>. Expect to see 0x6A or 0x6B for the ISM330DHCX. If empty, check the Qwiic cable seat.</li>
-        <li>Run <code>gpioinfo</code>. Verify GPIO 12, 13, 17, 18, 19 are not claimed by any existing service.</li>
+        <li>Run <code>i2cdetect -y 1</code>. Expect to see <code>0x40</code> (PCA9685) and <code>0x6A</code> or <code>0x6B</code> (ISM330DHCX). If either is missing, check the Qwiic cable seat for that device.</li>
+        <li>Run <code>gpioinfo</code>. Verify GPIO 17 is not claimed by any existing service. (GPIO 12/13/18/19 are no longer used in this revision — see §3.)</li>
       </ol>
 
       <h3 class="subsection-title">8.3 · Motor bench test (tracks off ground)</h3>
@@ -326,6 +369,7 @@
         <thead><tr><th>Rev</th><th>Date</th><th>Author</th><th>Change</th></tr></thead>
         <tbody>
           <tr><td>0.1</td><td>2026-04-22</td><td>Louis Roig &amp; Claude Opus 4.7</td><td>Initial draft. Freezes GPIO allocation for iteration 1. Resolves SRS-HAL-001 OPEN-03. Removes magnetometer from IMU subsystem. Documents IBT-2 dual-PWM signalling convention.</td></tr>
+          <tr><td>0.2</td><td>2026-05-02</td><td>Louis Roig &amp; Claude Opus 4.7</td><td>Off-board PWM via PCA9685 (I²C) replaces Pi 5 hardware PWM after both <code>lgpio.tx_pwm</code> and sysfs <code>pwm-2chan</code> proved unworkable on Ubuntu 24.04 / RP1. Pi GPIO 12/13/18/19 freed. New §3.2 (PCA9685 channel allocation), §3.3 (rationale callout), §4.3 (PCA9685 wiring); §4.2 IBT-2 wiring updated to point at PCA9685 channels; §6 IMU notes shared I²C bus 1; §7/§8 power, ground, and bring-up checks updated to include PCA9685.</td></tr>
         </tbody>
       </table>
     </section>

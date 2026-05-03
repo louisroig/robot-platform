@@ -51,8 +51,12 @@ def generate_launch_description() -> LaunchDescription:
     return LaunchDescription([
         DeclareLaunchArgument(
             'gpio_backend',
-            default_value='lgpio',
-            description="motor_driver GPIO backend: 'lgpio' on hardware, 'mock' on dev",
+            default_value='pca9685',
+            description=(
+                "motor_driver GPIO backend: 'pca9685' on hardware (production "
+                "PWM via I²C), 'lgpio' for direct Pi PWM (currently broken on "
+                "Ubuntu 24.04 / RP1), 'mock' on dev"
+            ),
         ),
         DeclareLaunchArgument(
             'imu_backend',
