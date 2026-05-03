@@ -13,7 +13,7 @@
   <a class="doc-bar-crumb" href="index.html">NODES</a><span class="doc-bar-sep">·</span>
   <span class="doc-bar-id">FW-XIAO</span><span class="doc-bar-sep">·</span>
   <span class="doc-bar-path">xiao_bridge firmware</span><span class="doc-bar-sep">·</span>
-  <span style="color: var(--ink-dim)">REV 0.2</span>
+  <span style="color: var(--ink-dim)">REV 0.3</span>
   <div class="doc-bar-status"><span class="status-dot"></span><span>DRAFT</span></div>
   <div class="doc-bar-tools"><button class="tool-btn" onclick="window.print()">PRINT</button><button class="tool-btn" onclick="copyLink(event)">COPY LINK</button></div>
 </div>
@@ -25,7 +25,7 @@
       <p class="doc-subtitle">Firmware for the XIAO ESP32-S3 Sense — Wi-Fi MAVLink bridge and OV2640 camera capture for the drone.</p>
       <div class="doc-meta">
         <div class="meta-item"><div class="meta-label">Document ID</div><div class="meta-value">FW-XIAO</div></div>
-        <div class="meta-item"><div class="meta-label">Revision</div><div class="meta-value">0.2 · draft</div></div>
+        <div class="meta-item"><div class="meta-label">Revision</div><div class="meta-value">0.3 · draft</div></div>
         <div class="meta-item"><div class="meta-label">Target</div><div class="meta-value">XIAO ESP32-S3 Sense</div></div>
         <div class="meta-item"><div class="meta-label">Framework</div><div class="meta-value">Arduino-ESP32</div></div>
       </div>
@@ -61,6 +61,7 @@
         <li>Capture parameters: 1600×1200 (UXGA), JPEG quality 12 (ESP32 camera library convention: range 0–63, lower = better quality), auto-exposure default.</li>
         <li>Trigger latency (GET → image in buffer) ≤ 500 ms.</li>
       </ul>
+      <p>The wire-level contract — exact response codes, headers, concurrency behavior, and verification — is normative in <a href="../interfaces/icd-xiao-http-api.html">ICD-XIAO-001</a>. This section is the firmware implementer's view; ICD-XIAO-001 is the consumer's view. A change to either requires a coordinated rev of the other.</p>
     </section>
 
     <section><div class="section-header"><span class="section-num">5.0</span><h2 class="section-title">Configuration</h2></div>
@@ -86,6 +87,7 @@
       <table class="revision-table"><thead><tr><th>Rev</th><th>Date</th><th>Author</th><th>Change</th></tr></thead><tbody>
         <tr><td class="rev">0.1</td><td>2026-04-19</td><td>Louis Roig &amp; Claude Opus 4.7</td><td>Initial draft.</td></tr>
         <tr><td class="rev">0.2</td><td>2026-05-03</td><td>Louis Roig &amp; Claude Opus 4.7</td><td>§3 added mDNS discovery (<code>xiao-bridge.local</code>) so mavros doesn't depend on static IP; second-connection behavior specified (reject + log). §4 clarified JPEG quality units (ESP32 camera library, lower = better).</td></tr>
+        <tr><td class="rev">0.3</td><td>2026-05-03</td><td>Louis Roig &amp; Claude Opus 4.7</td><td>§4 cross-references the new <a href="../interfaces/icd-xiao-http-api.html">ICD-XIAO-001</a> as the normative wire contract; this doc remains the firmware implementer's view.</td></tr>
       </tbody></table>
     </section>
 

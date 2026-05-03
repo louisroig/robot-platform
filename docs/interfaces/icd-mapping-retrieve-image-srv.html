@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ICD-MAP-004 · /mapping/retrieve_latest_image service</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=IBM+Plex+Sans:wght@300;400;500;600;700&family=IBM+Plex+Serif:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../shared/shared.css">
+</head>
+<body>
+<div class="doc-bar">
+  <a class="doc-bar-crumb" href="../index.html">← HOME</a><span class="doc-bar-sep">·</span>
+  <a class="doc-bar-crumb" href="index.html">INTERFACES</a><span class="doc-bar-sep">·</span>
+  <span class="doc-bar-id">ICD-MAP-004</span><span class="doc-bar-sep">·</span>
+  <span class="doc-bar-path">/mapping/retrieve_latest_image</span><span class="doc-bar-sep">·</span>
+  <span style="color: var(--ink-dim)">REV 0.1</span>
+  <div class="doc-bar-status"><span class="status-dot"></span><span>DRAFT</span></div>
+  <div class="doc-bar-tools">
+    <button class="tool-btn" onclick="window.print()">PRINT</button>
+    <button class="tool-btn" onclick="copyLink(event)">COPY LINK</button>
+  </div>
+</div>
+
+<div class="container">
+  <nav class="toc">
+    <div class="toc-title">CONTENTS</div>
+    <ul class="toc-list">
+      <li class="toc-item"><a class="toc-link" href="#s1"><span class="toc-num">1.0</span>Purpose</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s2"><span class="toc-num">2.0</span>Participants</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s3"><span class="toc-num">3.0</span>Interface Definition</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s4"><span class="toc-num">4.0</span>Semantics</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s5"><span class="toc-num">5.0</span>Timing</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s6"><span class="toc-num">6.0</span>QoS</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s7"><span class="toc-num">7.0</span>Fault</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s8"><span class="toc-num">8.0</span>Requirements</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s9"><span class="toc-num">9.0</span>Verification</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s10"><span class="toc-num">10.0</span>Open Issues</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s11"><span class="toc-num">11.0</span>Revision</a></li>
+    </ul>
+  </nav>
+
+  <main class="prose-serif">
+    <div class="doc-header">
+      <div class="doc-type interface">INTERFACE CONTROL DOCUMENT · SERVICE</div>
+      <h1 class="doc-title"><code>/mapping/retrieve_latest_image</code></h1>
+      <p class="doc-subtitle">Pulls the most recent capture from the drone's XIAO ESP32-S3 to rover disk and returns the local image path.</p>
+      <div class="doc-meta">
+        <div class="meta-item"><div class="meta-label">Document ID</div><div class="meta-value">ICD-MAP-004</div></div>
+        <div class="meta-item"><div class="meta-label">Revision</div><div class="meta-value">0.1 · draft</div></div>
+        <div class="meta-item"><div class="meta-label">Owner</div><div class="meta-value">platform_mapping</div></div>
+        <div class="meta-item"><div class="meta-label">Classification</div><div class="meta-value">Data transport</div></div>
+        <div class="meta-item"><div class="meta-label">Last Updated</div><div class="meta-value">2026-05-03</div></div>
+      </div>
+    </div>
+
+    <section id="s1"><div class="section-header"><span class="section-num">1.0</span><h2 class="section-title">Purpose</h2></div>
+      <p>The <code>/mapping/retrieve_latest_image</code> service is the explicit hand-off between the drone-side capture (XIAO HTTP, see <a href="icd-xiao-http-api.html">ICD-XIAO-001</a>) and the rover-side persistence + georeferencing pipeline. It is called by <a href="../nodes/srs-drone-mission-coordinator.html">drone_mission_coordinator</a> after the IMAGE_TRANSFER state begins, and returns the absolute path of the saved file on rover disk.</p>
+      <p>Splitting capture and retrieval into separate steps — instead of letting the XIAO push to the rover — keeps the XIAO firmware tiny (HTTP server only) and keeps retry/error semantics on the rover side where Python and the ROS log are easier to work with.</p>
+    </section>
+
+    <section id="s2"><div class="section-header"><span class="section-num">2.0</span><h2 class="section-title">Participants</h2></div>
+      <div class="participants">
+        <div class="participant-card srv"><div class="participant-role">Server</div><div class="participant-name">image_retriever</div>
+          <div class="participant-detail"><strong>SRS</strong><a href="../nodes/srs-image-retriever.html">SRS-MAP-002</a><strong>Role</strong>Performs the HTTP fetch against the XIAO, persists to disk, returns path. Owns retry policy.</div></div>
+        <div class="participant-card srv"><div class="participant-role">Clients</div><div class="participant-name">drone_mission_coordinator</div>
+          <div class="participant-detail"><strong>SRS</strong><a href="../nodes/srs-drone-mission-coordinator.html">SRS-MAP-001</a><strong>Role</strong>Sole caller. Invokes after the drone has landed and reached the IMAGE_TRANSFER post-LANDED state per <a href="../state-machines/sm-drone-mission.html">SM-DRN-001</a>; passes the in-flight <code>mission_id</code> so the file lands under the right namespace.</div></div>
+      </div>
+    </section>
+
+    <section id="s3"><div class="section-header"><span class="section-num">3.0</span><h2 class="section-title">Interface Definition</h2></div>
+      <p>Service type: <code>platform_msgs/srv/RetrieveLatestImage</code>.</p>
+      <div class="code-block" data-lang="IDL"><span class="comment"># Request</span>
+string mission_id            <span class="comment"># namespaces the saved file: /var/lib/platform/images/&lt;mission_id&gt;/capture.jpg</span>
+<span class="comment">---</span>
+<span class="comment"># Response</span>
+bool success
+string image_path            <span class="comment"># absolute path on rover disk on success; empty string on failure</span>
+string message               <span class="comment"># human-readable detail; empty on success, error explanation on failure</span></div>
+      <p>Example success response:</p>
+      <div class="code-block" data-lang="JSON">{
+  <span class="string">"success"</span>: <span class="keyword">true</span>,
+  <span class="string">"image_path"</span>: <span class="string">"/var/lib/platform/images/2026-05-03T19-21-44Z/capture.jpg"</span>,
+  <span class="string">"message"</span>: <span class="string">""</span>
+}</div>
+      <p>Example failure response (XIAO unreachable after retries):</p>
+      <div class="code-block" data-lang="JSON">{
+  <span class="string">"success"</span>: <span class="keyword">false</span>,
+  <span class="string">"image_path"</span>: <span class="string">""</span>,
+  <span class="string">"message"</span>: <span class="string">"xiao unreachable: 3 attempts to http://xiao-bridge.local/latest.jpg timed out after 10s each"</span>
+}</div>
+    </section>
+
+    <section id="s4"><div class="section-header"><span class="section-num">4.0</span><h2 class="section-title">Semantics</h2></div>
+      <p>On invocation, image_retriever:</p>
+      <ol class="indent-list">
+        <li>Validates <code>mission_id</code> is non-empty and contains only filename-safe characters (alphanumeric, dash, underscore, ISO-8601 colons replaced with dashes). Empty or unsafe → SUCCESS=FALSE with reason.</li>
+        <li>Constructs the destination directory <code>&lt;image_dir&gt;/&lt;mission_id&gt;/</code>, creating it if absent.</li>
+        <li>Issues <code>GET http://&lt;xiao_host&gt;/latest.jpg</code> per <a href="icd-xiao-http-api.html">ICD-XIAO-001 §3</a>, streaming the body to <code>capture.jpg</code> in the destination directory.</li>
+        <li>On HTTP error or timeout, retries per SRS-MAP-002-F02 (3 attempts, 1 s / 2 s / 4 s exponential backoff). Failures within retry budget are not visible to the caller.</li>
+        <li>On final success, returns the absolute path. The file is fsync'd before the response is sent, so a downstream call to <a href="icd-mapping-georeference-srv.html">/mapping/georeference</a> is guaranteed to find a complete, durable file.</li>
+        <li>On final failure (retries exhausted or unrecoverable error), returns SUCCESS=FALSE with a single-line description suitable for surfacing to the operator app.</li>
+      </ol>
+      <p>The service is <em>not</em> idempotent in the strict sense — each call performs a fresh HTTP fetch and overwrites the destination file. Calling twice on the same <code>mission_id</code> yields two equivalent files (or two failures); there is no caching layer.</p>
+    </section>
+
+    <section id="s5"><div class="section-header"><span class="section-num">5.0</span><h2 class="section-title">Timing</h2></div>
+      <div class="data-table-wrap"><table class="data-table"><thead><tr><th>Property</th><th>Value</th></tr></thead><tbody>
+        <tr><td>Per-attempt HTTP timeout</td><td>10 s (image_retriever <code>http_timeout_s</code> default)</td></tr>
+        <tr><td>Retry budget</td><td>3 attempts: 1 s + 2 s + 4 s backoff</td></tr>
+        <tr><td>Worst-case service latency</td><td>≤ 37 s (3 × 10 s timeout + 7 s backoff)</td></tr>
+        <tr><td>Nominal latency, 2 MB JPEG over 2.4 GHz Wi-Fi</td><td>≤ 5 s (per SRS-MAP-002 §5)</td></tr>
+      </tbody></table></div>
+    </section>
+
+    <section id="s6"><div class="section-header"><span class="section-num">6.0</span><h2 class="section-title">QoS</h2></div>
+      <p>ROS 2 service default QoS. Reliability RELIABLE (services require it). The HTTP transport underneath is best-effort TCP per <a href="icd-xiao-http-api.html">ICD-XIAO-001</a>; service-level reliability is provided by image_retriever's retry loop, not by the underlying socket.</p>
+    </section>
+
+    <section id="s7"><div class="section-header"><span class="section-num">7.0</span><h2 class="section-title">Fault</h2></div>
+      <div class="data-table-wrap"><table class="data-table"><thead><tr><th>Fault</th><th>Response</th></tr></thead>
+        <tbody>
+          <tr><td>image_retriever down</td><td>ROS 2 service call fails (no server). Coordinator surfaces as mission failure with reason <code>"image_retriever_unreachable"</code>.</td></tr>
+          <tr><td>XIAO unreachable (Wi-Fi or firmware crash)</td><td>Retries exhausted → SUCCESS=FALSE, <code>message</code> identifies the URL and the timeout. Coordinator transitions mission to FAILED.</td></tr>
+          <tr><td>XIAO returns 503 (camera timeout)</td><td>Treated as transient → counted toward retry budget.</td></tr>
+          <tr><td>Disk full</td><td>SUCCESS=FALSE, <code>message="disk full at &lt;path&gt;"</code>. Diagnostic emitted at WARN.</td></tr>
+          <tr><td>Empty or unsafe <code>mission_id</code></td><td>SUCCESS=FALSE, <code>message="invalid mission_id"</code>; no HTTP request issued.</td></tr>
+          <tr><td>Concurrent calls</td><td>Each call gets its own HTTP attempt. The destination filename is fully determined by <code>mission_id</code>, so calls with distinct ids cannot collide; calls with the same id race on the file (last writer wins). Coordinator does not issue concurrent calls per mission, so this is theoretical.</td></tr>
+        </tbody></table></div>
+    </section>
+
+    <section id="s8"><div class="section-header"><span class="section-num">8.0</span><h2 class="section-title">Requirements</h2></div>
+      <ul class="req-list">
+        <li class="req-item"><div class="req-id">REQ-ICD-MAP-004-01</div><div><div class="req-text">On SUCCESS, the file at <code>image_path</code> shall exist and be a complete, fsync'd JPEG before the response is returned.</div><div class="req-trace">verified by: <code>TEST-MAP-040</code></div></div></li>
+        <li class="req-item"><div class="req-id">REQ-ICD-MAP-004-02</div><div><div class="req-text">On retry-exhaustion failure, the partial download (if any) shall be removed from disk before the response is returned, so a subsequent SUCCESS call cannot accidentally serve a half-file.</div><div class="req-trace">verified by: <code>TEST-MAP-041</code></div></div></li>
+        <li class="req-item"><div class="req-id">REQ-ICD-MAP-004-03</div><div><div class="req-text">Service callback latency shall be bounded by §5: ≤ 37 s worst case, typically ≤ 5 s.</div><div class="req-trace">verified by: <code>TEST-MAP-040</code> · <code>TEST-MAP-041</code></div></div></li>
+      </ul>
+    </section>
+
+    <section id="s9"><div class="section-header"><span class="section-num">9.0</span><h2 class="section-title">Verification</h2></div>
+      <div class="data-table-wrap"><table class="data-table"><thead><tr><th>Test</th><th>Method</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td><span class="field-name">TEST-MAP-040</span></td><td>Integration</td><td>Mock XIAO HTTP server on localhost; call service; verify SUCCESS=TRUE, file exists at returned path, JPEG is byte-identical to mock-served bytes.</td></tr>
+          <tr><td><span class="field-name">TEST-MAP-041</span></td><td>Integration</td><td>Mock XIAO returning 503 first two attempts then 200; verify retry timing matches §5 budget, final response is SUCCESS, partial files cleaned up after each failed attempt.</td></tr>
+        </tbody></table></div>
+    </section>
+
+    <section id="s10"><div class="section-header"><span class="section-num">10.0</span><h2 class="section-title">Open Issues</h2></div>
+      <ol class="indent-list">
+        <li><strong>OPEN-01</strong> — Multi-image support: iter 1 captures one image per mission. When mosaicking lands (iter 2+), this service likely takes a list-of-image-ids in the request and returns a list of paths. Defer signature change until the consumer is real.</li>
+        <li><strong>OPEN-02</strong> — Capture timestamp from the XIAO is not currently surfaced in the response. The georeferencer takes <code>capture_time</code> as a separate input from the FC; if the XIAO ever stamps the JPEG (EXIF), expose it here.</li>
+      </ol>
+    </section>
+
+    <section id="s11"><div class="section-header"><span class="section-num">11.0</span><h2 class="section-title">Revision</h2></div>
+      <table class="revision-table"><thead><tr><th>Rev</th><th>Date</th><th>Author</th><th>Change</th></tr></thead>
+        <tbody><tr><td class="rev">0.1</td><td>2026-05-03</td><td>Louis Roig &amp; Claude Opus 4.7</td><td>Initial draft. Formalizes the contract that <a href="../nodes/srs-image-retriever.html">SRS-MAP-002</a> §3 left as "std_srvs/Trigger with extended request for mission_id".</td></tr></tbody></table>
+    </section>
+
+    <div class="footer-nav"><a href="index.html">← Interfaces Index</a><span>Related: <a href="icd-xiao-http-api.html">ICD-XIAO-001</a> · <a href="icd-mapping-georeference-srv.html">/mapping/georeference</a></span></div>
+  </main>
+</div>
+<script src="../shared/shared.js"></script>
+</body></html>

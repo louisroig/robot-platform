@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ICD-XIAO-001 · XIAO HTTP capture API</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=IBM+Plex+Sans:wght@300;400;500;600;700&family=IBM+Plex+Serif:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../shared/shared.css">
+</head>
+<body>
+<div class="doc-bar">
+  <a class="doc-bar-crumb" href="../index.html">← HOME</a><span class="doc-bar-sep">·</span>
+  <a class="doc-bar-crumb" href="index.html">INTERFACES</a><span class="doc-bar-sep">·</span>
+  <span class="doc-bar-id">ICD-XIAO-001</span><span class="doc-bar-sep">·</span>
+  <span class="doc-bar-path">XIAO HTTP capture API</span><span class="doc-bar-sep">·</span>
+  <span style="color: var(--ink-dim)">REV 0.1</span>
+  <div class="doc-bar-status"><span class="status-dot"></span><span>DRAFT</span></div>
+  <div class="doc-bar-tools">
+    <button class="tool-btn" onclick="window.print()">PRINT</button>
+    <button class="tool-btn" onclick="copyLink(event)">COPY LINK</button>
+  </div>
+</div>
+
+<div class="container">
+  <nav class="toc">
+    <div class="toc-title">CONTENTS</div>
+    <ul class="toc-list">
+      <li class="toc-item"><a class="toc-link" href="#s1"><span class="toc-num">1.0</span>Purpose</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s2"><span class="toc-num">2.0</span>Participants</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s3"><span class="toc-num">3.0</span>Endpoints</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s4"><span class="toc-num">4.0</span>Discovery &amp; Transport</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s5"><span class="toc-num">5.0</span>Timing</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s6"><span class="toc-num">6.0</span>Concurrency</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s7"><span class="toc-num">7.0</span>Fault</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s8"><span class="toc-num">8.0</span>Requirements</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s9"><span class="toc-num">9.0</span>Verification</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s10"><span class="toc-num">10.0</span>Open Issues</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s11"><span class="toc-num">11.0</span>Revision</a></li>
+    </ul>
+  </nav>
+
+  <main class="prose-serif">
+    <div class="doc-header">
+      <div class="doc-type interface">INTERFACE CONTROL DOCUMENT · NETWORK</div>
+      <h1 class="doc-title">XIAO HTTP capture API</h1>
+      <p class="doc-subtitle">The wire-level contract between rover-side ROS nodes and the drone's XIAO ESP32-S3 image-capture HTTP server. Companion to <a href="../nodes/firmware-xiao-bridge.html">FW-XIAO</a> §4.</p>
+      <div class="doc-meta">
+        <div class="meta-item"><div class="meta-label">Document ID</div><div class="meta-value">ICD-XIAO-001</div></div>
+        <div class="meta-item"><div class="meta-label">Revision</div><div class="meta-value">0.1 · draft</div></div>
+        <div class="meta-item"><div class="meta-label">Owner</div><div class="meta-value">platform_mapping (consumer-side); firmware (server-side)</div></div>
+        <div class="meta-item"><div class="meta-label">Classification</div><div class="meta-value">Network / data transport</div></div>
+        <div class="meta-item"><div class="meta-label">Last Updated</div><div class="meta-value">2026-05-03</div></div>
+      </div>
+    </div>
+
+    <section id="s1"><div class="section-header"><span class="section-num">1.0</span><h2 class="section-title">Purpose</h2></div>
+      <p>Formalizes the HTTP interface that rover-side software (specifically <a href="../nodes/srs-image-retriever.html">image_retriever</a>) talks to on the drone's XIAO ESP32-S3 to obtain captured aerial images. The XIAO firmware spec (<a href="../nodes/firmware-xiao-bridge.html">FW-XIAO</a>) describes the server side; this document is the consumer-facing contract: endpoints, response shapes, latency expectations, and what failure looks like to a Python <code>requests</code> caller.</p>
+      <p>The contract is normative for both sides. A change to either FW-XIAO §4 or this document requires a coordinated rev of the other.</p>
+    </section>
+
+    <section id="s2"><div class="section-header"><span class="section-num">2.0</span><h2 class="section-title">Participants</h2></div>
+      <div class="participants">
+        <div class="participant-card srv"><div class="participant-role">Server</div><div class="participant-name">XIAO ESP32-S3 (firmware)</div>
+          <div class="participant-detail"><strong>Spec</strong><a href="../nodes/firmware-xiao-bridge.html">FW-XIAO §4</a><strong>Listens on</strong>port 80, all interfaces<strong>Discovery</strong>mDNS hostname <code>xiao-bridge.local</code> (FW-XIAO §3)</div></div>
+        <div class="participant-card srv"><div class="participant-role">Clients</div><div class="participant-name">image_retriever (primary)</div>
+          <div class="participant-detail"><strong>SRS</strong><a href="../nodes/srs-image-retriever.html">SRS-MAP-002</a><strong>Role</strong>Sole production caller. Issues <code>GET /latest.jpg</code> after the drone has landed and the coordinator has reached IMAGE_TRANSFER. Holds the retry policy.<strong>Other</strong>Bench operators (curl, browser) are tolerated for diagnostics but not part of the spec'd workload.</div></div>
+      </div>
+    </section>
+
+    <section id="s3"><div class="section-header"><span class="section-num">3.0</span><h2 class="section-title">Endpoints</h2></div>
+
+      <div class="subsection-title">3.1 <code>GET /capture</code></div>
+      <p>Triggers a fresh capture. Stores the JPEG into the XIAO's rolling buffer and returns the same bytes inline.</p>
+      <div class="data-table-wrap"><table class="data-table"><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody>
+        <tr><td>Method</td><td>GET</td></tr>
+        <tr><td>Request body</td><td>none</td></tr>
+        <tr><td>Request headers</td><td>none required; <code>User-Agent</code> recommended for log correlation</td></tr>
+        <tr><td>Success status</td><td>200 OK</td></tr>
+        <tr><td>Success Content-Type</td><td><code>image/jpeg</code></td></tr>
+        <tr><td>Success Content-Length</td><td>set, equals JPEG byte count</td></tr>
+        <tr><td>Success body</td><td>JPEG bytes; 1600×1200 (UXGA), quality 12 per FW-XIAO §4 (subject to camera config)</td></tr>
+        <tr><td>Error statuses</td><td>503 (camera timeout), 500 (firmware fault), 429 (concurrent capture in flight, see §6)</td></tr>
+        <tr><td>Error body</td><td>plaintext one-line reason; not machine-parsed</td></tr>
+      </tbody></table></div>
+
+      <div class="subsection-title">3.2 <code>GET /latest.jpg</code></div>
+      <p>Returns the most-recently captured image without re-triggering the camera. This is the production endpoint for image_retriever — the coordinator triggers capture earlier (during the CAPTURING state, before landing) and uses <code>/latest.jpg</code> to fetch after landing.</p>
+      <div class="data-table-wrap"><table class="data-table"><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody>
+        <tr><td>Method</td><td>GET</td></tr>
+        <tr><td>Request body</td><td>none</td></tr>
+        <tr><td>Success status</td><td>200 OK</td></tr>
+        <tr><td>Success Content-Type</td><td><code>image/jpeg</code></td></tr>
+        <tr><td>Success body</td><td>JPEG bytes from the most recent successful capture</td></tr>
+        <tr><td>Error statuses</td><td>404 (no capture has happened since last boot), 500 (firmware fault)</td></tr>
+      </tbody></table></div>
+
+      <p>Both endpoints are idempotent in a HTTP sense (repeated GETs do not corrupt server state); semantically <code>/capture</code> is <em>not</em> idempotent — each call advances the rolling buffer to a new image. <code>/latest.jpg</code> is fully idempotent and safe to retry indefinitely.</p>
+    </section>
+
+    <section id="s4"><div class="section-header"><span class="section-num">4.0</span><h2 class="section-title">Discovery &amp; Transport</h2></div>
+      <ul class="indent-list">
+        <li><strong>Discovery.</strong> The XIAO advertises itself as <code>xiao-bridge.local</code> via mDNS (FW-XIAO §3). Clients should resolve this name fresh per session — DNS caching beyond a few seconds risks pointing at stale Wi-Fi-leased IPs after a drone reboot. Static IP fallback is not provided; if mDNS is unreliable on the operator's network, fix the network rather than the spec.</li>
+        <li><strong>Transport.</strong> HTTP/1.1 over TCP, port 80. No TLS — the link is a closed Wi-Fi network on a battery-powered platform; the cost of TLS termination on ESP32 outweighs the threat model for iter 1. Do not put credentials or PII over this interface.</li>
+        <li><strong>Connection reuse.</strong> The XIAO accepts but does not require keep-alive; clients should close after each response. Concurrent connections to the HTTP server are not exercised by the production workload (image_retriever is the sole caller and serializes its calls); the firmware reserves the right to reject overlapping requests with 429 (see §6).</li>
+        <li><strong>Compression.</strong> No <code>Content-Encoding</code> support. JPEG is already compressed; gzip would only add CPU load.</li>
+      </ul>
+    </section>
+
+    <section id="s5"><div class="section-header"><span class="section-num">5.0</span><h2 class="section-title">Timing</h2></div>
+      <div class="data-table-wrap"><table class="data-table"><thead><tr><th>Property</th><th>Value</th></tr></thead><tbody>
+        <tr><td>Trigger latency, <code>GET /capture</code> → first byte of response</td><td>≤ 500 ms (FW-XIAO §4)</td></tr>
+        <tr><td>Trigger latency, <code>GET /latest.jpg</code> → first byte of response</td><td>≤ 100 ms (cached buffer; no camera op)</td></tr>
+        <tr><td>Full transfer, 2 MB JPEG, 2.4 GHz Wi-Fi, ≤ 30 m line-of-sight</td><td>≤ 5 s nominal</td></tr>
+        <tr><td>Recommended client timeout</td><td>10 s per attempt (matches image_retriever's <code>http_timeout_s</code> default in <a href="../nodes/srs-image-retriever.html">SRS-MAP-002 §8</a>)</td></tr>
+      </tbody></table></div>
+      <p>Throughput depends heavily on RF conditions and may degrade severely past 30 m or behind obstructions; FW-XIAO OPEN-02 tracks the open question of yard-scale pipe characterization.</p>
+    </section>
+
+    <section id="s6"><div class="section-header"><span class="section-num">6.0</span><h2 class="section-title">Concurrency</h2></div>
+      <p>The firmware is single-threaded with respect to the camera. Behavior under overlapping HTTP requests:</p>
+      <ul class="indent-list">
+        <li>Two concurrent <code>GET /latest.jpg</code> requests — both succeed; the buffer is read-only on this path.</li>
+        <li>A <code>GET /capture</code> while another <code>/capture</code> is in flight — the second request returns 429 Too Many Requests with body <code>"capture_in_progress"</code>. The first request completes normally.</li>
+        <li>A <code>GET /latest.jpg</code> while a <code>/capture</code> is in flight — returns the previous capture (the one before the in-flight one). The buffer is not partially exposed; either the old image or the new image, never a mix.</li>
+      </ul>
+      <p>Production callers are advised to serialize their own calls regardless. The 429 path exists to give bench operators a clean signal rather than mysterious timeouts.</p>
+    </section>
+
+    <section id="s7"><div class="section-header"><span class="section-num">7.0</span><h2 class="section-title">Fault</h2></div>
+      <div class="data-table-wrap"><table class="data-table"><thead><tr><th>Symptom (client side)</th><th>Likely cause</th><th>Recommended response</th></tr></thead><tbody>
+        <tr><td>DNS resolution failure for <code>xiao-bridge.local</code></td><td>Drone off, Wi-Fi not associated, or mDNS responder not advertising yet</td><td>Retry per image_retriever's backoff; surface as mission failure if exhausted.</td></tr>
+        <tr><td>TCP connection refused</td><td>HTTP server not yet up (boot race)</td><td>Same as above. Bench tip: <code>curl -v http://xiao-bridge.local/latest.jpg</code> from the rover.</td></tr>
+        <tr><td>Connection established but socket idle past timeout</td><td>Camera taking longer than 500 ms (low light, USB hub glitch)</td><td>Treat as transient; retry.</td></tr>
+        <tr><td>HTTP 503 from <code>/capture</code></td><td>Camera timeout (FW-XIAO §6)</td><td>Treat as transient; retry.</td></tr>
+        <tr><td>HTTP 404 from <code>/latest.jpg</code></td><td>No capture has happened since XIAO last booted</td><td>Coordinator bug — the CAPTURING state should have triggered <code>/capture</code> already. Surface as mission failure rather than retrying.</td></tr>
+        <tr><td>HTTP 429</td><td>Another caller is mid-capture</td><td>Wait and retry; in production, indicates an unexpected second client.</td></tr>
+        <tr><td>HTTP 500</td><td>Firmware fault</td><td>Treat as transient (XIAO watchdog will reset, FW-XIAO §6); retry after backoff.</td></tr>
+        <tr><td>Truncated body (Content-Length mismatch)</td><td>Wi-Fi dropout mid-transfer</td><td>Treat as transient; the partial file must be discarded by the client (REQ-ICD-MAP-004-02).</td></tr>
+      </tbody></table></div>
+    </section>
+
+    <section id="s8"><div class="section-header"><span class="section-num">8.0</span><h2 class="section-title">Requirements</h2></div>
+      <ul class="req-list">
+        <li class="req-item"><div class="req-id">REQ-ICD-XIAO-001-01</div><div><div class="req-text">The XIAO HTTP server shall expose <code>GET /capture</code> and <code>GET /latest.jpg</code> on port 80 of <code>xiao-bridge.local</code> per §3.</div><div class="req-trace">verified by: <code>TEST-XIAO-001</code></div></div></li>
+        <li class="req-item"><div class="req-id">REQ-ICD-XIAO-001-02</div><div><div class="req-text">A successful response shall include <code>Content-Type: image/jpeg</code> and a <code>Content-Length</code> matching the JPEG byte count, so a streaming client can detect truncation.</div><div class="req-trace">verified by: <code>TEST-XIAO-001</code></div></div></li>
+        <li class="req-item"><div class="req-id">REQ-ICD-XIAO-001-03</div><div><div class="req-text">A second <code>GET /capture</code> issued while the first is still processing shall return 429, not block; the first request's success shall be unaffected.</div><div class="req-trace">verified by: <code>TEST-XIAO-002</code></div></div></li>
+        <li class="req-item"><div class="req-id">REQ-ICD-XIAO-001-04</div><div><div class="req-text">After a XIAO reboot, <code>GET /latest.jpg</code> with no prior capture shall return 404 (not a stale pre-reboot image and not a malformed empty response).</div><div class="req-trace">verified by: <code>TEST-XIAO-003</code></div></div></li>
+        <li class="req-item"><div class="req-id">REQ-ICD-XIAO-001-05</div><div><div class="req-text">The XIAO shall advertise its hostname over mDNS within 5 s of Wi-Fi association, so clients on the same LAN can resolve <code>xiao-bridge.local</code> without manual configuration.</div><div class="req-trace">verified by: <code>TEST-XIAO-004</code></div></div></li>
+      </ul>
+    </section>
+
+    <section id="s9"><div class="section-header"><span class="section-num">9.0</span><h2 class="section-title">Verification</h2></div>
+      <div class="data-table-wrap"><table class="data-table"><thead><tr><th>Test</th><th>Method</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td><span class="field-name">TEST-XIAO-001</span></td><td>Bench (XIAO + laptop)</td><td>Hit both endpoints with curl + Python <code>requests</code>; verify status, headers, byte count, and that body decodes as a JPEG of the expected resolution.</td></tr>
+          <tr><td><span class="field-name">TEST-XIAO-002</span></td><td>Bench</td><td>Two parallel <code>/capture</code> calls; assert one returns 200 and the other 429 with the documented body; first request's response is unchanged compared to a single-call baseline.</td></tr>
+          <tr><td><span class="field-name">TEST-XIAO-003</span></td><td>Bench</td><td>Power-cycle XIAO; immediately call <code>/latest.jpg</code>; assert 404. Then call <code>/capture</code>; then call <code>/latest.jpg</code>; assert 200 with matching bytes.</td></tr>
+          <tr><td><span class="field-name">TEST-XIAO-004</span></td><td>Bench</td><td>Power-cycle XIAO; from a host on the same LAN, monitor mDNS and assert <code>xiao-bridge.local</code> resolves within 5 s of the XIAO printing "wifi associated" on its UART.</td></tr>
+        </tbody></table></div>
+    </section>
+
+    <section id="s10"><div class="section-header"><span class="section-num">10.0</span><h2 class="section-title">Open Issues</h2></div>
+      <ol class="indent-list">
+        <li><strong>OPEN-01</strong> — EXIF / sidecar metadata. The XIAO does not currently stamp the JPEG with capture time or pose; coordinator carries pose separately. If <a href="icd-mapping-georeference-srv.html">/mapping/georeference</a>'s pose-via-request pattern proves brittle, revisit and have the XIAO embed an EXIF block.</li>
+        <li><strong>OPEN-02</strong> — Range / RF characterization is FW-XIAO OPEN-02; reflect findings here once measured (e.g. degrade timeout above some range).</li>
+        <li><strong>OPEN-03</strong> — A small <code>GET /healthz</code> endpoint would let the coordinator do a pre-flight reachability check (does mDNS resolve, does the server answer) without burning a capture. Out of scope for v0.1.</li>
+      </ol>
+    </section>
+
+    <section id="s11"><div class="section-header"><span class="section-num">11.0</span><h2 class="section-title">Revision</h2></div>
+      <table class="revision-table"><thead><tr><th>Rev</th><th>Date</th><th>Author</th><th>Change</th></tr></thead>
+        <tbody><tr><td class="rev">0.1</td><td>2026-05-03</td><td>Louis Roig &amp; Claude Opus 4.7</td><td>Initial draft. Promotes the wire contract from prose-only in <a href="../nodes/firmware-xiao-bridge.html">FW-XIAO §4</a> to a normative ICD with a verification harness.</td></tr></tbody></table>
+    </section>
+
+    <div class="footer-nav"><a href="index.html">← Interfaces Index</a><span>Related: <a href="../nodes/firmware-xiao-bridge.html">FW-XIAO</a> · <a href="icd-mapping-retrieve-image-srv.html">/mapping/retrieve_latest_image</a></span></div>
+  </main>
+</div>
+<script src="../shared/shared.js"></script>
+</body></html>

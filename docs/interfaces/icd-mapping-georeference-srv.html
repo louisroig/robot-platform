@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ICD-MAP-005 · /mapping/georeference service</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=IBM+Plex+Sans:wght@300;400;500;600;700&family=IBM+Plex+Serif:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../shared/shared.css">
+</head>
+<body>
+<div class="doc-bar">
+  <a class="doc-bar-crumb" href="../index.html">← HOME</a><span class="doc-bar-sep">·</span>
+  <a class="doc-bar-crumb" href="index.html">INTERFACES</a><span class="doc-bar-sep">·</span>
+  <span class="doc-bar-id">ICD-MAP-005</span><span class="doc-bar-sep">·</span>
+  <span class="doc-bar-path">/mapping/georeference</span><span class="doc-bar-sep">·</span>
+  <span style="color: var(--ink-dim)">REV 0.1</span>
+  <div class="doc-bar-status"><span class="status-dot"></span><span>DRAFT</span></div>
+  <div class="doc-bar-tools">
+    <button class="tool-btn" onclick="window.print()">PRINT</button>
+    <button class="tool-btn" onclick="copyLink(event)">COPY LINK</button>
+  </div>
+</div>
+
+<div class="container">
+  <nav class="toc">
+    <div class="toc-title">CONTENTS</div>
+    <ul class="toc-list">
+      <li class="toc-item"><a class="toc-link" href="#s1"><span class="toc-num">1.0</span>Purpose</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s2"><span class="toc-num">2.0</span>Participants</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s3"><span class="toc-num">3.0</span>Interface Definition</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s4"><span class="toc-num">4.0</span>Semantics</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s5"><span class="toc-num">5.0</span>Timing</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s6"><span class="toc-num">6.0</span>QoS</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s7"><span class="toc-num">7.0</span>Fault</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s8"><span class="toc-num">8.0</span>Requirements</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s9"><span class="toc-num">9.0</span>Verification</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s10"><span class="toc-num">10.0</span>Open Issues</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s11"><span class="toc-num">11.0</span>Revision</a></li>
+    </ul>
+  </nav>
+
+  <main class="prose-serif">
+    <div class="doc-header">
+      <div class="doc-type interface">INTERFACE CONTROL DOCUMENT · SERVICE</div>
+      <h1 class="doc-title"><code>/mapping/georeference</code></h1>
+      <p class="doc-subtitle">Compute the geographic corners of a captured aerial image from drone pose at shutter; publish the resulting AerialImageMeta and return it in the response.</p>
+      <div class="doc-meta">
+        <div class="meta-item"><div class="meta-label">Document ID</div><div class="meta-value">ICD-MAP-005</div></div>
+        <div class="meta-item"><div class="meta-label">Revision</div><div class="meta-value">0.1 · draft</div></div>
+        <div class="meta-item"><div class="meta-label">Owner</div><div class="meta-value">platform_mapping</div></div>
+        <div class="meta-item"><div class="meta-label">Classification</div><div class="meta-value">Data processing</div></div>
+        <div class="meta-item"><div class="meta-label">Last Updated</div><div class="meta-value">2026-05-03</div></div>
+      </div>
+    </div>
+
+    <section id="s1"><div class="section-header"><span class="section-num">1.0</span><h2 class="section-title">Purpose</h2></div>
+      <p>The <code>/mapping/georeference</code> service is the explicit trigger for the rover-side flat-ground georeferencing computation that turns a captured JPEG plus shutter-time drone pose into the four geographic corner coordinates of the image footprint. It is called by <a href="../nodes/srs-drone-mission-coordinator.html">drone_mission_coordinator</a> after <a href="icd-mapping-retrieve-image-srv.html">/mapping/retrieve_latest_image</a> has placed the JPEG on disk, in the GEOREF post-LANDED state of <a href="../state-machines/sm-drone-mission.html">SM-DRN-001</a>.</p>
+      <p>The resulting <a href="icd-mapping-aerial-image.html">AerialImageMeta</a> is also published on <code>/mapping/latest_aerial_image</code> (TRANSIENT_LOCAL) so late-joining subscribers — most importantly <a href="../nodes/srs-mission-api.html">mission_api</a> — pick it up without depending on this service call. The response carries the same struct so the coordinator does not have to round-trip through a topic to read what it just produced.</p>
+    </section>
+
+    <section id="s2"><div class="section-header"><span class="section-num">2.0</span><h2 class="section-title">Participants</h2></div>
+      <div class="participants">
+        <div class="participant-card srv"><div class="participant-role">Server</div><div class="participant-name">georeferencer</div>
+          <div class="participant-detail"><strong>SRS</strong><a href="../nodes/srs-georeferencer.html">SRS-MAP-003</a><strong>Role</strong>Computes corners; publishes AerialImageMeta to <a href="icd-mapping-aerial-image.html">/mapping/latest_aerial_image</a>; returns the same struct in the response.</div></div>
+        <div class="participant-card srv"><div class="participant-role">Clients</div><div class="participant-name">drone_mission_coordinator</div>
+          <div class="participant-detail"><strong>SRS</strong><a href="../nodes/srs-drone-mission-coordinator.html">SRS-MAP-001</a><strong>Role</strong>Sole caller. Supplies the path returned by <a href="icd-mapping-retrieve-image-srv.html">/mapping/retrieve_latest_image</a> plus the shutter-time pose it captured from the FC.</div></div>
+      </div>
+    </section>
+
+    <section id="s3"><div class="section-header"><span class="section-num">3.0</span><h2 class="section-title">Interface Definition</h2></div>
+      <p>Service type: <code>platform_msgs/srv/Georeference</code>.</p>
+      <div class="code-block" data-lang="IDL"><span class="comment"># Request</span>
+string image_path                          <span class="comment"># absolute path to the captured JPEG on rover disk</span>
+float64 capture_lat                        <span class="comment"># drone latitude at shutter (degrees, WGS84)</span>
+float64 capture_lon                        <span class="comment"># drone longitude at shutter (degrees, WGS84)</span>
+float32 capture_alt_m                      <span class="comment"># altitude above takeoff at shutter (meters)</span>
+geometry_msgs/Quaternion capture_attitude  <span class="comment"># body-from-world rotation at shutter</span>
+builtin_interfaces/Time capture_time       <span class="comment"># FC timestamp at shutter</span>
+<span class="comment">---</span>
+<span class="comment"># Response</span>
+bool success
+string message                             <span class="comment"># empty on success; reason on failure</span>
+platform_msgs/AerialImageMeta meta         <span class="comment"># fully populated on success; default-init on failure</span></div>
+      <p>The <code>meta</code> field on success is identical (byte-for-byte) to the message published on <a href="icd-mapping-aerial-image.html">/mapping/latest_aerial_image</a> for this call.</p>
+    </section>
+
+    <section id="s4"><div class="section-header"><span class="section-num">4.0</span><h2 class="section-title">Semantics</h2></div>
+      <p>On invocation, georeferencer:</p>
+      <ol class="indent-list">
+        <li>Validates <code>image_path</code> exists and is a readable JPEG. Missing or unreadable → SUCCESS=FALSE.</li>
+        <li>Validates <code>capture_alt_m</code> is finite. Negative or non-finite → SUCCESS=FALSE. (Out-of-range altitudes log a warning and still compute, per <a href="../nodes/srs-georeferencer.html">SRS-MAP-003 §9</a>.)</li>
+        <li>Computes the pinhole-camera footprint at the given altitude using configured <code>camera_hfov_deg</code> / <code>camera_vfov_deg</code>; rotates by <code>capture_attitude</code>; converts ground-frame corner offsets to lat/lon via <code>pyproj</code> from <code>(capture_lat, capture_lon)</code>.</li>
+        <li>Populates the AerialImageMeta with <code>image_path</code>, capture pose, four <code>corner_lats</code> / <code>corner_lons</code> (NE, SE, SW, NW), and <code>capture_time</code>.</li>
+        <li>Publishes the meta on <a href="icd-mapping-aerial-image.html">/mapping/latest_aerial_image</a>.</li>
+        <li>Returns SUCCESS=TRUE with a copy of the meta in the response.</li>
+      </ol>
+      <p>The publish-and-respond order is: publish first, then respond. This ordering ensures that any subscriber on <code>/mapping/latest_aerial_image</code> sees the new meta no later than the caller does — the coordinator cannot race ahead of mission_api by reading the response and signaling completion before mission_api has the topic update.</p>
+    </section>
+
+    <section id="s5"><div class="section-header"><span class="section-num">5.0</span><h2 class="section-title">Timing</h2></div>
+      <div class="data-table-wrap"><table class="data-table"><thead><tr><th>Property</th><th>Value</th></tr></thead><tbody>
+        <tr><td>Per-image processing</td><td>≤ 500 ms (per SRS-MAP-003 §5)</td></tr>
+        <tr><td>Service callback latency</td><td>= processing time (synchronous compute, no I/O beyond reading the JPEG header for sanity)</td></tr>
+      </tbody></table></div>
+    </section>
+
+    <section id="s6"><div class="section-header"><span class="section-num">6.0</span><h2 class="section-title">QoS</h2></div>
+      <p>ROS 2 service default QoS. Reliability RELIABLE.</p>
+    </section>
+
+    <section id="s7"><div class="section-header"><span class="section-num">7.0</span><h2 class="section-title">Fault</h2></div>
+      <div class="data-table-wrap"><table class="data-table"><thead><tr><th>Fault</th><th>Response</th></tr></thead>
+        <tbody>
+          <tr><td>georeferencer down</td><td>ROS 2 service call fails (no server). Coordinator surfaces as mission failure with reason <code>"georeferencer_unreachable"</code>.</td></tr>
+          <tr><td><code>image_path</code> missing or unreadable</td><td>SUCCESS=FALSE, <code>message="image not found at &lt;path&gt;"</code>. No publication on the topic.</td></tr>
+          <tr><td>Non-finite or negative altitude</td><td>SUCCESS=FALSE, <code>message="invalid capture_alt_m: &lt;value&gt;"</code>.</td></tr>
+          <tr><td>Quaternion non-finite or zero-norm</td><td>SUCCESS=FALSE, <code>message="invalid capture_attitude"</code>.</td></tr>
+          <tr><td>pyproj transform raises</td><td>SUCCESS=FALSE, <code>message="projection failed: &lt;exc&gt;"</code>; diagnostic at WARN.</td></tr>
+        </tbody></table></div>
+      <p>Failure does not publish on <code>/mapping/latest_aerial_image</code>: the topic carries only successful georeferences. The TRANSIENT_LOCAL last-value semantics mean a subscriber that joins late after a failure sees the previous successful georeference (if any), never a partial one.</p>
+    </section>
+
+    <section id="s8"><div class="section-header"><span class="section-num">8.0</span><h2 class="section-title">Requirements</h2></div>
+      <ul class="req-list">
+        <li class="req-item"><div class="req-id">REQ-ICD-MAP-005-01</div><div><div class="req-text">On SUCCESS, the response <code>meta</code> shall be byte-identical to the message published on <code>/mapping/latest_aerial_image</code> in the same call.</div><div class="req-trace">verified by: <code>TEST-MAP-010</code></div></div></li>
+        <li class="req-item"><div class="req-id">REQ-ICD-MAP-005-02</div><div><div class="req-text">The publication on <code>/mapping/latest_aerial_image</code> shall happen before the service response is returned, so any subscriber sees the update no later than the caller.</div><div class="req-trace">verified by: <code>TEST-MAP-010</code></div></div></li>
+        <li class="req-item"><div class="req-id">REQ-ICD-MAP-005-03</div><div><div class="req-text">Service callback latency shall be ≤ 500 ms for a 1600×1200 JPEG.</div><div class="req-trace">verified by: <code>TEST-MAP-010</code></div></div></li>
+        <li class="req-item"><div class="req-id">REQ-ICD-MAP-005-04</div><div><div class="req-text">Corner accuracy shall meet REQ-ICD-MAP-002-02 (±0.5 m at yard distances) when given accurate inputs.</div><div class="req-trace">verified by: <code>TEST-MAP-011</code></div></div></li>
+      </ul>
+    </section>
+
+    <section id="s9"><div class="section-header"><span class="section-num">9.0</span><h2 class="section-title">Verification</h2></div>
+      <div class="data-table-wrap"><table class="data-table"><thead><tr><th>Test</th><th>Method</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td><span class="field-name">TEST-MAP-010</span></td><td>Integration</td><td>Synthetic image + canned pose; call service; verify response matches a separately-subscribed snapshot of the topic; measure end-to-end latency.</td></tr>
+          <tr><td><span class="field-name">TEST-MAP-011</span></td><td>Field</td><td>GPS-surveyed ground markers; fly mapping mission; compare predicted corners (from response) to surveyed positions; assert ≤ 0.5 m residual.</td></tr>
+        </tbody></table></div>
+    </section>
+
+    <section id="s10"><div class="section-header"><span class="section-num">10.0</span><h2 class="section-title">Open Issues</h2></div>
+      <ol class="indent-list">
+        <li><strong>OPEN-01</strong> — Pose inputs are passed by the caller rather than queried by georeferencer from <code>/hal/gps_fix</code> + IMU. Rationale: caller already has the shutter-time pose because it triggered the capture; querying again would race the FC clock. Revisit if the coordinator stops being the only client.</li>
+        <li><strong>OPEN-02</strong> — DEM-aware processing (per SRS-MAP-003 OPEN-01) will need an additional input — likely a ground-elevation-at-capture-point field — when iter 2 lands. Defer signature change until then.</li>
+      </ol>
+    </section>
+
+    <section id="s11"><div class="section-header"><span class="section-num">11.0</span><h2 class="section-title">Revision</h2></div>
+      <table class="revision-table"><thead><tr><th>Rev</th><th>Date</th><th>Author</th><th>Change</th></tr></thead>
+        <tbody><tr><td class="rev">0.1</td><td>2026-05-03</td><td>Louis Roig &amp; Claude Opus 4.7</td><td>Initial draft. Formalizes the contract that <a href="../nodes/srs-georeferencer.html">SRS-MAP-003</a> §3 left as "takes <code>image_path</code> + drone pose, returns AerialImageMeta".</td></tr></tbody></table>
+    </section>
+
+    <div class="footer-nav"><a href="index.html">← Interfaces Index</a><span>Related: <a href="icd-mapping-aerial-image.html">/mapping/latest_aerial_image</a> · <a href="icd-mapping-retrieve-image-srv.html">/mapping/retrieve_latest_image</a></span></div>
+  </main>
+</div>
+<script src="../shared/shared.js"></script>
+</body></html>

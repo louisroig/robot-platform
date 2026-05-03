@@ -13,7 +13,7 @@
   <a class="doc-bar-crumb" href="index.html">NODES</a><span class="doc-bar-sep">·</span>
   <span class="doc-bar-id">SRS-MAP-003</span><span class="doc-bar-sep">·</span>
   <span class="doc-bar-path">georeferencer</span><span class="doc-bar-sep">·</span>
-  <span style="color: var(--ink-dim)">REV 0.1</span>
+  <span style="color: var(--ink-dim)">REV 0.2</span>
   <div class="doc-bar-status"><span class="status-dot"></span><span>DRAFT</span></div>
   <div class="doc-bar-tools"><button class="tool-btn" onclick="window.print()">PRINT</button><button class="tool-btn" onclick="copyLink(event)">COPY LINK</button></div>
 </div>
@@ -42,7 +42,7 @@
       <p class="doc-subtitle">Computes geographic corner coordinates for captured aerial imagery from drone pose and camera model.</p>
       <div class="doc-meta">
         <div class="meta-item"><div class="meta-label">Document ID</div><div class="meta-value">SRS-MAP-003</div></div>
-        <div class="meta-item"><div class="meta-label">Revision</div><div class="meta-value">0.1 · draft</div></div>
+        <div class="meta-item"><div class="meta-label">Revision</div><div class="meta-value">0.2 · draft</div></div>
         <div class="meta-item"><div class="meta-label">Owner</div><div class="meta-value">platform_mapping</div></div>
         <div class="meta-item"><div class="meta-label">Language</div><div class="meta-value">Python (rclpy + pyproj)</div></div>
         <div class="meta-item"><div class="meta-label">Classification</div><div class="meta-value">Data processing</div></div>
@@ -59,7 +59,7 @@
     </section>
 
     <section id="s3"><div class="section-header"><span class="section-num">3.0</span><h2 class="section-title">Interfaces</h2></div>
-      <p>Service server: <code>/mapping/georeference</code> (takes <code>image_path</code> + drone pose, returns AerialImageMeta). Publisher: <a href="../interfaces/icd-mapping-aerial-image.html">/mapping/latest_aerial_image</a>, <code>/diagnostics</code>.</p>
+      <p>Service server: <a href="../interfaces/icd-mapping-georeference-srv.html"><code>/mapping/georeference</code></a> (<code>platform_msgs/srv/Georeference</code> per ICD-MAP-005 — request carries image_path + drone pose; response carries AerialImageMeta). Publisher: <a href="../interfaces/icd-mapping-aerial-image.html">/mapping/latest_aerial_image</a>, <code>/diagnostics</code>.</p>
     </section>
 
     <section id="s4"><div class="section-header"><span class="section-num">4.0</span><h2 class="section-title">Functional</h2></div>
@@ -105,7 +105,10 @@
     </section>
 
     <section id="s12"><div class="section-header"><span class="section-num">12.0</span><h2 class="section-title">Revision</h2></div>
-      <table class="revision-table"><thead><tr><th>Rev</th><th>Date</th><th>Author</th><th>Change</th></tr></thead><tbody><tr><td class="rev">0.1</td><td>2026-04-19</td><td>Louis Roig &amp; Claude Opus 4.7</td><td>Initial draft.</td></tr></tbody></table>
+      <table class="revision-table"><thead><tr><th>Rev</th><th>Date</th><th>Author</th><th>Change</th></tr></thead><tbody>
+        <tr><td class="rev">0.1</td><td>2026-04-19</td><td>Louis Roig &amp; Claude Opus 4.7</td><td>Initial draft.</td></tr>
+        <tr><td class="rev">0.2</td><td>2026-05-03</td><td>Louis Roig &amp; Claude Opus 4.7</td><td>§3 links to <a href="../interfaces/icd-mapping-georeference-srv.html">ICD-MAP-005</a> (formal service contract). Removes the "takes image_path + drone pose, returns AerialImageMeta" placeholder.</td></tr>
+      </tbody></table>
     </section>
 
     <div class="footer-nav"><a href="index.html">← Nodes Index</a></div>

@@ -13,7 +13,7 @@
   <a class="doc-bar-crumb" href="index.html">NODES</a><span class="doc-bar-sep">·</span>
   <span class="doc-bar-id">SRS-MAP-001</span><span class="doc-bar-sep">·</span>
   <span class="doc-bar-path">drone_mission_coordinator</span><span class="doc-bar-sep">·</span>
-  <span style="color: var(--ink-dim)">REV 0.4</span>
+  <span style="color: var(--ink-dim)">REV 0.5</span>
   <div class="doc-bar-status"><span class="status-dot"></span><span>DRAFT</span></div>
   <div class="doc-bar-tools"><button class="tool-btn" onclick="window.print()">PRINT</button><button class="tool-btn" onclick="copyLink(event)">COPY LINK</button></div>
 </div>
@@ -43,7 +43,7 @@
       <p class="doc-subtitle">Orchestrates the drone's complete mapping mission cycle: arm, takeoff, capture, land.</p>
       <div class="doc-meta">
         <div class="meta-item"><div class="meta-label">Document ID</div><div class="meta-value">SRS-MAP-001</div></div>
-        <div class="meta-item"><div class="meta-label">Revision</div><div class="meta-value">0.4 · draft</div></div>
+        <div class="meta-item"><div class="meta-label">Revision</div><div class="meta-value">0.5 · draft</div></div>
         <div class="meta-item"><div class="meta-label">Owner</div><div class="meta-value">platform_mapping</div></div>
         <div class="meta-item"><div class="meta-label">Language</div><div class="meta-value">Python (rclpy)</div></div>
         <div class="meta-item"><div class="meta-label">Classification</div><div class="meta-value">Autonomy</div></div>
@@ -60,7 +60,7 @@
     </section>
 
     <section id="s3"><div class="section-header"><span class="section-num">3.0</span><h2 class="section-title">Interfaces</h2></div>
-      <p>Action server: <a href="../interfaces/icd-mapping-mission-action.html">/mapping/run_mission</a>. MAVROS clients (services and topics): <code>/mavros/cmd/arming</code>, <code>/mavros/cmd/takeoff</code>, <code>/mavros/cmd/land</code>, <code>/mavros/state</code>, <code>/mavros/global_position/global</code>. Publisher: <code>/diagnostics</code>.</p>
+      <p>Action server: <a href="../interfaces/icd-mapping-mission-action.html">/mapping/run_mission</a>. MAVROS clients (services and topics): <code>/mavros/cmd/arming</code>, <code>/mavros/cmd/takeoff</code>, <code>/mavros/cmd/land</code>, <code>/mavros/state</code>, <code>/mavros/global_position/global</code>. Service clients: <a href="../interfaces/icd-mapping-retrieve-image-srv.html">/mapping/retrieve_latest_image</a> (during IMAGE_TRANSFER), <a href="../interfaces/icd-mapping-georeference-srv.html">/mapping/georeference</a> (during GEOREF). HTTP client of the XIAO during CAPTURING per <a href="../interfaces/icd-xiao-http-api.html">ICD-XIAO-001</a>. Publisher: <code>/diagnostics</code>.</p>
     </section>
 
     <section id="s4"><div class="section-header"><span class="section-num">4.0</span><h2 class="section-title">Functional</h2></div>
@@ -87,7 +87,7 @@
     </section>
 
     <section id="s8"><div class="section-header"><span class="section-num">8.0</span><h2 class="section-title">Dependencies</h2></div>
-      <p>rclpy, mavros, platform_msgs, <a href="srs-image-retriever.html">image_retriever</a> service contract.</p>
+      <p>rclpy, mavros, platform_msgs, <code>requests</code> (XIAO HTTP). Service contracts: <a href="../interfaces/icd-mapping-retrieve-image-srv.html">ICD-MAP-004</a> (image_retriever), <a href="../interfaces/icd-mapping-georeference-srv.html">ICD-MAP-005</a> (georeferencer), <a href="../interfaces/icd-xiao-http-api.html">ICD-XIAO-001</a> (XIAO HTTP API).</p>
     </section>
 
     <section id="s9"><div class="section-header"><span class="section-num">9.0</span><h2 class="section-title">Configuration</h2></div>
@@ -121,6 +121,7 @@
         <tr><td class="rev">0.2</td><td>2026-05-03</td><td>Louis Roig &amp; Claude Opus 4.7</td><td>§7 state list extended with IMAGE_TRANSFER and GEOREF post-LANDED states; result-emission point moved to DISARMED. Aligns with <a href="../state-machines/sm-drone-mission.html">SM-DRN-001</a> rev 0.2 and <a href="../interfaces/icd-mapping-mission-action.html">ICD-MAP-003</a> rev 0.2.</td></tr>
         <tr><td class="rev">0.3</td><td>2026-05-03</td><td>Louis Roig &amp; Claude Opus 4.7</td><td>§9 added battery-threshold layering note: <code>abort_on_low_battery_pct</code> must fire before FC failsafe (BATT_LOW_VOLT in FW-ACP §3) to preserve coordinator-owned abort. Also reflects ICD-MAP-003 §7 RTL→LAND clarification.</td></tr>
         <tr><td class="rev">0.4</td><td>2026-05-03</td><td>Louis Roig &amp; Claude Opus 4.7</td><td>§5 specified CPU budget platform (Pi 5, single core) and feedback rate as ≥ 2 Hz nominal / ≥ 1 Hz floor.</td></tr>
+        <tr><td class="rev">0.5</td><td>2026-05-03</td><td>Louis Roig &amp; Claude Opus 4.7</td><td>§3 + §8 link the post-LANDED service calls and XIAO HTTP capture to formal ICDs: <a href="../interfaces/icd-mapping-retrieve-image-srv.html">ICD-MAP-004</a>, <a href="../interfaces/icd-mapping-georeference-srv.html">ICD-MAP-005</a>, <a href="../interfaces/icd-xiao-http-api.html">ICD-XIAO-001</a>.</td></tr>
       </tbody></table>
     </section>
 

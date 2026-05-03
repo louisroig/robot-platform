@@ -39,7 +39,7 @@
 
       <div class="doc-meta">
         <div class="meta-item"><div class="meta-label">Section ID</div><div class="meta-value">ICD</div></div>
-        <div class="meta-item"><div class="meta-label">ICDs</div><div class="meta-value">21</div></div>
+        <div class="meta-item"><div class="meta-label">ICDs</div><div class="meta-value">24</div></div>
         <div class="meta-item"><div class="meta-label">Status</div><div class="meta-value">Draft · Rev 0.1</div></div>
         <div class="meta-item"><div class="meta-label">Applies To</div><div class="meta-value">Iteration 1+</div></div>
       </div>
@@ -269,6 +269,42 @@
           <div>
             <a class="doc-link" href="icd-mapping-mission-action.html"><code>/mapping/run_mission</code> action</a>
             <div class="doc-oneliner">Drone mission action interface. Triggers a complete mapping flight cycle.</div>
+          </div>
+          <span class="doc-status">DRAFT</span>
+        </li>
+        <li data-filterable="ICD-MAP-004 /mapping/retrieve_latest_image service">
+          <span class="doc-id">ICD-MAP-004</span>
+          <div>
+            <a class="doc-link" href="icd-mapping-retrieve-image-srv.html"><code>/mapping/retrieve_latest_image</code> service</a>
+            <div class="doc-oneliner">Pulls the most recent capture from the XIAO over HTTP and persists to rover disk.</div>
+          </div>
+          <span class="doc-status">DRAFT</span>
+        </li>
+        <li data-filterable="ICD-MAP-005 /mapping/georeference service">
+          <span class="doc-id">ICD-MAP-005</span>
+          <div>
+            <a class="doc-link" href="icd-mapping-georeference-srv.html"><code>/mapping/georeference</code> service</a>
+            <div class="doc-oneliner">Computes geographic image-corner coordinates from drone pose; publishes AerialImageMeta and returns it.</div>
+          </div>
+          <span class="doc-status">DRAFT</span>
+        </li>
+      </ul>
+    </section>
+
+    <section>
+      <div class="section-header">
+        <span class="section-num">6.5</span>
+        <h2 class="section-title">Drone interfaces (non-ROS)</h2>
+      </div>
+
+      <p>External wire contracts to drone-side firmware. Not ROS 2 topics; consumed by mapping nodes via plain HTTP.</p>
+
+      <ul class="doc-list">
+        <li data-filterable="ICD-XIAO-001 xiao http capture esp32">
+          <span class="doc-id">ICD-XIAO-001</span>
+          <div>
+            <a class="doc-link" href="icd-xiao-http-api.html">XIAO HTTP capture API</a>
+            <div class="doc-oneliner">Wire contract for <code>GET /capture</code> and <code>GET /latest.jpg</code> on the XIAO ESP32-S3. Companion to FW-XIAO §4.</div>
           </div>
           <span class="doc-status">DRAFT</span>
         </li>
