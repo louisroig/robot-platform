@@ -199,12 +199,16 @@
         <li><strong>OPEN-01</strong> — Iteration 2: integrate hardware heartbeat line to safety MCU. Scaffolding present; output not wired.</li>
         <li><strong>OPEN-02</strong> — Reason-code enumeration (vs. strings) for machine-reliable app handling. See <a href="../interfaces/icd-safety-state.html">ICD-SAF-001</a> OPEN-01.</li>
         <li><strong>OPEN-03</strong> — Formal verification of the state machine. Candidate: generate TLA+ model from spec. Deferred.</li>
+        <li><strong>OPEN-04</strong> — Stale-input enforcement (per SRS-SAF-001-S01) lives in this node, not the teleop UI. Bench finding 2026-05-03 (M1 phone-joystick smoke test): the <a href="../../">teleop_web</a> page-side stale-link check resets on any inbound message and so does not latch when only <code>/hal/imu/data</code> goes silent (because <code>/diagnostics</code> from this node + motor_driver keeps arriving at 1 Hz). Harmless at M1 because this node is a pass-through stub, but at M2 the gate must enforce IMU staleness server-side via <code>topic_staleness_ms</code> per §6 / S01. The JS check should be reduced to UX-only (or removed) once this node enforces.</li>
       </ol>
     </section>
 
     <section id="s13"><div class="section-header"><span class="section-num">13.0</span><h2 class="section-title">Revision</h2></div>
       <table class="revision-table"><thead><tr><th>Rev</th><th>Date</th><th>Author</th><th>Change</th></tr></thead>
-        <tbody><tr><td class="rev">0.1</td><td>2026-04-19</td><td>Louis Roig &amp; Claude Opus 4.7</td><td>Initial draft.</td></tr></tbody></table>
+        <tbody>
+          <tr><td class="rev">0.1</td><td>2026-04-19</td><td>Louis Roig &amp; Claude Opus 4.7</td><td>Initial draft.</td></tr>
+          <tr><td class="rev">0.2</td><td>2026-05-03</td><td>Louis Roig &amp; Claude Opus 4.7</td><td>Added OPEN-04: M1 bench finding that page-side stale check is non-latching; reaffirms server-side enforcement at M2.</td></tr>
+        </tbody></table>
     </section>
 
     <div class="footer-nav">

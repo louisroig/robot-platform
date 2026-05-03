@@ -188,7 +188,9 @@
   const IMU_TYPE = 'sensor_msgs/msg/Imu';
   const DIAG_TOPIC = '/diagnostics';
   const DIAG_TYPE = 'diagnostic_msgs/msg/DiagnosticArray';
-  // IMU publishes at 100 Hz; flag the link stale if no inbound traffic for this long.
+  // UX hint only — any inbound topic resets this, so /diagnostics at 1 Hz prevents
+  // latching when only IMU dies. Real stale-link enforcement is safety_monitor's job
+  // at M2 (SRS-SAF-001 OPEN-04 / §6 topic_staleness_ms).
   const STALE_MS = 1000;
 
   const dot = document.getElementById('dot');
