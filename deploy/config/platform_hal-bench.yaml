@@ -1,0 +1,47 @@
+# Bench parameters for the platform_hal stack — used during development
+# and cold-boot validation when the PCA9685 isn't wired up yet.
+#
+# Differences from platform_hal.yaml (production):
+#   - motor_driver: gpio_backend = 'mock' instead of 'pca9685', so
+#     motor_driver comes up cleanly without an I²C device on the bus.
+#     /test/motor_pwm carries the per-track commands for inspection.
+#
+# Everything else mirrors production: real IMU, real safety thresholds.
+# Keep this file in sync with platform_hal.yaml when tuning non-backend
+# parameters.
+
+motor_driver:
+  ros__parameters:
+    gpio_backend: mock              # ← bench-only: skip PCA9685
+    rpwm_left_pin: 0
+    lpwm_left_pin: 1
+    rpwm_right_pin: 2
+    lpwm_right_pin: 3
+    pwm_frequency_hz: 1000
+    i2c_bus: 1
+    i2c_address: 0x40
+    track_width_m: 0.28
+    max_linear_vel: 0.7
+    max_angular_vel: 1.5
+    cmd_vel_timeout_ms: 500
+    control_loop_hz: 50.0
+
+imu_driver:
+  ros__parameters:
+    imu_backend: ism330             # real IMU on bench
+    i2c_bus: 1
+    i2c_address: 0x6B
+    imu_rate_hz: 100.0
+    calibration_file: $HOME/.config/platform/imu_calibration.yaml
+    madgwick_beta: 0.1
+    frame_id: imu_link
+
+safety_monitor:
+  ros__parameters:
+    tilt_limit_deg: 25.0
+    tilt_warning_deg: 18.0
+    tilt_latches: true
+    imu_staleness_ms: 200
+    cmd_vel_staleness_ms: 500
+    eval_rate_hz: 10.0
+    safe_publish_rate_hz: 50.0

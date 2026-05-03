@@ -1,0 +1,56 @@
+# Production parameters for the platform_hal stack.
+#
+# Used by the systemd unit (deploy/systemd/rover-platform-hal.service) via
+# the `params_file:=` launch argument. Defaults baked into each node match
+# what's specified here, so omitting this file is harmless during dev — but
+# in production we want the bench-validated values pinned in source rather
+# than relying on whatever the code happens to default to.
+#
+# Schema: ros2 standard. Each top-level key is a node name; values under
+# `ros__parameters:` are forwarded as parameter overrides.
+
+motor_driver:
+  ros__parameters:
+    # PCA9685 is the production PWM path on this Pi 5 — RP1 hardware PWM
+    # is broken on Ubuntu 24.04, so lgpio.tx_pwm silently no-ops. PCA9685
+    # channels 0/1 = left RPWM/LPWM, 2/3 = right RPWM/LPWM. See HW-PI5-001.
+    gpio_backend: pca9685
+    rpwm_left_pin: 0
+    lpwm_left_pin: 1
+    rpwm_right_pin: 2
+    lpwm_right_pin: 3
+    pwm_frequency_hz: 1000          # PCA9685 supports 24-1526 Hz
+    i2c_bus: 1
+    i2c_address: 0x40               # PCA9685 default; doesn't collide with IMU 0x6B
+    track_width_m: 0.28             # SRS-HAL-001 §9
+    max_linear_vel: 0.7             # m/s, SRS-HAL-001 §9
+    max_angular_vel: 1.5            # rad/s, SRS-HAL-001 §9
+    cmd_vel_timeout_ms: 500         # SRS-HAL-001-F04 / SR-005
+    control_loop_hz: 50.0
+
+imu_driver:
+  ros__parameters:
+    imu_backend: ism330             # production IMU; 'mock' for dev
+    i2c_bus: 1
+    i2c_address: 0x6B               # ISM330DHCX
+    imu_rate_hz: 100.0              # SRS-HAL-002-F01
+    calibration_file: $HOME/.config/platform/imu_calibration.yaml
+    madgwick_beta: 0.1              # SRS-HAL-002 §9
+    frame_id: imu_link
+
+safety_monitor:
+  ros__parameters:
+    # Tilt thresholds match SRS-SAF-001 §9 defaults; tilt_latches is M2's
+    # deviation from the strict spec — tip-over events require an explicit
+    # /safety/reset rather than auto-clearing on level recovery.
+    tilt_limit_deg: 25.0
+    tilt_warning_deg: 18.0
+    tilt_latches: true
+    # Per-topic staleness windows. IMU pubs at 100 Hz; cmd_vel_raw at 50 Hz
+    # (or whatever twist_mux is forwarding). 10× margin on IMU; the cmd_vel
+    # window matches motor_driver's own command timeout so both layers fail
+    # at roughly the same instant when teleop drops.
+    imu_staleness_ms: 200
+    cmd_vel_staleness_ms: 500
+    eval_rate_hz: 10.0              # SM-SAF-001 §6
+    safe_publish_rate_hz: 50.0      # ICD-HAL-002 §3.2

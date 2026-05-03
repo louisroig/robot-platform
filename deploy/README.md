@@ -8,6 +8,9 @@ green without manual intervention.*
 
 - `systemd/rover-platform-hal.service` — HAL stack (motor_driver + imu_driver + safety_monitor)
 - `systemd/rover-teleop-web.service`   — rosbridge WebSocket + joystick HTTP server
+- `config/platform_hal.yaml`           — **production** params (PCA9685 motor backend)
+- `config/platform_hal-bench.yaml`     — **bench** params (mock motor backend, real IMU)
+- `scripts/switch-platform-config.sh`  — swap which YAML the systemd unit uses
 - `udev/99-robot-platform.rules`       — placeholder (finalize after HW complete)
 
 ## One-time install (first deployment)
@@ -91,6 +94,26 @@ ros2 topic hz /hal/imu/data
    status pill reads `connected`. Dragging the knob publishes Twist.
 
 If all three pass, M1 bring-up is green.
+
+### Cold-boot test without the PCA9685 (bench validation)
+
+When the PCA9685 isn't wired up, the production YAML's `gpio_backend: pca9685`
+will make `motor_driver` exit with `no PCA9685 acking on i2c bus 1 @ 0x40`,
+and per `on_exit=Shutdown` that takes the whole launch down. Use the
+`switch-platform-config.sh` helper to point the systemd unit at the bench
+YAML (mock motor backend, real IMU) for cold-boot validation of the
+non-motor stack:
+
+```bash
+deploy/scripts/switch-platform-config.sh status        # what's wired now
+deploy/scripts/switch-platform-config.sh bench         # mock motor backend
+# … power-cycle, validate as above …
+deploy/scripts/switch-platform-config.sh prod          # back to PCA9685
+```
+
+In bench mode `/test/motor_pwm` carries the per-track PWM commands
+motor_driver would have written, useful for sanity-checking the gating
+chain (teleop → safety → motor) without hardware in the loop.
 
 ## Operator flow (phone teleop)
 

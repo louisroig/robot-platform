@@ -10,9 +10,15 @@ def _motor_driver_action(context, *args, **kwargs):
     gpio_backend = LaunchConfiguration('gpio_backend').perform(context)
     params_file = LaunchConfiguration('params_file').perform(context)
 
-    parameters = [{'gpio_backend': gpio_backend}]
+    # YAML first, then dict — ROS 2 applies parameter sources in order, last
+    # wins. This makes the launch arg override whatever the YAML specifies,
+    # matching the conventional "CLI > config file" precedence (and lets
+    # `gpio_backend:=mock` work for dev even when params_file points to the
+    # production YAML).
+    parameters = []
     if params_file:
         parameters.append(params_file)
+    parameters.append({'gpio_backend': gpio_backend})
 
     return [
         Node(
@@ -33,9 +39,10 @@ def _imu_driver_action(context, *args, **kwargs):
     imu_backend = LaunchConfiguration('imu_backend').perform(context)
     params_file = LaunchConfiguration('params_file').perform(context)
 
-    parameters = [{'imu_backend': imu_backend}]
+    parameters = []
     if params_file:
         parameters.append(params_file)
+    parameters.append({'imu_backend': imu_backend})
 
     return [
         Node(
@@ -45,6 +52,21 @@ def _imu_driver_action(context, *args, **kwargs):
             output='screen',
             parameters=parameters,
             on_exit=Shutdown(reason='imu_driver exited'),
+        ),
+    ]
+
+
+def _safety_monitor_action(context, *args, **kwargs):
+    params_file = LaunchConfiguration('params_file').perform(context)
+    parameters = [params_file] if params_file else []
+    return [
+        Node(
+            package='platform_hal',
+            executable='safety_monitor',
+            name='safety_monitor',
+            output='screen',
+            parameters=parameters,
+            on_exit=Shutdown(reason='safety_monitor exited'),
         ),
     ]
 
@@ -73,15 +95,9 @@ def generate_launch_description() -> LaunchDescription:
         DeclareLaunchArgument(
             'params_file',
             default_value='',
-            description='Optional YAML params file shared by motor_driver and imu_driver',
+            description='Optional YAML params file shared by all platform_hal nodes',
         ),
-        Node(
-            package='platform_hal',
-            executable='safety_monitor',
-            name='safety_monitor',
-            output='screen',
-            on_exit=Shutdown(reason='safety_monitor exited'),
-        ),
+        OpaqueFunction(function=_safety_monitor_action),
         OpaqueFunction(function=_motor_driver_action),
         OpaqueFunction(function=_imu_driver_action),
     ])
