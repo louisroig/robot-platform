@@ -1,0 +1,22 @@
+# Drone mapping mission. arm → takeoff → climb → capture → descent → land
+# → image transfer → georeference → done.
+# Contract: ICD-MAP-003. Server: drone_mission_coordinator (SRS-MAP-001).
+# State machine: SM-DRN-001.
+
+# Goal
+float32 altitude_m              # target capture altitude AGL (default 30.0)
+string output_name              # identifier for the saved image, e.g. "front_yard_20260419"
+---
+# Result
+bool success
+string mission_id               # UUID of the mission record (server-generated)
+string image_path               # absolute path on rover disk if success=true; empty otherwise
+string failure_reason           # populated if success=false; one of the SM-DRN-001 abort reasons
+---
+# Feedback
+# `phase` carries the canonical SM-DRN-001 state name; consumers that
+# care about machine handling should match strings exactly.
+string phase
+float32 progress                # 0.0..1.0; phase-weighted, see SRS-MAP-001 OPEN-X4
+float32 altitude_m              # current drone altitude AGL
+float32 battery_pct             # current drone battery percentage
