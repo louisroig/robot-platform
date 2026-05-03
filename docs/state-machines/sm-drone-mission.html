@@ -13,7 +13,7 @@
   <a class="doc-bar-crumb" href="index.html">STATE MACHINES</a><span class="doc-bar-sep">·</span>
   <span class="doc-bar-id">SM-DRN-001</span><span class="doc-bar-sep">·</span>
   <span class="doc-bar-path">drone_mission</span><span class="doc-bar-sep">·</span>
-  <span style="color: var(--ink-dim)">REV 0.1</span>
+  <span style="color: var(--ink-dim)">REV 0.2</span>
   <div class="doc-bar-status"><span class="status-dot"></span><span>DRAFT</span></div>
   <div class="doc-bar-tools"><button class="tool-btn" onclick="window.print()">PRINT</button><button class="tool-btn" onclick="copyLink(event)">COPY LINK</button></div>
 </div>
@@ -37,11 +37,11 @@
     <div class="doc-header">
       <div class="doc-type state">STATE MACHINE · DRONE MISSION</div>
       <h1 class="doc-title">drone_mission state machine</h1>
-      <p class="doc-subtitle">The drone's mission-cycle state, owned by <a href="../nodes/srs-drone-mission-coordinator.html">drone_mission_coordinator</a>. Seven sequential states + ABORTING.</p>
+      <p class="doc-subtitle">The drone's mission-cycle state, owned by <a href="../nodes/srs-drone-mission-coordinator.html">drone_mission_coordinator</a>. Nine sequential states + ABORTING.</p>
       <div class="doc-meta">
         <div class="meta-item"><div class="meta-label">Document ID</div><div class="meta-value">SM-DRN-001</div></div>
         <div class="meta-item"><div class="meta-label">Node</div><div class="meta-value"><a href="../nodes/srs-drone-mission-coordinator.html">drone_mission_coordinator</a></div></div>
-        <div class="meta-item"><div class="meta-label">Revision</div><div class="meta-value">0.1 · draft</div></div>
+        <div class="meta-item"><div class="meta-label">Revision</div><div class="meta-value">0.2 · draft</div></div>
       </div>
     </div>
 
@@ -50,6 +50,8 @@
     </section>
 
     <section id="s2"><div class="section-header"><span class="section-num">2.0</span><h2 class="section-title">Diagram</h2></div>
+
+      <p>The diagram shows the in-flight portion of the cycle. The post-land states <code>IMAGE_TRANSFER</code> and <code>GEOREF</code> follow <code>LANDED</code> on the success path; see §3 and §4 for the full enumeration.</p>
 
       <div class="state-diagram">
         <svg viewBox="0 0 900 360" xmlns="http://www.w3.org/2000/svg">
@@ -112,8 +114,10 @@
         <tr><td><span class="field-name">CLIMBING</span></td><td>Ascending to target altitude.</td></tr>
         <tr><td><span class="field-name">CAPTURING</span></td><td>Hovering; image-capture in progress on XIAO.</td></tr>
         <tr><td><span class="field-name">DESCENDING</span></td><td>Land command issued; actively descending.</td></tr>
-        <tr><td><span class="field-name">LANDED</span></td><td>On the ground. Action result is emitted from this state.</td></tr>
-        <tr><td><span class="field-name">ABORTING</span></td><td>Any non-terminal state transitioned here; immediate-land command issued. Terminal transitions to LANDED then action result=failure.</td></tr>
+        <tr><td><span class="field-name">LANDED</span></td><td>On the ground. From the success path, transitions to IMAGE_TRANSFER. From the abort path, transitions directly to DISARMED with action result=failure.</td></tr>
+        <tr><td><span class="field-name">IMAGE_TRANSFER</span></td><td>Drone disarmed; coordinator pulls the captured JPEG from the XIAO (<a href="../nodes/firmware-xiao-bridge.html">FW-XIAO</a> <code>GET /latest.jpg</code>). Only entered from the success path.</td></tr>
+        <tr><td><span class="field-name">GEOREF</span></td><td>Image georeferenced (geo-tag from EXIF + drone GPS at capture). Terminal predecessor of DISARMED on the success path; action result emitted here with <code>image_path</code> populated.</td></tr>
+        <tr><td><span class="field-name">ABORTING</span></td><td>Any in-flight non-terminal state transitioned here; immediate-land command issued. Transitions to LANDED then directly to DISARMED with action result=failure (no IMAGE_TRANSFER attempt).</td></tr>
       </tbody></table></div>
     </section>
 
@@ -129,17 +133,22 @@
         <tr><td>CAPTURING</td><td>ABORTING</td><td>capture timeout or capture error</td><td>—</td></tr>
         <tr><td>DESCENDING</td><td>LANDED</td><td>landed_state=ON_GROUND from mavros</td><td>—</td></tr>
         <tr><td>any non-terminal</td><td>ABORTING</td><td>operator cancel, /safety/state=ESTOP, low battery (&lt; 20%), GPS loss, MAVROS heartbeat loss</td><td>—</td></tr>
-        <tr><td>ABORTING</td><td>LANDED</td><td>landed_state=ON_GROUND</td><td>result.success=false</td></tr>
-        <tr><td>LANDED</td><td>DISARMED</td><td>disarm commanded; ACK received</td><td>—</td></tr>
+        <tr><td>ABORTING</td><td>LANDED</td><td>landed_state=ON_GROUND</td><td>—</td></tr>
+        <tr><td>LANDED</td><td>IMAGE_TRANSFER</td><td>disarm commanded; ACK received</td><td>predecessor was DESCENDING (success path)</td></tr>
+        <tr><td>LANDED</td><td>DISARMED</td><td>disarm commanded; ACK received</td><td>predecessor was ABORTING; result.success=false emitted on entry to DISARMED</td></tr>
+        <tr><td>IMAGE_TRANSFER</td><td>GEOREF</td><td>JPEG retrieved successfully from XIAO</td><td>—</td></tr>
+        <tr><td>IMAGE_TRANSFER</td><td>DISARMED</td><td>retrieval timeout or HTTP error</td><td>result.success=false, failure_reason="image_transfer_failed"</td></tr>
+        <tr><td>GEOREF</td><td>DISARMED</td><td>geo-tag written</td><td>result.success=true, image_path populated</td></tr>
       </tbody></table></div>
     </section>
 
     <section id="s5"><div class="section-header"><span class="section-num">5.0</span><h2 class="section-title">Abort Semantics</h2></div>
       <ul class="indent-list">
-        <li>ABORTING always commands immediate LAND via MAV_CMD_NAV_LAND. The drone descends at its current lat/lon.</li>
+        <li>ABORTING is in-flight-only. It always commands immediate LAND via MAV_CMD_NAV_LAND. The drone descends at its current lat/lon.</li>
         <li>No attempt to return to takeoff point is made in iteration 1 (would require RTL mode transition and extra seconds). The safety argument is: "already in the air, already over your yard — coming straight down is fine."</li>
         <li>Once ABORTING is entered, subsequent cancel / safety events are no-ops (we're already aborting).</li>
-        <li>The action result is always populated on entry to LANDED, whether from the nominal sequence or from ABORTING.</li>
+        <li>From the abort path no IMAGE_TRANSFER is attempted — there's nothing meaningful to retrieve, and the operator wants closure quickly.</li>
+        <li>The action result is populated on entry to DISARMED — either via GEOREF (success) or directly from LANDED on the abort path (failure) or from IMAGE_TRANSFER on transfer failure (failure with drone already safe).</li>
       </ul>
     </section>
 
@@ -152,6 +161,8 @@
         <tr><td>CAPTURING</td><td>3 s hover + ~1 s capture</td><td>10 s</td></tr>
         <tr><td>DESCENDING from 30 m</td><td>25 s</td><td>60 s</td></tr>
         <tr><td>ABORT → land (worst case from 30 m)</td><td>25 s</td><td>30 s</td></tr>
+        <tr><td>IMAGE_TRANSFER (1600×1200 JPEG over 2.4 GHz Wi-Fi)</td><td>3–10 s</td><td>30 s (see <a href="../nodes/firmware-xiao-bridge.html">FW-XIAO</a> OPEN-02)</td></tr>
+        <tr><td>GEOREF</td><td>&lt; 1 s</td><td>5 s</td></tr>
       </tbody></table></div>
     </section>
 
@@ -163,7 +174,10 @@
     </section>
 
     <section id="s8"><div class="section-header"><span class="section-num">8.0</span><h2 class="section-title">Revision</h2></div>
-      <table class="revision-table"><thead><tr><th>Rev</th><th>Date</th><th>Author</th><th>Change</th></tr></thead><tbody><tr><td class="rev">0.1</td><td>2026-04-19</td><td>Louis Roig &amp; Claude Opus 4.7</td><td>Initial draft.</td></tr></tbody></table>
+      <table class="revision-table"><thead><tr><th>Rev</th><th>Date</th><th>Author</th><th>Change</th></tr></thead><tbody>
+        <tr><td class="rev">0.1</td><td>2026-04-19</td><td>Louis Roig &amp; Claude Opus 4.7</td><td>Initial draft.</td></tr>
+        <tr><td class="rev">0.2</td><td>2026-05-03</td><td>Louis Roig &amp; Claude Opus 4.7</td><td>Added IMAGE_TRANSFER and GEOREF post-LANDED states (success-path only), reconciling SM with the <code>phase</code> enum in <a href="../interfaces/icd-mapping-mission-action.html">ICD-MAP-003</a>. Result-emission moved to DISARMED. ABORTING explicitly in-flight-only.</td></tr>
+      </tbody></table>
     </section>
 
     <div class="footer-nav"><a href="index.html">← State Machines Index</a><span>Related: <a href="../nodes/srs-drone-mission-coordinator.html">SRS-MAP-001</a></span></div>
