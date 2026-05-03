@@ -143,11 +143,18 @@ ros_ws/src/platform_hal/
   coding the node.
 - **Spec:** `docs/nodes/srs-imu-driver.html`
 
-### safety_monitor (SRS-SAF-001) — STUB AT M1
-- **Sub:** `/hal/cmd_vel_raw` (Twist)
-- **Pub:** `/hal/cmd_vel_safe` (Twist)
-- **M1 behavior:** Unconditional pass-through. No gating.
-- **M2 behavior:** Real gate — e-stop, tilt, person-detect, heartbeat.
+### safety_monitor (SRS-SAF-001) — M2 REAL GATE
+- **Sub:** `/hal/cmd_vel_raw` (Twist) · `/hal/imu/data` (Imu)
+- **Pub:** `/hal/cmd_vel_safe` (Twist) · `/diagnostics`
+- **Service:** `/safety/reset` (`std_srvs/Trigger` stand-in for `platform_msgs/srv/ResetSafety`)
+- **M2 behavior:** State machine gates `/hal/cmd_vel_raw → /hal/cmd_vel_safe`. ESTOP triggers
+  at M2: tilt > 25° (latched), tilt warning > 18°, IMU staleness, cmd_vel staleness, NaN/Inf
+  in raw, startup self-test. Latched ESTOPs require `/safety/reset` (validates condition is
+  clear before granting).
+- **M2 deviations from full spec:** No `platform_msgs` package yet — `/safety/state` deferred,
+  state surfaced via `/diagnostics` instead; `/safety/reset` uses `std_srvs/Trigger`. Tilt
+  excursion is latched (spec says auto-clear); revisit when more triggers exist. Perception,
+  geofence, battery, and decel-ramp triggers land in later milestones.
 - **Spec:** `docs/nodes/srs-safety-monitor.html`
 
 ---
