@@ -4,7 +4,7 @@ Ground-air autonomous platform — iteration 1. Solo build, targeting an M6 fiel
 
 ## Layout
 
-- `spec-site/` — HTML specification corpus. Open `spec-site/index.html` in any browser. See `spec-site/SPEC-README.md` for details on the corpus.
+- `docs/` — HTML specification corpus. Open `docs/index.html` in any browser. See `docs/SPEC-README.md` for details on the corpus.
 - `ros_ws/` — ROS 2 Jazzy workspace. Source `/opt/ros/jazzy/setup.bash`, then `colcon build` from inside this directory.
 - `firmware/` — Custom firmware. `xiao-bridge/` hosts the XIAO ESP32-S3 MAVLink + camera bridge.
 - `deploy/` — udev rules and systemd units for the Pi 5 rover.
@@ -15,4 +15,4 @@ Ground-air autonomous platform — iteration 1. Solo build, targeting an M6 fiel
 - **Drone:** iFlight Blitz Whoop F7 AIO (ArduCopter 4.5) + XIAO ESP32-S3 Sense bridge.
 - **Operator:** Mobile app over Wi-Fi (REST + WebSocket).
 
-See [`spec-site/architecture/deployment.html`](spec-site/architecture/deployment.html) for hardware allocation and [`spec-site/architecture/iteration-roadmap.html`](spec-site/architecture/iteration-roadmap.html) for the iteration plan.
+See [`docs/architecture/deployment.html`](docs/architecture/deployment.html) for hardware allocation and [`docs/architecture/iteration-roadmap.html`](docs/architecture/iteration-roadmap.html) for the iteration plan.

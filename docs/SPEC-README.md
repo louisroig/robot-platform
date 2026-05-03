@@ -17,7 +17,7 @@ This directory is the HTML-based specification corpus for iteration 1 of the gro
 ## Directory map
 
 ```
-spec-site/
+docs/
 ├── index.html                        Splash page — entry point
 ├── glossary.html                     Acronyms and terms
 ├── README.md                         This file
@@ -115,7 +115,7 @@ Everything else (no external JS, no build step, no framework) works without netw
 
 ## Deploying as a static site
 
-The `spec-site/` directory is already a valid static site. To host it:
+The `docs/` directory is already a valid static site. To host it:
 - Copy the directory to any static host (GitHub Pages, S3, Netlify, a plain nginx).
 - `index.html` is the root. No rewrites are required.
 - All internal links are relative; no base-URL configuration needed.

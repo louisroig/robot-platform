@@ -6,9 +6,9 @@ Autonomous lawn mower robot platform. Two-vehicle system: a tracked rover (teleo
 iteration 1) and a drone that maps the yard. Built on ROS 2 Jazzy, Python/rclpy, running on
 a Raspberry Pi 5.
 
-The specification lives at `spec-site/` in this repo — this is the single source of truth.
+The specification lives at `docs/` in this repo — this is the single source of truth.
 Browseable copy (auto-published via GitHub Pages): https://louisroig.github.io/robot-platform/
-When in doubt about a requirement or interface contract, read the spec in `spec-site/`.
+When in doubt about a requirement or interface contract, read the spec in `docs/`.
 
 ---
 
@@ -27,7 +27,7 @@ robot-platform/
 ├── deploy/
 │   ├── systemd/               ← systemd service units
 │   └── udev/                  ← udev rules for USB/GPIO devices
-└── spec-site/                 ← local copy of the HTML spec corpus
+└── docs/                 ← local copy of the HTML spec corpus
     ├── nodes/                 ← SRS documents per node
     ├── interfaces/            ← ICD documents
     ├── verification/          ← test protocols
@@ -77,7 +77,7 @@ everything back green without manual intervention.
 | Vision (M2+) | OAK-D on NPU |
 | Drone (M3+) | ArduCopter + XIAO bridge (see `firmware/xiao-bridge/`) |
 
-**GPIO BCM pin assignments frozen in `spec-site/hardware/hw-pi5-001-rover-wiring.html` §3:
+**GPIO BCM pin assignments frozen in `docs/hardware/hw-pi5-001-rover-wiring.html` §3:
 left track RPWM/LPWM on GPIO 12/13, right track on GPIO 18/19 (all hardware-PWM channels).**
 
 ---
@@ -129,7 +129,7 @@ ros_ws/src/platform_hal/
 - GPIO backend pluggable via `gpio_backend` param (`lgpio` for hardware, `mock` for tests).
 - **Safety:** Hold zero on startup until first valid message. Safe-halt if no message
   in 500 ms. (satisfies SR-005, SR-008)
-- **Spec:** `spec-site/nodes/srs-motor-driver.html`
+- **Spec:** `docs/nodes/srs-motor-driver.html`
 
 ### imu_driver (SRS-HAL-002)
 - **Pub:** `/hal/imu/data` (Imu, 100 Hz) · `/diagnostics`
@@ -141,14 +141,14 @@ ros_ws/src/platform_hal/
   (never emits stale values — triggers safety_monitor staleness at M2).
 - **First step:** Run IMU calibration tool and commit `imu_calibration.yaml` before
   coding the node.
-- **Spec:** `spec-site/nodes/srs-imu-driver.html`
+- **Spec:** `docs/nodes/srs-imu-driver.html`
 
 ### safety_monitor (SRS-SAF-001) — STUB AT M1
 - **Sub:** `/hal/cmd_vel_raw` (Twist)
 - **Pub:** `/hal/cmd_vel_safe` (Twist)
 - **M1 behavior:** Unconditional pass-through. No gating.
 - **M2 behavior:** Real gate — e-stop, tilt, person-detect, heartbeat.
-- **Spec:** `spec-site/nodes/srs-safety-monitor.html`
+- **Spec:** `docs/nodes/srs-safety-monitor.html`
 
 ---
 
@@ -160,7 +160,7 @@ ros_ws/src/platform_hal/
 | `/hal/cmd_vel_safe` | geometry_msgs/Twist | 50 Hz | Pass-through at M1 |
 | `/hal/imu/data` | sensor_msgs/Imu | 100 Hz | Orientation + accel + gyro |
 
-Full ICDs: `spec-site/interfaces/` or https://louisroig.github.io/robot-platform/interfaces/
+Full ICDs: `docs/interfaces/` or https://louisroig.github.io/robot-platform/interfaces/
 
 ---
 
@@ -172,7 +172,7 @@ Motor driver command timeout — must pass before M1 closes.
 - Runs 10 trials; all must be ≤ 600 ms; no late non-zero commands
 - Automated via `launch_testing` — runs on every PR
 - Uses `test/fixtures/mock_motor_driver.py` (no hardware needed for CI)
-- **Spec:** `spec-site/verification/test-hal-009.html`
+- **Spec:** `docs/verification/test-hal-009.html`
 
 ---
 
