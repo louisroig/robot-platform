@@ -13,7 +13,7 @@
   <a class="doc-bar-crumb" href="index.html">NODES</a><span class="doc-bar-sep">·</span>
   <span class="doc-bar-id">SRS-MAP-001</span><span class="doc-bar-sep">·</span>
   <span class="doc-bar-path">drone_mission_coordinator</span><span class="doc-bar-sep">·</span>
-  <span style="color: var(--ink-dim)">REV 0.2</span>
+  <span style="color: var(--ink-dim)">REV 0.3</span>
   <div class="doc-bar-status"><span class="status-dot"></span><span>DRAFT</span></div>
   <div class="doc-bar-tools"><button class="tool-btn" onclick="window.print()">PRINT</button><button class="tool-btn" onclick="copyLink(event)">COPY LINK</button></div>
 </div>
@@ -43,7 +43,7 @@
       <p class="doc-subtitle">Orchestrates the drone's complete mapping mission cycle: arm, takeoff, capture, land.</p>
       <div class="doc-meta">
         <div class="meta-item"><div class="meta-label">Document ID</div><div class="meta-value">SRS-MAP-001</div></div>
-        <div class="meta-item"><div class="meta-label">Revision</div><div class="meta-value">0.2 · draft</div></div>
+        <div class="meta-item"><div class="meta-label">Revision</div><div class="meta-value">0.3 · draft</div></div>
         <div class="meta-item"><div class="meta-label">Owner</div><div class="meta-value">platform_mapping</div></div>
         <div class="meta-item"><div class="meta-label">Language</div><div class="meta-value">Python (rclpy)</div></div>
         <div class="meta-item"><div class="meta-label">Classification</div><div class="meta-value">Autonomy</div></div>
@@ -97,6 +97,7 @@
         <tr><td><span class="field-name">capture_hover_s</span></td><td>3</td></tr>
         <tr><td><span class="field-name">abort_on_low_battery_pct</span></td><td>20.0</td></tr>
       </tbody></table></div>
+      <p><strong>Battery threshold layering.</strong> <code>abort_on_low_battery_pct</code> must trip <em>before</em> the ArduCopter battery failsafe (<a href="firmware-arducopter-config.html">FW-ACP</a> §3, <code>BATT_LOW_VOLT</code>) so the coordinator owns the abort decision and emits a clean action result. If the FC failsafe wins the race, the coordinator sees the drone descending without having issued the command and the action result is best-effort. To preserve coordinator-first ordering on a 3S 550 mAh pack, <code>abort_on_low_battery_pct</code> should leave ≥ 5% margin over the FC trigger under typical voltage sag — verify on bench before flight tuning.</p>
     </section>
 
     <section id="s10"><div class="section-header"><span class="section-num">10.0</span><h2 class="section-title">Failure Modes</h2></div>
@@ -118,6 +119,7 @@
       <table class="revision-table"><thead><tr><th>Rev</th><th>Date</th><th>Author</th><th>Change</th></tr></thead><tbody>
         <tr><td class="rev">0.1</td><td>2026-04-19</td><td>Louis Roig &amp; Claude Opus 4.7</td><td>Initial draft.</td></tr>
         <tr><td class="rev">0.2</td><td>2026-05-03</td><td>Louis Roig &amp; Claude Opus 4.7</td><td>§7 state list extended with IMAGE_TRANSFER and GEOREF post-LANDED states; result-emission point moved to DISARMED. Aligns with <a href="../state-machines/sm-drone-mission.html">SM-DRN-001</a> rev 0.2 and <a href="../interfaces/icd-mapping-mission-action.html">ICD-MAP-003</a> rev 0.2.</td></tr>
+        <tr><td class="rev">0.3</td><td>2026-05-03</td><td>Louis Roig &amp; Claude Opus 4.7</td><td>§9 added battery-threshold layering note: <code>abort_on_low_battery_pct</code> must fire before FC failsafe (BATT_LOW_VOLT in FW-ACP §3) to preserve coordinator-owned abort. Also reflects ICD-MAP-003 §7 RTL→LAND clarification.</td></tr>
       </tbody></table>
     </section>
 
