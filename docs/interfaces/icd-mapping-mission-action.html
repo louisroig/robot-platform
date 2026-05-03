@@ -15,7 +15,7 @@
   <a class="doc-bar-crumb" href="index.html">INTERFACES</a><span class="doc-bar-sep">·</span>
   <span class="doc-bar-id">ICD-MAP-003</span><span class="doc-bar-sep">·</span>
   <span class="doc-bar-path">/mapping/run_mission</span><span class="doc-bar-sep">·</span>
-  <span style="color: var(--ink-dim)">REV 0.3</span>
+  <span style="color: var(--ink-dim)">REV 0.4</span>
   <div class="doc-bar-status"><span class="status-dot"></span><span>DRAFT</span></div>
   <div class="doc-bar-tools">
     <button class="tool-btn" onclick="window.print()">PRINT</button>
@@ -48,7 +48,7 @@
       <p class="doc-subtitle">Action interface for triggering a complete drone mapping mission — arm, takeoff, capture, land.</p>
       <div class="doc-meta">
         <div class="meta-item"><div class="meta-label">Document ID</div><div class="meta-value">ICD-MAP-003</div></div>
-        <div class="meta-item"><div class="meta-label">Revision</div><div class="meta-value">0.3 · draft</div></div>
+        <div class="meta-item"><div class="meta-label">Revision</div><div class="meta-value">0.4 · draft</div></div>
         <div class="meta-item"><div class="meta-label">Owner</div><div class="meta-value">platform_mapping</div></div>
         <div class="meta-item"><div class="meta-label">Classification</div><div class="meta-value">Mission-control</div></div>
         <div class="meta-item"><div class="meta-label">Last Updated</div><div class="meta-value">2026-04-19</div></div>
@@ -88,7 +88,7 @@ float32 battery_pct             <span class="comment"># current drone battery</s
     </section>
 
     <section id="s4"><div class="section-header"><span class="section-num">4.0</span><h2 class="section-title">Semantics</h2></div>
-      <p>On goal accept, the server returns an accepted response immediately (within 100 ms) and begins executing the mission. Progress feedback is published at ~2 Hz throughout. Goal can be canceled; cancellation triggers immediate land (ABORTING state). A successful result populates <code>image_path</code>; a failed result populates <code>failure_reason</code>.</p>
+      <p>On goal accept, the server returns an accepted response immediately (within 100 ms) and begins executing the mission. Progress feedback is published at ≥ 2 Hz nominal (≥ 1 Hz floor; see <a href="../nodes/srs-drone-mission-coordinator.html">SRS-MAP-001</a> §5) throughout. Goal can be canceled; cancellation triggers immediate land (ABORTING state). A successful result populates <code>image_path</code>; a failed result populates <code>failure_reason</code>.</p>
       <p>Mission states and transitions are formally specified in <a href="../state-machines/sm-drone-mission.html">SM-DRN-001</a>.</p>
     </section>
 
@@ -96,7 +96,7 @@ float32 battery_pct             <span class="comment"># current drone battery</s
       <div class="data-table-wrap"><table class="data-table"><thead><tr><th>Param</th><th>Value</th></tr></thead>
         <tbody>
           <tr><td>Accept latency</td><td>≤ 100 ms</td></tr>
-          <tr><td>Feedback rate</td><td>~ 2 Hz</td></tr>
+          <tr><td>Feedback rate</td><td>≥ 2 Hz nominal · ≥ 1 Hz floor</td></tr>
           <tr><td>Typical mission duration</td><td>120 – 240 s</td></tr>
           <tr><td>Abort-to-ground latency</td><td>≤ 30 s (descent time)</td></tr>
         </tbody></table></div>
@@ -147,6 +147,7 @@ float32 battery_pct             <span class="comment"># current drone battery</s
           <tr><td class="rev">0.1</td><td>2026-04-19</td><td>Louis Roig &amp; Claude Opus 4.7</td><td>Initial draft.</td></tr>
           <tr><td class="rev">0.2</td><td>2026-05-03</td><td>Louis Roig &amp; Claude Opus 4.7</td><td>Aligned <code>phase</code> enum with <a href="../state-machines/sm-drone-mission.html">SM-DRN-001</a> canonical state names (was: ARMING/CLIMB/CAPTURE/DESCENT/LAND; now: ARMED/CLIMBING/CAPTURING/DESCENDING/LANDED, plus DISARMED, ABORTING). IMAGE_TRANSFER/GEOREF retained — corresponding states added to SM at rev 0.2.</td></tr>
           <tr><td class="rev">0.3</td><td>2026-05-03</td><td>Louis Roig &amp; Claude Opus 4.7</td><td>§7 low-battery fault: was "executes RTL"; now matches SM-DRN-001 and FW-ACP — lands at current position.</td></tr>
+          <tr><td class="rev">0.4</td><td>2026-05-03</td><td>Louis Roig &amp; Claude Opus 4.7</td><td>§4/§5 feedback rate now stated consistently as ≥ 2 Hz nominal / ≥ 1 Hz floor (was: prose "~ 2 Hz" vs requirement "≥ 1 Hz").</td></tr>
         </tbody></table>
     </section>
 
