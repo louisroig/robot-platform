@@ -24,6 +24,7 @@ setup(
             'motor_driver = platform_hal.motor_driver:main',
             'imu_driver = platform_hal.imu_driver:main',
             'safety_monitor = platform_hal.safety_monitor:main',
+            'imu_calibrate = platform_hal.imu_calibrate:main',
         ],
     },
 )
