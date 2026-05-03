@@ -21,7 +21,8 @@ robot-platform/
 ├── ros_ws/                    ← ROS 2 colcon workspace
 │   └── src/                   ← ROS 2 packages
 │       ├── platform_hal/      ← HAL nodes (motor_driver, imu_driver, safety_monitor)
-│       ├── platform_msgs/     ← shared msg/srv types (SafetyState, ResetSafety, ...)
+│       ├── platform_msgs/     ← shared msg/srv/action types
+│       ├── drone_mission/     ← drone_mission_coordinator (M3 scaffold)
 │       └── teleop_web/        ← M1 browser joystick + rosbridge launch
 ├── firmware/
 │   └── xiao-bridge/           ← XIAO MAVLink bridge firmware (M3+)
@@ -160,6 +161,30 @@ ros_ws/src/platform_hal/
   later milestones — when they do, `motion_permitted ≠ tool_permitted` becomes possible
   (CRITICAL state) and the publisher will need updating.
 - **Spec:** `docs/nodes/srs-safety-monitor.html`
+
+---
+
+## drone_mission package (M3 scaffold, hardware-pending)
+
+Built ahead of M3 hardware bring-up so the action-server contract and state
+machine are settled before mavros wiring begins.
+
+- `drone_mission/mission_state_machine.py` — pure-Python SM-DRN-001 (no rclpy);
+  9 phases + ABORTING; `MissionResult` populated on entry to terminal DISARMED.
+- `drone_mission/mavros_backend.py` — `MavrosBackend` ABC + `MockMavrosBackend`
+  in-process simulator + `RealMavrosBackend` SCAFFOLD (every method raises with
+  a pointer to the mavros topic/service it'll subscribe to). Selected via the
+  `mavros_backend` parameter (`mock` default; switch to `real` once a drone is
+  on the bench).
+- `drone_mission/drone_mission_coordinator.py` — `ActionServer` for
+  `/mapping/run_mission` (ICD-MAP-003). Runs the mission loop on a Reentrant
+  callback group so its sleeps don't starve the safety subscription or the 2 Hz
+  feedback timer. Pre-arm checks: `/safety/state == OK`, MAVROS connected, GPS
+  fix. Calls `/mapping/retrieve_latest_image` (ICD-MAP-004) and
+  `/mapping/georeference` (ICD-MAP-005) on the success path.
+- Tests: 21 unit (state machine + mock backend) + 2 launch_testing integration
+  (happy path + image-transfer-failure path). Run with `mavros_backend:=mock`;
+  no drone needed.
 
 ---
 
