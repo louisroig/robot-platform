@@ -1,0 +1,18 @@
+# Compute the geographic corners of a captured aerial image.
+# Contract: ICD-MAP-005. Server: georeferencer (SRS-MAP-003).
+#
+# Publishes platform_msgs/AerialImageMeta on /mapping/latest_aerial_image
+# before returning, then returns the same struct in the response.
+
+string image_path
+float64 capture_lat
+float64 capture_lon
+float32 capture_alt_m
+geometry_msgs/Quaternion capture_attitude
+builtin_interfaces/Time capture_time
+---
+bool success
+# Empty on success; reason on failure.
+string message
+# Fully populated on success; default-init on failure.
+AerialImageMeta meta

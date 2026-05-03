@@ -17,7 +17,7 @@ import rclpy
 from geometry_msgs.msg import Twist
 from rclpy.context import Context
 from sensor_msgs.msg import Imu
-from std_srvs.srv import Trigger
+from platform_msgs.srv import ResetSafety
 
 from platform_hal.safety_monitor import (
     SafetyMonitor,
@@ -323,10 +323,10 @@ class TestNodeResetService:
         safety_node._eval_tick()
 
         response = safety_node._on_reset_request(
-            Trigger.Request(), Trigger.Response(),
+            ResetSafety.Request(), ResetSafety.Response(),
         )
         assert response.success is False
-        assert 'tilt_exceeded' in response.message
+        assert 'tilt_exceeded' in response.reason
 
     def test_reset_succeeds_after_recovery(self, safety_node):
         # Excursion then recovery.
@@ -343,7 +343,7 @@ class TestNodeResetService:
         assert safety_node._last_eval.clearable is False
 
         response = safety_node._on_reset_request(
-            Trigger.Request(), Trigger.Response(),
+            ResetSafety.Request(), ResetSafety.Response(),
         )
         assert response.success is True
         assert safety_node._last_eval.state == SafetyState.OK

@@ -1,0 +1,13 @@
+# Operator-initiated clear of latched safety states.
+# Contract: ICD-SAF-002. Server: safety_monitor (SRS-SAF-001).
+#
+# Never forces a clear: if any latched trigger condition is still active,
+# the response is success=false with the active condition in `reason`.
+
+# Request: empty.
+---
+bool success
+# Empty on success; on failure, identifies the still-active latched
+# condition (e.g. "tilt_exceeded") so the app can prompt the operator
+# with a specific recovery action.
+string reason

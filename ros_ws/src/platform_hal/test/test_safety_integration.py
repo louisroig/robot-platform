@@ -52,7 +52,8 @@ from rclpy.qos import (
     ReliabilityPolicy,
 )
 from sensor_msgs.msg import Imu
-from std_srvs.srv import Trigger
+from platform_msgs.msg import SafetyState as SafetyStateMsg
+from platform_msgs.srv import ResetSafety
 
 sys.path.insert(0, os.path.dirname(__file__))
 from fixtures.mock_motor_driver import MotorCommandRecorder  # noqa: E402
@@ -153,7 +154,23 @@ class TestSafetyIntegration(unittest.TestCase):
         cls.imu_pub = cls.pub_node.create_publisher(
             Imu, '/hal/imu/data', imu_qos,
         )
-        cls.reset_client = cls.pub_node.create_client(Trigger, '/safety/reset')
+        cls.reset_client = cls.pub_node.create_client(ResetSafety, '/safety/reset')
+
+        # Subscribe to /safety/state so the test can also verify the new
+        # topic publishes per ICD-SAF-001 (TRANSIENT_LOCAL means we get the
+        # latest value immediately on subscription).
+        state_qos = QoSProfile(
+            reliability=ReliabilityPolicy.RELIABLE,
+            durability=DurabilityPolicy.TRANSIENT_LOCAL,
+            history=HistoryPolicy.KEEP_LAST,
+            depth=3,
+        )
+        cls._latest_state_msg = None
+        def _on_state(m):
+            cls._latest_state_msg = m
+        cls.pub_node.create_subscription(
+            SafetyStateMsg, '/safety/state', _on_state, state_qos,
+        )
 
         # Shared mutable state: a dict so test methods can mutate values via
         # `self._intent[...] = x` and the timer callbacks (closing over `cls`)
@@ -214,8 +231,8 @@ class TestSafetyIntegration(unittest.TestCase):
             time.sleep(0.05)
         self.fail('subscribers / reset service not ready in time')
 
-    def _call_reset(self, timeout_s: float = 2.0) -> Trigger.Response:
-        future = self.reset_client.call_async(Trigger.Request())
+    def _call_reset(self, timeout_s: float = 2.0) -> ResetSafety.Response:
+        future = self.reset_client.call_async(ResetSafety.Request())
         deadline = time.monotonic() + timeout_s
         while time.monotonic() < deadline:
             if future.done():
@@ -279,9 +296,9 @@ class TestSafetyIntegration(unittest.TestCase):
         response = self._call_reset()
         self.assertFalse(
             response.success,
-            f'/safety/reset should refuse while still tilted; got {response.message!r}',
+            f'/safety/reset should refuse while still tilted; got {response.reason!r}',
         )
-        self.assertIn('tilt_exceeded', response.message)
+        self.assertIn('tilt_exceeded', response.reason)
 
         # ---- 3. recover tilt; latch keeps motor at zero --------------------
         self._set_intent(tilt_deg=0.0)
@@ -299,7 +316,7 @@ class TestSafetyIntegration(unittest.TestCase):
         response = self._call_reset()
         self.assertTrue(
             response.success,
-            f'/safety/reset should succeed once recovered; got {response.message!r}',
+            f'/safety/reset should succeed once recovered; got {response.reason!r}',
         )
 
         t_after_reset = self.pub_node.get_clock().now().nanoseconds
@@ -308,8 +325,21 @@ class TestSafetyIntegration(unittest.TestCase):
         )
         self.assertGreater(abs(nonzero_sample.left), 0.0)
 
+        # ---- 5. /safety/state was published and reflects current state ----
+        # By this point the post-reset OK state must have been broadcast on
+        # /safety/state. ICD-SAF-001 §6 says TRANSIENT_LOCAL so the latest
+        # value sticks; any subscriber that joined late still sees it.
+        self.assertIsNotNone(
+            self._latest_state_msg,
+            '/safety/state never published any message',
+        )
+        self.assertEqual(self._latest_state_msg.state, SafetyStateMsg.STATE_OK)
+        self.assertTrue(self._latest_state_msg.motion_permitted)
+        self.assertTrue(self._latest_state_msg.tool_permitted)
+
         print(
             'TEST-SAF-INT PASS: '
             'gate-open → tilt-excursion → motor-zero → reset-refused → '
-            'recover → latched-zero → reset-granted → motor-resumed'
+            'recover → latched-zero → reset-granted → motor-resumed → '
+            'safety_state=OK'
         )

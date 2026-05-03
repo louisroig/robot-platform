@@ -19,12 +19,9 @@ and the only trigger that exercises the /safety/reset codepath; treating
 it as latched keeps the reset service meaningful and is the safer default
 for a tip-over event. Configurable via the `tilt_latches` parameter.
 
-The /safety/reset service is stand-in std_srvs/Trigger at M2 (matches
-ICD-SAF-002 wire shape: empty request, success+message); the dedicated
-platform_msgs/srv/ResetSafety arrives with the platform_msgs package.
-
-The dedicated /safety/state topic (ICD-SAF-001) is similarly deferred;
-state and active reasons are surfaced via /diagnostics until then.
+Publishes /safety/state (platform_msgs/msg/SafetyState) per ICD-SAF-001:
+RELIABLE, KEEP_LAST depth 3, TRANSIENT_LOCAL, 10 Hz baseline plus a
+≤20 ms on-change update driven from the input callbacks.
 """
 
 from __future__ import annotations
@@ -38,6 +35,8 @@ from typing import Optional
 import rclpy
 from diagnostic_msgs.msg import DiagnosticArray, DiagnosticStatus, KeyValue
 from geometry_msgs.msg import Twist
+from platform_msgs.msg import SafetyState as SafetyStateMsg
+from platform_msgs.srv import ResetSafety
 from rclpy.callback_groups import MutuallyExclusiveCallbackGroup
 from rclpy.executors import MultiThreadedExecutor
 from rclpy.node import Node
@@ -48,7 +47,6 @@ from rclpy.qos import (
     ReliabilityPolicy,
 )
 from sensor_msgs.msg import Imu
-from std_srvs.srv import Trigger
 
 
 class SafetyState(IntEnum):
@@ -290,8 +288,20 @@ class SafetyMonitor(Node):
             depth=10,
         )
 
+        # ICD-SAF-001 §6 — RELIABLE, KEEP_LAST depth 3, TRANSIENT_LOCAL so a
+        # late-joining telemetry subscriber immediately sees the current state.
+        safety_state_qos = QoSProfile(
+            reliability=ReliabilityPolicy.RELIABLE,
+            durability=DurabilityPolicy.TRANSIENT_LOCAL,
+            history=HistoryPolicy.KEEP_LAST,
+            depth=3,
+        )
+
         self._safe_pub = self.create_publisher(
             Twist, '/hal/cmd_vel_safe', cmd_vel_qos,
+        )
+        self._state_pub = self.create_publisher(
+            SafetyStateMsg, '/safety/state', safety_state_qos,
         )
         self.create_subscription(
             Twist, '/hal/cmd_vel_raw', self._on_raw,
@@ -302,7 +312,7 @@ class SafetyMonitor(Node):
             imu_qos, callback_group=self._safety_cbgroup,
         )
         self.create_service(
-            Trigger, '/safety/reset', self._on_reset_request,
+            ResetSafety, '/safety/reset', self._on_reset_request,
             callback_group=self._safety_cbgroup,
         )
         self._diag_pub = self.create_publisher(
@@ -331,6 +341,10 @@ class SafetyMonitor(Node):
         self._last_imu_stamp_ns = self.get_clock().now().nanoseconds
         q = msg.orientation
         self._last_tilt_rad = tilt_angle_rad(q.w, q.x, q.y, q.z)
+        # Drive on-change /safety/state from the input event itself so tilt
+        # threshold crossings hit the ≤20 ms ICD-SAF-001 §5 latency bound
+        # rather than waiting for the next 10 Hz eval tick (~100 ms).
+        self._reevaluate(publish_only_on_change=True)
 
     def _on_raw(self, msg: Twist) -> None:
         self._n_raw_received += 1
@@ -343,6 +357,9 @@ class SafetyMonitor(Node):
             self._sm.set_active('cmd_vel_invalid', True)
             self._last_cmd_vel = None
             self._safe_pub.publish(Twist())
+            # Same on-change low-latency pattern as tilt — NaN is also a
+            # safety-event input, not a steady-state condition.
+            self._reevaluate(publish_only_on_change=True)
             return
 
         # Each clean message clears the invalid latch-source. Stale check is
@@ -362,8 +379,8 @@ class SafetyMonitor(Node):
     # ----- Service ------------------------------------------------------------
 
     def _on_reset_request(
-        self, _request: Trigger.Request, response: Trigger.Response,
-    ) -> Trigger.Response:
+        self, _request: ResetSafety.Request, response: ResetSafety.Response,
+    ) -> ResetSafety.Response:
         self._n_resets_attempted += 1
         # Re-evaluate from the latest sensor facts BEFORE deciding whether
         # to honor the request. Without this, the decision can use trigger
@@ -371,29 +388,35 @@ class SafetyMonitor(Node):
         # before the most recent /hal/imu/data message arrived, leaving an
         # excursion-class trigger marked inactive even though the rover is
         # still tilted. ICD-SAF-002 §1: never force-clear an active condition.
-        self._eval_tick()
+        self._reevaluate()
         still_active = self._sm.latched_keys_active()
         if still_active:
             response.success = False
-            response.message = (
+            response.reason = (
                 f'cannot reset — latched conditions still active: '
                 f'{", ".join(still_active)}'
             )
             return response
         # Clear latches; remaining auto-clearable triggers resolve themselves.
         self._sm.clear_latches()
-        # Re-evaluate so /diagnostics + safe_publish reflect the cleared
+        # Re-evaluate so /safety/state and /diagnostics reflect the cleared
         # state without waiting for the next tick.
-        self._eval_tick()
+        self._reevaluate()
         self._n_resets_granted += 1
         response.success = True
-        response.message = f'reset granted; state={self._last_eval.state.name}'
+        response.reason = ''
         return response
 
     # ----- Timed work ---------------------------------------------------------
 
-    def _eval_tick(self) -> None:
-        """Re-evaluate the state machine from current facts. 10 Hz."""
+    def _reevaluate(self, *, publish_only_on_change: bool = False) -> None:
+        """Re-derive triggers from facts, evaluate the SM, publish state.
+
+        publish_only_on_change=True is the path taken from input callbacks:
+        the steady-state /safety/state cadence comes from the 10 Hz eval
+        timer; input-driven calls only emit an additional message when the
+        state actually changed (ICD-SAF-001 §5 on-change ≤ 20 ms).
+        """
         now_ns = self.get_clock().now().nanoseconds
 
         # Staleness watchdogs. INV-7: absence-of-data is unsafe.
@@ -430,6 +453,30 @@ class SafetyMonitor(Node):
                 f'(reasons={evaluation.reasons or ["—"]})'
             )
         self._last_eval = evaluation
+        if not publish_only_on_change or evaluation.triggers_changed:
+            self._publish_safety_state(evaluation)
+
+    def _eval_tick(self) -> None:
+        """10 Hz baseline. Always publishes /safety/state."""
+        self._reevaluate()
+
+    def _publish_safety_state(self, evaluation: 'StateEvaluation') -> None:
+        """Build and publish a SafetyState message reflecting `evaluation`.
+
+        Permission flags follow SM-SAF-001 §3: motion and tool both true in
+        OK/WARNING, both false in ESTOP. CRITICAL is the only state where
+        they diverge (motion permitted to reach safe stop, tool blocked) and
+        does not exist at M2.
+        """
+        msg = SafetyStateMsg()
+        msg.header.stamp = self.get_clock().now().to_msg()
+        msg.state = int(evaluation.state)
+        msg.reasons = list(evaluation.reasons)
+        permitted = evaluation.state != SafetyState.ESTOP
+        msg.motion_permitted = permitted
+        msg.tool_permitted = permitted
+        msg.clearable = evaluation.clearable
+        self._state_pub.publish(msg)
 
     def _safe_publish_tick(self) -> None:
         """Steady-state cmd_vel_safe pump.

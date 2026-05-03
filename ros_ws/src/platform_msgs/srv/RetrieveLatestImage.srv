@@ -1,0 +1,13 @@
+# Pull the most recent capture from the drone's XIAO to rover disk.
+# Contract: ICD-MAP-004. Server: image_retriever (SRS-MAP-002).
+
+# Namespaces the saved file:
+#   /var/lib/platform/images/<mission_id>/capture.jpg
+# Must be non-empty and contain only filename-safe characters.
+string mission_id
+---
+bool success
+# Absolute path on rover disk on success; empty string on failure.
+string image_path
+# Empty on success; human-readable failure detail otherwise.
+string message

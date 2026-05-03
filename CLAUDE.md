@@ -21,10 +21,13 @@ robot-platform/
 ├── ros_ws/                    ← ROS 2 colcon workspace
 │   └── src/                   ← ROS 2 packages
 │       ├── platform_hal/      ← HAL nodes (motor_driver, imu_driver, safety_monitor)
+│       ├── platform_msgs/     ← shared msg/srv types (SafetyState, ResetSafety, ...)
 │       └── teleop_web/        ← M1 browser joystick + rosbridge launch
 ├── firmware/
 │   └── xiao-bridge/           ← XIAO MAVLink bridge firmware (M3+)
 ├── deploy/
+│   ├── config/                ← production + bench params YAMLs
+│   ├── scripts/               ← switch-platform-config.sh helper
 │   ├── systemd/               ← systemd service units
 │   └── udev/                  ← udev rules for USB/GPIO devices
 └── docs/                 ← local copy of the HTML spec corpus
@@ -145,16 +148,17 @@ ros_ws/src/platform_hal/
 
 ### safety_monitor (SRS-SAF-001) — M2 REAL GATE
 - **Sub:** `/hal/cmd_vel_raw` (Twist) · `/hal/imu/data` (Imu)
-- **Pub:** `/hal/cmd_vel_safe` (Twist) · `/diagnostics`
-- **Service:** `/safety/reset` (`std_srvs/Trigger` stand-in for `platform_msgs/srv/ResetSafety`)
+- **Pub:** `/hal/cmd_vel_safe` (Twist) · `/safety/state` (`platform_msgs/SafetyState`,
+  RELIABLE / TRANSIENT_LOCAL / 10 Hz + on-change) · `/diagnostics`
+- **Service:** `/safety/reset` (`platform_msgs/srv/ResetSafety`)
 - **M2 behavior:** State machine gates `/hal/cmd_vel_raw → /hal/cmd_vel_safe`. ESTOP triggers
   at M2: tilt > 25° (latched), tilt warning > 18°, IMU staleness, cmd_vel staleness, NaN/Inf
   in raw, startup self-test. Latched ESTOPs require `/safety/reset` (validates condition is
   clear before granting).
-- **M2 deviations from full spec:** No `platform_msgs` package yet — `/safety/state` deferred,
-  state surfaced via `/diagnostics` instead; `/safety/reset` uses `std_srvs/Trigger`. Tilt
-  excursion is latched (spec says auto-clear); revisit when more triggers exist. Perception,
-  geofence, battery, and decel-ramp triggers land in later milestones.
+- **M2 deviations from full spec:** Tilt excursion is latched (spec says auto-clear); revisit
+  when more triggers exist. Perception, geofence, battery, and decel-ramp triggers land in
+  later milestones — when they do, `motion_permitted ≠ tool_permitted` becomes possible
+  (CRITICAL state) and the publisher will need updating.
 - **Spec:** `docs/nodes/srs-safety-monitor.html`
 
 ---
