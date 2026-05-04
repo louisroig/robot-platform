@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HW-DRONE-001 · Drone wiring reference</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=IBM+Plex+Sans:wght@300;400;500;600;700&family=IBM+Plex+Serif:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../shared/shared.css">
+</head>
+<body>
+<div class="doc-bar">
+  <a class="doc-bar-crumb" href="../index.html">← HOME</a><span class="doc-bar-sep">·</span>
+  <a class="doc-bar-crumb" href="index.html">HARDWARE</a><span class="doc-bar-sep">·</span>
+  <span class="doc-bar-id">HW-DRONE-001</span><span class="doc-bar-sep">·</span>
+  <span class="doc-bar-path">Drone wiring</span><span class="doc-bar-sep">·</span>
+  <span style="color: var(--ink-dim)">REV 0.1</span>
+  <div class="doc-bar-status"><span class="status-dot"></span><span>DRAFT</span></div>
+  <div class="doc-bar-tools">
+    <button class="tool-btn" onclick="window.print()">PRINT</button>
+    <button class="tool-btn" onclick="copyLink(event)">COPY LINK</button>
+  </div>
+</div>
+
+<div class="container">
+  <nav class="toc">
+    <div class="toc-title">CONTENTS</div>
+    <ul class="toc-list">
+      <li class="toc-item"><a class="toc-link" href="#s1"><span class="toc-num">1.0</span>Purpose</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s2"><span class="toc-num">2.0</span>Hardware Inventory</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s3"><span class="toc-num">3.0</span>UART Allocation</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s4"><span class="toc-num">4.0</span>MAVLink Bridge Wiring</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s5"><span class="toc-num">5.0</span>Camera &amp; Storage</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s6"><span class="toc-num">6.0</span>Power &amp; Grounding</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s7"><span class="toc-num">7.0</span>Bring-up Checklist</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s8"><span class="toc-num">8.0</span>Open Issues</a></li>
+      <li class="toc-item"><a class="toc-link" href="#s9"><span class="toc-num">9.0</span>Revision</a></li>
+    </ul>
+  </nav>
+
+  <main class="prose-serif">
+    <div class="doc-header">
+      <div class="doc-type">HARDWARE REFERENCE · DRONE</div>
+      <h1 class="doc-title">Drone wiring reference</h1>
+      <p class="doc-subtitle">Authoritative pin-level interface between the XIAO ESP32-S3 Sense companion board and the Blitz Whoop F7 AIO flight controller, drone power tree, and bring-up procedure for the iteration-1 mapping drone.</p>
+      <div class="doc-meta">
+        <div class="meta-item"><div class="meta-label">Document ID</div><div class="meta-value">HW-DRONE-001</div></div>
+        <div class="meta-item"><div class="meta-label">Revision</div><div class="meta-value">0.1 · draft</div></div>
+        <div class="meta-item"><div class="meta-label">Owner</div><div class="meta-value">platform_hal</div></div>
+        <div class="meta-item"><div class="meta-label">Classification</div><div class="meta-value">Hardware reference</div></div>
+        <div class="meta-item"><div class="meta-label">Applies To</div><div class="meta-value">Iteration 1 (M1–M6)</div></div>
+        <div class="meta-item"><div class="meta-label">Last Updated</div><div class="meta-value">2026-05-03</div></div>
+      </div>
+    </div>
+
+    <section id="s1"><div class="section-header"><span class="section-num">1.0</span><h2 class="section-title">Purpose</h2></div>
+      <p>This document is the single source of truth for the drone's physical wiring. It freezes the pin-level interface between the XIAO ESP32-S3 Sense companion board and the Blitz Whoop F7 AIO flight controller, fixes the drone's power tree, and provides a bring-up procedure. It closes the gap identified in <a href="../nodes/firmware-xiao-bridge.html">FW-XIAO</a> rev 0.3 §2.0, where the bridge UART was specified by config (baud, framing) but not by pin assignment.</p>
+      <p>Downstream: the FW-XIAO compile-time <code>config.h</code> constants, the <a href="../nodes/firmware-arducopter-config.html">ArduCopter parameter set (FW-ACP)</a> <code>SERIAL2_*</code> values, and any electrical schematic all derive their values from this document. When pins or baud rates change here, they change everywhere — do not fork.</p>
+      <p>This document does <strong>not</strong> cover RC link, ELRS/CRSF receiver wiring, ESC outputs, or motor wiring. Those are factory-integrated on the AIO and not part of the platform's modifiable surface.</p>
+    </section>
+
+    <section id="s2"><div class="section-header"><span class="section-num">2.0</span><h2 class="section-title">Hardware Inventory</h2></div>
+
+      <table class="data-table">
+        <thead><tr><th>Component</th><th>Specifics</th><th>Quantity</th></tr></thead>
+        <tbody>
+          <tr><td>Flight controller</td><td>Blitz Whoop F7 AIO (specific variant TBD — see OPEN-01)</td><td>1</td></tr>
+          <tr><td>Companion / camera board</td><td>XIAO ESP32-S3 Sense (ESP32-S3R8, 8 MB flash, 8 MB PSRAM, OV2640, microSD)</td><td>1</td></tr>
+          <tr><td>RC receiver</td><td>ELRS 2.4 GHz, onboard or external (variant TBD)</td><td>1</td></tr>
+          <tr><td>Battery</td><td>TBD — see OPEN-02</td><td>1</td></tr>
+          <tr><td>Frame &amp; propellers</td><td>Sub-250g whoop class, integrated with AIO</td><td>1</td></tr>
+          <tr><td>Interconnect harness</td><td>4-conductor silicone wire, 28 AWG, ≤ 50 mm, soldered direct (no connector)</td><td>1</td></tr>
+        </tbody>
+      </table>
+
+      <p>The XIAO ESP32-S3 Sense's OV2640 camera and microSD slot are factory-mounted on the included camera daughter board via a 24-pin board-to-board FFC. No user wiring is required for the camera or SD card — both are accessed by the ESP32-S3 over their dedicated internal buses.</p>
+
+      <p class="paragraph-note">Total takeoff mass target: &lt; 250 g to remain in the sub-250g regulatory class. The XIAO ESP32-S3 Sense module adds ~3.5 g; the camera daughter board adds ~3 g; a 4-conductor 50 mm harness adds &lt; 1 g. Airframe-level mass budget tracking is owned elsewhere.</p>
+    </section>
+
+    <section id="s3"><div class="section-header"><span class="section-num">3.0</span><h2 class="section-title">UART Allocation</h2></div>
+
+      <h3 class="subsection-title">3.1 · XIAO ESP32-S3 Sense pin assignments</h3>
+
+      <p>The XIAO uses <strong>one</strong> UART for the MAVLink bridge to the FC. All other peripheral I/O (camera, microSD) is internal to the Sense daughter board. Wi-Fi uses the SoC's integrated radio, no external pins.</p>
+
+      <table class="data-table">
+        <thead><tr><th>Function</th><th>XIAO silkscreen</th><th>ESP32-S3 GPIO</th><th>Direction</th><th>Notes</th></tr></thead>
+        <tbody>
+          <tr><td>MAVLink UART — TX</td><td>D6</td><td>GPIO 43</td><td>out, push-pull 3.3 V</td><td>To FC TELEM2 RX</td></tr>
+          <tr><td>MAVLink UART — RX</td><td>D7</td><td>GPIO 44</td><td>in, no pull</td><td>From FC TELEM2 TX</td></tr>
+          <tr><td>Power input — 5 V</td><td>5V pad</td><td>—</td><td>in</td><td>From FC 5 V BEC, ≥ 200 mA budget</td></tr>
+          <tr><td>Ground</td><td>GND</td><td>—</td><td>—</td><td>Common with FC GND, see §6.2</td></tr>
+        </tbody>
+      </table>
+
+      <p class="paragraph-note">The UART used is the one exposed on the XIAO's D6/D7 silkscreen pads. In Arduino-ESP32 framework code on the XIAO target this is <code>Serial1</code>. <a href="../nodes/firmware-xiao-bridge.html">FW-XIAO</a> §2.0 refers to this as "UART0" colloquially — terminology reconciliation is OPEN-03.</p>
+
+      <p class="paragraph-note">D0–D5 and D8–D10 are unused on the drone (no other UART, I²C, or SPI peripherals at iteration 1) and are reserved.</p>
+
+      <h3 class="subsection-title">3.2 · Why TELEM2 (not TELEM1)</h3>
+
+      <p>ArduCopter convention reserves SERIAL1 ("TELEM1") for the primary GCS link — typically a radio modem to a handheld controller or laptop running Mission Planner / QGroundControl. Using TELEM2 (SERIAL2) for the companion-computer/MAVROS path keeps the GCS port available for direct ground-station debugging during bring-up without contention.</p>
+
+      <p>The exact <code>SERIAL2_*</code> parameter values (protocol, baud, options) are normative in <a href="../nodes/firmware-arducopter-config.html">FW-ACP</a>, not here. This document fixes the physical pads; FW-ACP fixes the protocol on top.</p>
+    </section>
+
+    <section id="s4"><div class="section-header"><span class="section-num">4.0</span><h2 class="section-title">MAVLink Bridge Wiring · XIAO ↔ FC</h2></div>
+
+      <h3 class="subsection-title">4.1 · Cable</h3>
+
+      <p>Four conductors, 28 AWG silicone wire, ≤ 50 mm. Solder direct to pads on both ends — no connector. The drone is a sealed assembly; field-serviceable connectors are not required at iteration 1 and add mass.</p>
+
+      <h3 class="subsection-title">4.2 · Pin-level wiring</h3>
+
+      <div class="callout">
+        <div class="callout-title">Cross TX↔RX between the two boards</div>
+        <p>The XIAO's TX drives the FC's RX, and vice versa. This is the most common wiring mistake on this kind of link and silently produces "MAVLink bridge connected, no heartbeat" symptoms.</p>
+      </div>
+
+      <table class="data-table">
+        <thead><tr><th>XIAO pad</th><th>Wire color (suggested)</th><th>FC pad</th><th>Function</th></tr></thead>
+        <tbody>
+          <tr><td>D6</td><td>white</td><td>TELEM2 RX</td><td>XIAO TX → FC RX</td></tr>
+          <tr><td>D7</td><td>yellow</td><td>TELEM2 TX</td><td>FC TX → XIAO RX</td></tr>
+          <tr><td>GND</td><td>black</td><td>GND (TELEM2 block or any FC GND within ~20 mm)</td><td>Common ground</td></tr>
+          <tr><td>5V</td><td>red</td><td>5 V BEC out (TELEM2 block or FC 5V pad)</td><td>XIAO power</td></tr>
+        </tbody>
+      </table>
+
+      <h3 class="subsection-title">4.3 · Logic-level compatibility</h3>
+
+      <p>Both ends are 3.3 V CMOS logic:</p>
+      <ul class="prose-list">
+        <li>XIAO ESP32-S3: 3.3 V I/O on D6/D7. Internal pull-ups available but not enabled by default.</li>
+        <li>Blitz Whoop F7: STM32 F7 family MCU, 3.3 V I/O on all UART pads.</li>
+      </ul>
+      <p><strong>No level shifter is required.</strong> Wire D6/D7 directly to TELEM2 TX/RX. Do not insert resistors or buffers.</p>
+
+      <h3 class="subsection-title">4.4 · Baud and framing</h3>
+
+      <table class="data-table">
+        <thead><tr><th>Parameter</th><th>Value</th><th>Set in</th></tr></thead>
+        <tbody>
+          <tr><td>Baud</td><td>57600</td><td>FW-XIAO (<code>Serial1.begin(57600)</code>); FW-ACP (<code>SERIAL2_BAUD = 57</code>)</td></tr>
+          <tr><td>Framing</td><td>8N1</td><td>Default both ends</td></tr>
+          <tr><td>Flow control</td><td>None</td><td>Hardware RTS/CTS not used</td></tr>
+          <tr><td>Protocol on the wire</td><td>MAVLink v2</td><td>FW-ACP <code>SERIAL2_PROTOCOL = 2</code></td></tr>
+        </tbody>
+      </table>
+
+      <p class="paragraph-note">57600 is the lowest baud that comfortably carries MAVLink2 telemetry at default ArduCopter stream rates, and is slow enough to be reliable over a 50 mm hand-soldered wire run with no shielding. Iteration 2+ may revisit at 115200 if telemetry density grows.</p>
+    </section>
+
+    <section id="s5"><div class="section-header"><span class="section-num">5.0</span><h2 class="section-title">Camera &amp; Storage (XIAO Sense daughter board)</h2></div>
+
+      <p>The OV2640 camera and microSD slot are factory-wired to the ESP32-S3 over the 24-pin board-to-board FFC connector. <strong>No user wiring is required or possible</strong> for these subsystems — they are part of the off-the-shelf module.</p>
+
+      <p>The image retrieval path is <strong>not</strong> the MAVLink bridge: it is HTTP over Wi-Fi from the rover's Pi 5 to the XIAO's <code>xiao-bridge.local:80</code>, fully separate from the UART. See <a href="../interfaces/icd-xiao-http-api.html">ICD-XIAO-001</a> for the wire contract and <a href="../nodes/srs-image-retriever.html">SRS-MAP-002</a> for the consumer.</p>
+    </section>
+
+    <section id="s6"><div class="section-header"><span class="section-num">6.0</span><h2 class="section-title">Power &amp; Grounding</h2></div>
+
+      <h3 class="subsection-title">6.1 · Power tree</h3>
+
+      <p>The drone has a single battery and three derived rails:</p>
+      <ul class="prose-list">
+        <li><strong>Battery bus.</strong> Direct from the LiPo to the AIO's PDB pads. Variant-specific voltage (1S / 2S / 3S — see OPEN-02).</li>
+        <li><strong>Motor rail.</strong> Battery voltage to the four ESCs integrated on the AIO. Not externally accessible.</li>
+        <li><strong>5 V BEC.</strong> Generated by the AIO from the battery bus. Powers the FC's MCU and is the only rail tapped for the XIAO. Typical capacity on whoop-class AIOs is 0.5–1 A continuous — comfortably above the XIAO's &lt; 200 mA average draw at full Wi-Fi + camera load, with margin for transient spikes during JPEG capture.</li>
+        <li><strong>3.3 V (FC internal).</strong> Generated on the FC from the 5 V rail. <strong>Not</strong> brought out to the XIAO. The XIAO has its own 3.3 V LDO on the Sense board, fed from the 5V pad.</li>
+      </ul>
+
+      <p class="paragraph-note">Brown-out behavior under battery sag is OPEN-04.</p>
+
+      <h3 class="subsection-title">6.2 · Common ground</h3>
+
+      <p>Both the FC and the XIAO must share ground. <strong>Wire the GND conductor from the XIAO to a GND pad on or near the FC's TELEM2 connector, <em>not</em> via the battery negative.</strong> Routing UART ground through the battery rail introduces motor-current-induced ground bounce that corrupts UART framing.</p>
+
+      <p>If the AIO's TELEM2 connector exposes a dedicated GND pad, use that. Otherwise, any FC GND pad within ~20 mm of TELEM2 is acceptable.</p>
+
+      <h3 class="subsection-title">6.3 · No e-stop on the drone</h3>
+
+      <p>The drone has <strong>no hardware e-stop</strong> at iteration 1. Flight termination is handled in software via ArduCopter failsafes (RC loss, GCS loss, geofence breach, battery failsafe) and via MAVLink commands from <code>drone_mission_coordinator</code>. The decision to omit a hardware kill switch is documented in <a href="../nodes/srs-drone-mission-coordinator.html">SRS-MAP-001</a> and revisited in iteration 2+ alongside the safety MCU work.</p>
+
+      <p>This is an asymmetry with the rover (which has a hardware e-stop on the motor bus per <a href="hw-pi5-001-rover-wiring.html">HW-PI5-001</a> §5) and is called out so reviewers don't expect parallel architecture.</p>
+    </section>
+
+    <section id="s7"><div class="section-header"><span class="section-num">7.0</span><h2 class="section-title">Bring-up Checklist</h2></div>
+
+      <p>Work through these in order. Do not skip. Each step is a gate: if it fails, stop and fix before proceeding.</p>
+
+      <h3 class="subsection-title">7.1 · Pre-power</h3>
+      <ol class="prose-list">
+        <li>Confirm battery is <strong>disconnected</strong> and props are <strong>removed</strong>.</li>
+        <li>Visually verify the four-wire harness from XIAO to FC: 5 V red, GND black, TX/RX correctly <strong>crossed</strong> (XIAO D6 → FC TELEM2 RX; FC TELEM2 TX → XIAO D7).</li>
+        <li>Verify continuity from XIAO GND to FC GND with a multimeter (&lt; 0.5 Ω).</li>
+        <li>Verify no continuity from XIAO 5V pad to GND (checks for solder bridges).</li>
+      </ol>
+
+      <h3 class="subsection-title">7.2 · XIAO standalone power-on (FC unpowered)</h3>
+      <ol class="prose-list">
+        <li>Power the XIAO from its USB-C port. The FC stays unpowered.</li>
+        <li>Confirm the XIAO boots and joins Wi-Fi (serial log via USB-CDC).</li>
+        <li>From the rover Pi (or any host on the same Wi-Fi): <code>ping xiao-bridge.local</code> — must resolve and respond.</li>
+        <li>From the rover Pi: <code>curl -o /tmp/test.jpg http://xiao-bridge.local/latest.jpg</code> — confirms the image HTTP path works independently of the MAVLink path.</li>
+      </ol>
+
+      <h3 class="subsection-title">7.3 · FC standalone power-on (XIAO unpowered, USB on FC)</h3>
+      <ol class="prose-list">
+        <li>Power the FC via its own USB connector. Battery stays disconnected.</li>
+        <li>Connect Mission Planner or QGroundControl over the FC's USB-CDC.</li>
+        <li>Verify ArduCopter parameters per <a href="../nodes/firmware-arducopter-config.html">FW-ACP</a>. At minimum: <code>SERIAL2_PROTOCOL = 2</code> (MAVLink2), <code>SERIAL2_BAUD = 57</code>.</li>
+        <li>Disconnect FC USB.</li>
+      </ol>
+
+      <h3 class="subsection-title">7.4 · End-to-end MAVLink bridge test (battery still disconnected)</h3>
+      <ol class="prose-list">
+        <li>Power the XIAO via its USB-C <strong>and</strong> the FC via its USB simultaneously. Both will boot.</li>
+        <li>On the rover Pi: launch mavros pointed at <code>tcp://xiao-bridge.local:5760</code>.</li>
+        <li>Confirm <code>/mavros/state</code> reports <code>connected: true</code> within 10 seconds.</li>
+        <li>Confirm telemetry flow: <code>ros2 topic echo /mavros/battery</code> returns data. (Battery readings will be USB-power-derived and not meaningful, but message flow proves the pipe.)</li>
+        <li>If <code>connected: false</code> persists: see §7.6.</li>
+      </ol>
+
+      <h3 class="subsection-title">7.5 · Battery-powered test (props still off)</h3>
+      <ol class="prose-list">
+        <li>Remove all USB cables.</li>
+        <li>Connect the flight battery.</li>
+        <li>The XIAO should boot from the FC's 5 V BEC and rejoin Wi-Fi. The FC should boot normally.</li>
+        <li>Repeat §7.4 steps 2–4. Telemetry now reflects real battery voltage.</li>
+        <li>With the airframe firmly held by hand, arm and command 5 % throttle for ≤ 1 second to verify the FC accepts arm commands and motors respond. Disarm immediately. <strong>Props remain off.</strong></li>
+      </ol>
+
+      <h3 class="subsection-title">7.6 · Troubleshooting</h3>
+
+      <table class="data-table">
+        <thead><tr><th>Symptom</th><th>Likely cause</th><th>Fix</th></tr></thead>
+        <tbody>
+          <tr><td><code>ping xiao-bridge.local</code> fails</td><td>XIAO did not associate with Wi-Fi</td><td>Check <code>config.h</code> SSID/password; check serial log via XIAO USB-CDC</td></tr>
+          <tr><td>mavros connects but no heartbeats</td><td>TX/RX not crossed</td><td>Reverse D6/D7 wires at one end</td></tr>
+          <tr><td>Heartbeats present but garbled</td><td>Baud mismatch</td><td>Verify <code>SERIAL2_BAUD = 57</code> and FW-XIAO <code>Serial1.begin(57600)</code></td></tr>
+          <tr><td>Heartbeats drop out under motor load</td><td>Ground-bounce corruption on UART</td><td>Move GND tap closer to TELEM2; shorten harness</td></tr>
+          <tr><td>XIAO browns out under battery power</td><td>FC 5 V BEC undersized for combined load</td><td>Power XIAO from a dedicated UBEC on the battery bus, not the FC's 5 V rail</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section id="s8"><div class="section-header"><span class="section-num">8.0</span><h2 class="section-title">Open Issues</h2></div>
+
+      <ol class="prose-list">
+        <li><strong>OPEN-01</strong> — Specific Blitz Whoop F7 AIO variant not yet selected. Iteration 1 assumes ArduCopter compatibility (STM32 F7 family). <strong>Confirm the chosen variant has an official ArduCopter HWDef before procurement.</strong> Many whoop-class AIOs ship Betaflight-only and cannot run ArduCopter.</li>
+        <li><strong>OPEN-02</strong> — Battery cell count and capacity not finalized. Drives the AIO 5 V BEC sizing assumption (§6.1) and the takeoff mass budget. Likely 1S Li-Ion or 2S LiPo for sub-250g class.</li>
+        <li><strong>OPEN-03</strong> — FW-XIAO §2.0 refers to "UART0"; this document specifies the UART exposed on D6/D7 (Arduino <code>Serial1</code>). Reconcile terminology in FW-XIAO rev 0.4 to remove ambiguity.</li>
+        <li><strong>OPEN-04</strong> — Whether to add a dedicated UBEC for the XIAO (independent of FC 5 V rail) deferred to bring-up. Promote to a permanent change only if §7.6 ground-bounce or brown-out symptoms appear under battery + motor load.</li>
+        <li><strong>OPEN-05</strong> — Loss-of-Wi-Fi behavior on the XIAO during a mission is auto-reconnect with backoff (FW-XIAO §6.0). The mission-level fallback (does the drone RTL on prolonged GCS-link loss?) is owned by FW-ACP, not this document — but warrants a cross-reference once FW-ACP rev 0.2 lands.</li>
+      </ol>
+    </section>
+
+    <section id="s9"><div class="section-header"><span class="section-num">9.0</span><h2 class="section-title">Revision</h2></div>
+
+      <table class="data-table">
+        <thead><tr><th>Rev</th><th>Date</th><th>Author</th><th>Change</th></tr></thead>
+        <tbody>
+          <tr><td>0.1</td><td>2026-05-03</td><td>Louis Roig &amp; Claude Opus 4.7</td><td>Initial draft. Fixes XIAO ↔ Blitz F7 TELEM2 pin-level wiring, baud, logic levels, power tree, and bring-up procedure. Closes the gap identified in FW-XIAO rev 0.3 §2.0 (UART config without pin assignment).</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <nav class="doc-nav">
+      <a href="../index.html">← Corpus Home</a>
+      <span>Related: <a href="../nodes/firmware-xiao-bridge.html">FW-XIAO</a> · <a href="../nodes/firmware-arducopter-config.html">FW-ACP</a> · <a href="../nodes/srs-drone-mission-coordinator.html">SRS-MAP-001</a> · <a href="../nodes/srs-image-retriever.html">SRS-MAP-002</a> · <a href="../interfaces/icd-xiao-http-api.html">ICD-XIAO-001</a> · <a href="hw-pi5-001-rover-wiring.html">HW-PI5-001</a></span>
+    </nav>
+  </main>
+</div>
+
+<script src="../shared/shared.js"></script>
+</body>
+</html>
